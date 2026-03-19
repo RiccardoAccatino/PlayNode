@@ -104,8 +104,6 @@ Mentre voi lavorate, altri potrebbero aver aggiornato il progetto. È fondamenta
 5. `git commit -m "Aggiunta nuova feature"` (Salvo in locale)
 6. `git push origin mia-nuova-feature` (Mando su GitHub)
 7. *Andare su GitHub e aprire una Pull Request!*
-```
 
-Questo formato usa uno stile molto diretto e si focalizza sulle operazioni meccaniche per abbassare la curva di apprendimento. 
 
 Vuoi che aggiunga anche una sezione dedicata a come si crea e si gestisce una **Pull Request** direttamente dall'interfaccia web di GitHub, oppure preferisci mantenerlo incentrato solo sul terminale per ora?
