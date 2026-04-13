@@ -1,0 +1,40 @@
+# =========================
+# IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# =========================
+# File di Sistema Operativo
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =========================
+# File di Log e Temporanei
+# =========================
+*.log
+*.tmp
+
+# =========================
+# Credenziali e Segreti
+# =========================
+# (Regola d'oro: Mai caricare password, file .env o chiavi API su GitHub!)
+.env
+
+# =========================
+# Cartelle di Build e Dipendenze
+# (Togli il simbolo '#' se inizierete a usare queste tecnologie)
+# =========================
+# node_modules/     # Da decommentare se usate Node.js / React / Angular
+# target/           # Da decommentare se usate Java (Maven)
+# build/            # Da decommentare se usate Java (Gradle) o C++
+# venv/             # Da decommentare se usate Python
