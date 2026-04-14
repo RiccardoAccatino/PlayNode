@@ -1,0 +1,48 @@
+version: '3.8'
+services:
+  # --- DATABASE: PostgreSQL ---
+  postgres:
+    image: postgres:15
+    environment:
+        POSTGRES_DB: ${DB_NAME}
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Inizializzazione: esegue il tuo DDL al primo avvio
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Persistenza: salva i dati anche se il container viene rimosso
+      - playnode_db_data:/var/lib/postgresql/data
+
+  # --- MESSAGGISTICA: MQTT Broker (Mosquitto) ---
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: playnode-mosquitto
+    restart: always
+    ports:
+      - "1883:1883" # Porta MQTT standard
+      - "9001:9001" # Porta per i WebSockets (utile per il frontend)
+    volumes:
+      # Se hai un file di configurazione specifico
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  playnode_db_data:
