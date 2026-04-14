@@ -24,4 +24,22 @@ public class PartitaController {
     public PartitaDTO avviaPartita(@PathVariable Long idGiocoInstallato) {
         return partitaService.avviaNuovaPartita(idGiocoInstallato);
     }
+    // API: PUT /api/partite/{idPartita}/punteggio?squadra=1
+    // Aggiorna il punteggio della partita specificata
+    @PutMapping("/{idPartita}/punteggio")
+    public PartitaDTO registraPunto(
+            @PathVariable Long idPartita,
+            @RequestParam int squadra) {
+
+        // Chiamiamo il Service passandogli l'ID della partita e la squadra che ha segnato
+        return partitaService.aggiornaPunteggio(idPartita, squadra);
+    }
+    // API: PUT /api/partite/{idPartita}/termina
+    // Segna la partita come conclusa
+    @PutMapping("/{idPartita}/termina")
+    public PartitaDTO terminaPartita(@PathVariable Long idPartita) {
+
+        // Chiamiamo il Service per terminare la partita
+        return partitaService.terminaPartita(idPartita);
+    }
 }
