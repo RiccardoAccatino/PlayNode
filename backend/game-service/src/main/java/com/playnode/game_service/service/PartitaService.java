@@ -1,6 +1,6 @@
 package com.playnode.game_service.service;
 
-import main.java.com.playnode.game_service.dto.PartitaDTO;
+import com.playnode.game_service.dto.PartitaDTO;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
