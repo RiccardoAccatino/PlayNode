@@ -1,4 +1,4 @@
-package main.java.com.playnode.auth_service.model;
+package com.playnode.auth_service.model;
 
 public class modelUtente {
     private Long id;

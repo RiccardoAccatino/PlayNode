@@ -1,4 +1,4 @@
-package main.java.com.playnode.auth_service.dto;
+package com.playnode.auth_service.dto;
 
 public class authResponse {
 }
