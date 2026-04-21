@@ -1,12 +1,12 @@
 package com.playnode.auth_service.dto;
 
-public class authResponse {
+public class AuthResponse {
     private String message;
     private boolean success;
 
-    public authResponse() {}
+    public AuthResponse() {}
 
-    public authResponse(String message, boolean success) {
+    public AuthResponse(String message, boolean success) {
         this.message = message;
         this.success = success;
     }

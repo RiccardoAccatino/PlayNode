@@ -1,16 +1,20 @@
 package com.playnode.auth_service.dto;
 
-import com.playnode.auth_service.entity.ruoloTipo;
-import com.playnode.auth_service.entity.sessoTipo;
+import com.playnode.auth_service.entity.RuoloTipo;
+import com.playnode.auth_service.entity.SessoTipo;
 
-public class loginRequest {
+public class RegisterRequest {
+
+    private String username;
     private String email;
     private String password;
-    private ruoloTipo ruolo;
-    private String username;
+    private RuoloTipo ruolo;
+    private SessoTipo sesso;
 
-    public ruoloTipo getRuolo() { return ruolo; }
-    public void setRuolo(ruoloTipo ruolo) { this.ruolo = ruolo; }
+    public RuoloTipo getRuolo() { return ruolo; }
+    public void setRuolo(RuoloTipo ruolo) { this.ruolo = ruolo; }
+    public SessoTipo getSesso() { return sesso; }
+    public void setSesso(SessoTipo sesso) { this.sesso = sesso; }
     public String getUsername() { return username; }
     public void setUsername(String username){this.username = username; }
     public String getEmail() { return email; }

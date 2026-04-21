@@ -1,10 +1,10 @@
 package com.playnode.auth_service.controller;
 
-import com.playnode.auth_service.dto.authResponse;
-import com.playnode.auth_service.dto.loginRequest;
-import com.playnode.auth_service.dto.registerRequest;
-import com.playnode.auth_service.service.loginService;
-import com.playnode.auth_service.service.registerService;
+import com.playnode.auth_service.dto.AuthResponse;
+import com.playnode.auth_service.dto.LoginRequest;
+import com.playnode.auth_service.dto.RegisterRequest;
+import com.playnode.auth_service.service.LoginService;
+import com.playnode.auth_service.service.RegisterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,21 +13,21 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
-public class authController {
+public class AuthController {
 
     @Autowired
-    private registerService registerService;
+    private RegisterService registerService;
 
     @Autowired
-    private loginService loginService;
+    private LoginService loginService;
 
     /**
      * Endpoint per registrazione
      * POST /api/auth/register
      */
     @PostMapping("/register")
-    public ResponseEntity<authResponse> register(@RequestBody registerRequest request) {
-        authResponse response = registerService.register(request);
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        AuthResponse response = registerService.register(request);
 
         if (response.isSuccess()) {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -41,8 +41,8 @@ public class authController {
      * POST /api/auth/login
      */
     @PostMapping("/login")
-    public ResponseEntity<authResponse> login(@RequestBody loginRequest request) {
-        authResponse response = loginService.login(request);
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        AuthResponse response = loginService.login(request);
 
         if (response.isSuccess()) {
             return ResponseEntity.status(HttpStatus.OK).body(response);

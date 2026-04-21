@@ -1,22 +1,21 @@
 package com.playnode.auth_service.service;
 
 
-import com.playnode.auth_service.dto.authResponse;
-import com.playnode.auth_service.dto.registerRequest;
-import com.playnode.auth_service.entity.utente;
-import com.playnode.auth_service.entity.ruoloTipo;
-import com.playnode.auth_service.repository.repositoryUtente;
+import com.playnode.auth_service.dto.AuthResponse;
+import com.playnode.auth_service.dto.RegisterRequest;
+import com.playnode.auth_service.entity.Utente;
+import com.playnode.auth_service.repository.RepositoryUtente;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class registerService {
+public class RegisterService {
 
     @Autowired
-    private repositoryUtente repositoryUtente;
+    private RepositoryUtente repositoryUtente;
 
     @Autowired
-    private passwordHashService passwordHashService;
+    private PasswordHashService passwordHashService;
 
 
     /**
@@ -24,25 +23,27 @@ public class registerService {
      * @param request contiene email e password
      * @return AuthResponse con esito della registrazione
      */
-    public authResponse register(registerRequest request) {
+    public AuthResponse register(RegisterRequest request) {
 
         // Verifica se l'email esiste già
         if (repositoryUtente.findByEmail(request.getEmail()) != null) {
-            return new authResponse("Email già registrata", false);
+            return new AuthResponse("Email già registrata", false);
         }
 
         // Hash della password
         String hashedPassword = passwordHashService.hashPassword(request.getPassword());
 
         // Crea il nuovo utente
-        utente utente = new utente();
+        Utente utente = new Utente();
         utente.setEmail(request.getEmail());
         utente.setPassword(hashedPassword);
-        utente.setRuolo(ruoloTipo.Giocatore);
+        utente.setRuolo(request.getRuolo());
+        utente.setUsername(request.getUsername());
+        utente.setSesso(request.getSesso());
 
         // Salva nel database
         repositoryUtente.save(utente);
 
-        return new authResponse("Registrazione completata con successo", true);
+        return new AuthResponse("Registrazione completata con successo", true);
     }
 }

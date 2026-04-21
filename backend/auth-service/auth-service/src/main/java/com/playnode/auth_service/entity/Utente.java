@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 
     @Entity
     @Table(name = "Utente")
-    public class utente {
+    public class Utente {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         @Column(name = "id_utente")
-        private String id;
+        private Long id;
 
         @Column(nullable = false, unique = true)
         private String username;
@@ -22,17 +22,17 @@ import jakarta.persistence.*;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
-        private ruoloTipo ruolo;
+        private RuoloTipo ruolo;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
-        private sessoTipo sesso;
+        private SessoTipo sesso;
 
         // costruttore vuoto
-        public utente() {}
+        public Utente() {}
 
         // Costruttore
-        public utente(String username, String email, String password, ruoloTipo ruolo, sessoTipo sesso) {
+        public Utente(String username, String email, String password, RuoloTipo ruolo, SessoTipo sesso) {
             this.username = username;
             this.email = email;
             this.password = password;
@@ -40,15 +40,17 @@ import jakarta.persistence.*;
             this.sesso = sesso;
         }
         //fetter e setter
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password){this.password = password; }
         public String getEmail() {return email;}
         public void setEmail(String email){this.email = email;}
-        public ruoloTipo getRuolo() {return ruolo;}
-        public void setRuolo(ruoloTipo ruolo) {this.ruolo = ruolo;}
+        public RuoloTipo getRuolo() {return ruolo;}
+        public void setRuolo(RuoloTipo ruolo) {this.ruolo = ruolo;}
+        public SessoTipo getSesso() { return sesso; }
+        public void setSesso(SessoTipo sesso) { this.sesso = sesso; }
     }
 
