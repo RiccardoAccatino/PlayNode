@@ -1,11 +1,11 @@
 package com.playnode.auth_service.repository;
 
-import org.apache.catalina.User;
+import com.playnode.auth_service.entity.utente;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+@Repository
+public interface repositoryUtente extends JpaRepository<utente, String> {
+    utente findByEmail(String email);
 
-
-public interface repositoryUtente extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
 }
