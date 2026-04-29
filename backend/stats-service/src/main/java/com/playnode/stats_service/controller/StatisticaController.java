@@ -1,62 +1,42 @@
 package com.playnode.stats_service.controller;
 
-import com.playnode.stats_service.repository.StoricoPartitaRepository;
+import com.playnode.stats_service.dto.StatisticaUtenteDTO;
+import com.playnode.stats_service.service.StatisticaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * Questo è il Controller. Riceve le richieste da Internet.
+ * @RestController e @RequestMapping dicono a Spring Boot che questa classe risponde agli URL che iniziano con "/api/statistiche"
+ */
 @RestController
-@RequestMapping("/api/stats")
-@CrossOrigin(origins = "*") // Permette al frontend dei tuoi amici di leggere i dati senza blocchi di sicurezza
+@RequestMapping("/api/statistiche")
 public class StatisticaController {
 
-    // Colleghiamo il nostro nuovo Repository che sa fare i calcoli
+    // Colleghiamo il nostro nuovo Service! Non usiamo più il Repository qui.
     @Autowired
-    private StoricoPartitaRepository repository;
+    private StatisticaService statisticaService;
 
-    // 1. ENDPOINT PER IL GIOCATORE
-    // Il frontend lo chiama per avere i totali di un utente specifico
-    @GetMapping("/user/{idUtente}")
-    public ResponseEntity<Map<String, Object>> getStatisticheUtente(@PathVariable Long idUtente) {
+    /**
+     * Quando qualcuno va sull'indirizzo /api/statistiche/{id}, questo metodo si attiva.
+     * Restituisce il nostro nuovo DTO invece dell'Entità.
+     */
+    @GetMapping("/{utenteId}")
+    public ResponseEntity<StatisticaUtenteDTO> ottieniStatisticheUtente(@PathVariable Long utenteId) {
 
-        // Chiediamo al database di fare i calcoli al volo!
-        long partiteGiocate = repository.countByIdUtente(idUtente);
-        long punteggioTotale = repository.sumPunteggioTotaleByIdUtente(idUtente);
+        // Chiediamo al Service di fare tutto il lavoro duro (cercare e trasformare)
+        StatisticaUtenteDTO statisticheDto = statisticaService.ottieniStatistichePerUtente(utenteId);
 
-        // Creiamo un pacchetto (Map) con i risultati da inviare al frontend
-        Map<String, Object> risposta = new HashMap<>();
-        risposta.put("partiteGiocate", partiteGiocate);
-        risposta.put("punteggioTotale", punteggioTotale);
-
-        return ResponseEntity.ok(risposta);
-    }
-
-    // 2. ENDPOINT PER L'ADMIN LOCALE
-    // Il frontend lo chiama per sapere quante partite sono state fatte nel suo bar
-    @GetMapping("/locale/{idLocale}")
-    public ResponseEntity<Map<String, Object>> getStatisticheLocale(@PathVariable String idLocale) {
-
-        long partiteTotaliLocale = repository.countByIdLocale(idLocale);
-
-        Map<String, Object> risposta = new HashMap<>();
-        risposta.put("partiteTotali", partiteTotaliLocale);
-
-        return ResponseEntity.ok(risposta);
-    }
-
-    // 3. ENDPOINT PER L'ADMIN PIATTAFORMA
-    // Il frontend lo chiama per avere le statistiche globali di un singolo gioco
-    @GetMapping("/game/{nomeGioco}")
-    public ResponseEntity<Map<String, Object>> getStatisticheGioco(@PathVariable String nomeGioco) {
-
-        long partiteGlobali = repository.countByNomeGioco(nomeGioco);
-
-        Map<String, Object> risposta = new HashMap<>();
-        risposta.put("partiteGlobali", partiteGlobali);
-
-        return ResponseEntity.ok(risposta);
+        // Se il Service ha trovato i dati, rispondiamo con un bel "200 OK" e inviamo il DTO
+        if (statisticheDto != null) {
+            return ResponseEntity.ok(statisticheDto);
+        } else {
+            // Se non ha trovato nulla, rispondiamo con un "404 Not Found" (Non trovato)
+            return ResponseEntity.notFound().build();
+        }
     }
 }

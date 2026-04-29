@@ -2,7 +2,9 @@ package com.playnode.stats_service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.playnode.stats_service.entity.StatisticaUtente;
 import com.playnode.stats_service.entity.StoricoPartita;
+import com.playnode.stats_service.repository.StatisticaRepository;
 import com.playnode.stats_service.repository.StoricoPartitaRepository;
 import org.eclipse.paho.client.mqttv3.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class MqttListenerService {
@@ -26,9 +29,12 @@ public class MqttListenerService {
 
     private MqttClient mqttClient;
 
-    // Sostituiamo il vecchio repository con il nuovo StoricoPartitaRepository
+    // Colleghiamo ENTRAMBI i repository per poter scrivere su entrambe le tabelle del database
     @Autowired
     private StoricoPartitaRepository storicoRepository;
+
+    @Autowired
+    private StatisticaRepository statisticaRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -50,26 +56,69 @@ public class MqttListenerService {
                         String contenutoJSON = new String(message.getPayload());
                         System.out.println("📩 Ricevuto su " + topic + ": " + contenutoJSON);
 
-                        // Immaginiamo che i dispositivi inviino le statistiche alla fine della partita
                         if(topic.endsWith("/match_end")) {
 
-                            // 1. Leggiamo il JSON (es: {"idUtente": 1, "idLocale": "LOC-007", "nomeGioco": "Calciobalilla", "punteggio": 3})
+                            // 1. Leggiamo il JSON
                             JsonNode dati = objectMapper.readTree(contenutoJSON);
 
-                            // 2. Creiamo una nuova riga per il nostro registro storico
-                            StoricoPartita nuovaPartita = new StoricoPartita();
-                            nuovaPartita.setIdUtente(dati.get("idUtente").asLong());
-                            nuovaPartita.setIdLocale(dati.get("idLocale").asText());
-                            nuovaPartita.setNomeGioco(dati.get("nomeGioco").asText());
-                            nuovaPartita.setPunteggioOttenuto(dati.get("punteggio").asInt());
+                            // Estraiamo le variabili principali che ci servono per entrambe le tabelle
+                            Long utenteId = dati.has("idUtente") ? dati.get("idUtente").asLong() : 0L;
+                            int punteggio = dati.has("punteggio") ? dati.get("punteggio").asInt() : 0;
 
-                            // 3. Registriamo l'ora esatta dal sistema
+                            // ==========================================
+                            // FASE A: SALVIAMO LO STORICO DELLA PARTITA
+                            // ==========================================
+                            StoricoPartita nuovaPartita = new StoricoPartita();
+                            nuovaPartita.setUtenteId(utenteId);
+                            nuovaPartita.setPunteggioOttenuto(punteggio);
                             nuovaPartita.setDataPartita(LocalDateTime.now());
 
-                            // 4. Salviamo lo "scontrino" nel database!
-                            storicoRepository.save(nuovaPartita);
+                            // Gestiamo i campi aggiuntivi con sicurezza (se esistono nel JSON li usiamo)
+                            if (dati.has("giocoId")) {
+                                nuovaPartita.setGiocoId(dati.get("giocoId").asLong());
+                            } else {
+                                nuovaPartita.setGiocoId(1L); // Valore di default se manca
+                            }
 
+                            // Salviamo lo "scontrino" nel database
+                            storicoRepository.save(nuovaPartita);
                             System.out.println("✅ Partita registrata con successo nello storico!");
+
+                            // ==========================================
+                            // FASE B: AGGIORNIAMO LE STATISTICHE TOTALI
+                            // ==========================================
+                            // Cerchiamo se l'utente ha già delle statistiche salvate
+                            Optional<StatisticaUtente> statOpzionale = statisticaRepository.findById(utenteId);
+                            StatisticaUtente stat;
+
+                            if (statOpzionale.isPresent()) {
+                                // Se esistono, le prendiamo per aggiornarle
+                                stat = statOpzionale.get();
+                            } else {
+                                // Se l'utente è nuovo e non ha mai giocato, creiamo un foglio statistiche vuoto
+                                stat = new StatisticaUtente();
+                                stat.setUtenteId(utenteId);
+                                stat.setPartiteGiocate(0);
+                                stat.setPunteggioTotale(0);
+                                stat.setVittorie(0);
+                            }
+
+                            // Aggiungiamo i dati della nuova partita ai totali
+                            stat.setPartiteGiocate(stat.getPartiteGiocate() + 1);
+                            stat.setPunteggioTotale(stat.getPunteggioTotale() + punteggio);
+
+                            // Se il JSON ci dice che ha vinto (es: "vittoria": true), aumentiamo le vittorie
+                            if (dati.has("vittoria") && dati.get("vittoria").asBoolean()) {
+                                stat.setVittorie(stat.getVittorie() + 1);
+                            }
+
+                            // Aggiorniamo i campi per l'amministratore, se presenti
+                            if (dati.has("idLocale")) stat.setIdLocale(dati.get("idLocale").asText());
+                            if (dati.has("nomeGioco")) stat.setNomeGioco(dati.get("nomeGioco").asText());
+
+                            // Salviamo le statistiche aggiornate nel database!
+                            statisticaRepository.save(stat);
+                            System.out.println("✅ Statistiche utente aggiornate con successo!");
                         }
 
                     } catch (Exception e) {

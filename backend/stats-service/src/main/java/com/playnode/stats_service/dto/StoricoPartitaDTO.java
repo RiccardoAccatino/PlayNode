@@ -1,30 +1,30 @@
-package com.playnode.stats_service.entity;
+package com.playnode.stats_service.dto;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Questa classe rappresenta la tabella "StoricoPartita" nel database.
+ * Questo DTO serve per inviare le informazioni di una singola partita finita.
  */
-@Entity
-public class StoricoPartita {
+public class StoricoPartitaDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Long utenteId;
     private Long giocoId;
     private int punteggioOttenuto;
     private LocalDateTime dataPartita;
 
-    // Costruttore vuoto obbligatorio per Spring Boot
-    public StoricoPartita() {
+    public StoricoPartitaDTO() {
     }
 
-    // ==========================================
-    // --- METODI GETTER E SETTER ---
-    // ==========================================
+    public StoricoPartitaDTO(Long id, Long utenteId, Long giocoId, int punteggioOttenuto, LocalDateTime dataPartita) {
+        this.id = id;
+        this.utenteId = utenteId;
+        this.giocoId = giocoId;
+        this.punteggioOttenuto = punteggioOttenuto;
+        this.dataPartita = dataPartita;
+    }
+
+    // --- GETTER E SETTER ---
 
     public Long getId() {
         return id;

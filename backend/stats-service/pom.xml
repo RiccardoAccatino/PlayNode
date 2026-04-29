@@ -40,6 +40,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Dipendenza per Swagger (OpenAPI) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
         <!-- Libreria per la comunicazione con MQTT (Mosquitto) -->
         <dependency>
             <groupId>org.eclipse.paho</groupId>
