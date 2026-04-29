@@ -1,4 +1,42 @@
-document.getElementById('ft-date').textContent = new Date().toLocaleDateString('it-IT');
+
+import { renderLogin } from '../views/login';
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("PlayNode Frontend Inizializzato");
+    document.getElementById('ft-date').textContent = new Date().toLocaleDateString('it-IT');
+
+    // Avviamo il login passando la funzione da eseguire in caso di successo
+    renderLogin(handleLoginSuccess);
+});
+
+// Funzione che gestisce lo sblocco dell'interfaccia dopo il login
+function handleLoginSuccess(user) {
+    console.log("Login effettuato per l'utente:", user);
+
+    // 1. Nascondiamo il form di login e mostriamo l'app
+    document.getElementById('login-root').style.display = 'none';
+    document.getElementById('main-app').style.display = 'flex'; // o 'block', a seconda del tuo CSS
+
+    // 2. Cerchiamo il tab corrispondente al ruolo per simulare il click
+    const roleButtons = document.querySelectorAll('.role-tab');
+    let targetBtn = Array.from(roleButtons).find(btn => {
+        if (user.role === 'player') return btn.textContent === 'Giocatore';
+        if (user.role === 'locale') return btn.textContent === 'Admin Locale';
+        if (user.role === 'platform') return btn.textContent === 'Admin Piattaforma';
+    });
+
+    if (!targetBtn) targetBtn = roleButtons[0]; // fallback di sicurezza
+
+    // 3. Attiviamo il ruolo e aggiorniamo i dati utente in alto a destra
+    setRole(user.role, targetBtn);
+    document.getElementById('av-name').textContent = user.name;
+    document.getElementById('av-initials').textContent = user.initials;
+}
+
+// ... Qui sotto lascia intatto il resto del tuo codice (const ROLES = { ... })
+// Rimuovi però l'ultima riga del tuo file originale: setRole('player', document.querySelector('.role-tab'));
+// perché ora lo chiamiamo dinamicamente in handleLoginSuccess.
 
 const ROLES = {
     player: {
@@ -136,8 +174,8 @@ function playerDashboard() {
         return `<div class="bar-col">
             <div class="bar-val">${v}</div>
             <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:1px">
-              <div class="bar-seg" style="height:${wh}px;background:var(--grn)"></div>
-              <div class="bar-seg" style="height:${lh}px;background:var(--red);border-radius:0"></div>
+              <div class="bar-seg" style="height:auto;background:var(--grn)"></div>
+              <div class="bar-seg" style="height:auto;background:var(--red);border-radius:0"></div>
             </div>
             <div class="bar-lbl">${labels[i]}</div>
           </div>`;

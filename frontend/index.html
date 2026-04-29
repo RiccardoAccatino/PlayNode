@@ -1,8 +1,17 @@
-<html>
-<meta charset="UTF-8">
-<link rel="stylesheet" href="style.css">
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <title>PlayNode App</title>
+</head>
+<body>
 
-<div class="app">
+<!-- 1. Il nuovo contenitore dedicato al form di login -->
+<div id="login-root"></div>
+
+<!-- 2. Nascondiamo il layout principale aggiungendo style="display: none;" -->
+<div class="app" id="main-app" style="display: none;">
 
     <div class="topbar">
         <div class="logo">
@@ -16,7 +25,6 @@
         </div>
         <div class="nav" id="topnav"></div>
         <div class="user-chip">
-            <!-- AGGIUNGERE LOGIN E REGISTRAZIONE -->
             <div class="avatar" id="av-initials">MR</div>
             <span class="uname" id="av-name">Mario R.</span>
         </div>
@@ -37,4 +45,7 @@
     </div>
 </div>
 
-<script src="script.js"></script>
+<!-- 3. Aggiunto type="module" per permettere gli import nel JS -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
