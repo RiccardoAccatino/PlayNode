@@ -1,0 +1,33 @@
+#Come provarlo:
+# (aprire l'applicazione docker desktop)
+# cd docker
+# docker-compose up -d
+
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - playnode_db_data:/var/lib/postgresql/data
+
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: playnode-mosquitto
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+volumes:
+  playnode_db_data:

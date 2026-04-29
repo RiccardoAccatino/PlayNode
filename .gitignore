@@ -29,6 +29,7 @@ Thumbs.db
 # =========================
 # (Regola d'oro: Mai caricare password, file .env o chiavi API su GitHub!)
 .env
+docker/.env
 
 # =========================
 # Cartelle di Build e Dipendenze
