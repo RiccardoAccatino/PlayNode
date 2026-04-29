@@ -1,4 +1,7 @@
+-- ==========================================
 -- CREAZIONE TABELLE (DDL)
+-- ==========================================
+
 
 -- tipi enum
 create type sesso_tipo as enum ('Maschio','Femmina','Altro');
