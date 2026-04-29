@@ -1,6 +1,6 @@
-
-import { renderLogin } from '../views/login';
-
+// Aggiungiamo l'estensione .js alla fine del percorso
+import { renderLogin } from '../views/login.js';
+import { renderRegister } from '../views/register.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("PlayNode Frontend Inizializzato");
