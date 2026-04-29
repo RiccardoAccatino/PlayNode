@@ -397,7 +397,7 @@ function localeSettings(){return `<div class="pg-title">Impostazioni Locale</div
 function platformOverview() {
   return `
   <div class="pg-title">Overview Globale</div>
-  <div class="pg-sub">Stato dell'intera piattaforma Connected Games</div>
+  <div class="pg-sub">Stato dell'intera piattaforma NodePlay</div>
   <div class="stats-row">
     <div class="scard"><div class="scard-lbl">Utenti totali</div><div class="scard-val">1.284</div><div class="scard-delta up">+47 questa settimana</div></div>
     <div class="scard"><div class="scard-lbl">Locali attivi</div><div class="scard-val">23</div><div class="scard-delta down">1 offline</div></div>

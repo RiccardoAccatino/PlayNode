@@ -104,4 +104,3 @@ Mentre voi lavorate, altri potrebbero aver aggiornato il progetto. È fondamenta
 5. `git commit -m "Aggiunta nuova feature"` (Salvo in locale)
 6. `git push origin mia-nuova-feature` (Mando su GitHub)
 7. *Andare su GitHub e aprire una Pull Request!*
-
