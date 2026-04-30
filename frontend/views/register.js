@@ -24,7 +24,6 @@ export function renderRegister(onSuccess) {
             PlayNode
           </span>
         </div>
-        <div style="font-size:12px;color:var(--txt3)">UPO — A.A. 2025/2026</div>
       </div>
 
       <!-- card -->
@@ -171,7 +170,7 @@ export function renderRegister(onSuccess) {
 
       <!-- footer -->
       <div style="text-align:center;margin-top:14px;font-size:10px;color:var(--txt3)">
-        Dappia · Ricky · Angie · [team] — PISSIR Lab 2025/2026
+        Dappia · Ricky · Angie -2026
       </div>
     </div>
   </div>`;

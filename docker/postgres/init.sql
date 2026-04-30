@@ -175,16 +175,16 @@ create table Evento_iot(
 
 -- 1. UTENTI (1 Admin Piattaforma, 1 Admin Gioco, 2 Gestori, 6 Giocatori)
 INSERT INTO Utente (username, email, password, ruolo, sesso) VALUES
-    ('francesco_admin', 'francesco.dappiano@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'AdminPiattaforma', 'Maschio'),
-    ('riccardo_gameadmin', 'riccardo.accatino@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'AdminGioco', 'Maschio'),
-    ('mario_gestore', 'mario.rossi@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Gestore', 'Maschio'),
-    ('luigi_gestore', 'luigi.verdi@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Gestore', 'Maschio'),
-    ('angie_player', 'angie.albitres@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Femmina'),
-    ('lisa_player', 'lisa.bianchi@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Femmina'),
-    ('giulio_player', 'giulio.neri@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Maschio'),
-    ('sara_player', 'sara.gialli@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Femmina'),
-    ('marco_player', 'marco.blu@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Maschio'),
-    ('elena_player', 'elena.viola@gmail.com', '$2a$10$xn3LI/AjqicFYZFruSwve.681477XaVNaUQbr1ipc9WAptYNDa.uW', 'Giocatore', 'Femmina');
+    ('francesco_admin', 'francesco.dappiano@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'AdminPiattaforma', 'Maschio'),
+    ('riccardo_gameadmin', 'riccardo.accatino@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'AdminGioco', 'Maschio'),
+    ('mario_gestore', 'mario.rossi@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Gestore', 'Maschio'),
+    ('luigi_gestore', 'luigi.verdi@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Gestore', 'Maschio'),
+    ('angie_player', 'angie.albitres@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Femmina'),
+    ('lisa_player', 'lisa.bianchi@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Femmina'),
+    ('giulio_player', 'giulio.neri@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Maschio'),
+    ('sara_player', 'sara.gialli@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Femmina'),
+    ('marco_player', 'marco.blu@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Maschio'),
+    ('elena_player', 'elena.viola@gmail.com', '$2a$12$GzsQcQNydjX0HBoMdYjaiuTeRoMW1.mgAM5HNCcB89CjCeSxnB3nS', 'Giocatore', 'Femmina');
 
 -- 2. SQUADRE
 INSERT INTO Squadra (nome_squadra) VALUES

@@ -6,47 +6,7 @@
     <title>PlayNode App</title>
 </head>
 <body>
-
-<!-- 1. Il nuovo contenitore dedicato al form di login -->
-<div id="login-root"></div>
-<div id="register-root"></div>
-
-<!-- 2. Nascondiamo il layout principale aggiungendo style="display: none;" -->
-<div class="app" id="main-app" style="display: none;">
-
-    <div class="topbar">
-        <div class="logo">
-            <div class="logo-dot"></div>
-            PlayNode
-        </div>
-        <div class="role-tabs">
-            <button class="role-tab active" onclick="setRole('player',this)">Giocatore</button>
-            <button class="role-tab" onclick="setRole('locale',this)">Admin Locale</button>
-            <button class="role-tab" onclick="setRole('platform',this)">Admin Piattaforma</button>
-        </div>
-        <div class="nav" id="topnav"></div>
-        <div class="user-chip">
-            <div class="avatar" id="av-initials">MR</div>
-            <span class="uname" id="av-name">Mario R.</span>
-        </div>
-    </div>
-
-    <div class="body">
-        <div class="sidebar" id="sidebar"></div>
-        <div class="main" id="main-content"></div>
-    </div>
-
-    <div class="footer">
-        <span class="ft">PlayNode</span>
-        <span class="ft-sep">·</span>
-        <span class="ft" id="ft-authors">Dappia · Ricky · Angie</span>
-        <span class="ft-sep">·</span>
-        <span class="ft" style="margin-left:auto">v0.1</span>
-        <span class="ft" id="ft-date"></span>
-    </div>
-</div>
-
-<!-- 3. Aggiunto type="module" per permettere gli import nel JS -->
-<script type="module" src="js/app.js"></script>
+    <div id="app-root"></div> <!-- QUESTO È IL CONTENITORE -->
+    <script type="module" src="./js/app.js" defer></script>
 </body>
 </html>

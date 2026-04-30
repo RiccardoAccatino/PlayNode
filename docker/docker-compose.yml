@@ -1,9 +1,10 @@
 #Come provarlo:
 # (aprire l'applicazione docker desktop)
 # cd docker
+# docker-compose down -v
 # docker-compose up -d
 
-version: '3.8'
+# version: '3.8'
 services:
   postgres:
     image: postgres:15
