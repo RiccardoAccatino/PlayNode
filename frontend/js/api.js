@@ -1,22 +1,28 @@
-// frontend/js/api.js
+/**
+ * Questo modulo centralizza tutte le chiamate di rete (HTTP) verso le API del backend Java.
+ */
 
-// Definiamo l'indirizzo base del tuo backend Java.
-// Se il tuo auth-service gira su una porta diversa (es. 8081), cambiala qui!
+/**
+ * L'indirizzo di base per tutte le chiamate al backend.
+ *
+ * @constant {string}
+ */
 const API_BASE_URL = 'http://localhost:8080/api';
 
 /**
- * Funzione per inviare le credenziali di login al backend.
- * Usiamo "async" perché la richiesta al server richiede tempo e dobbiamo "aspettare" (await) la risposta.
+ * Effettua una richiesta di Login al backend (auth-service) inviando le credenziali dell'utente.
+ * Utilizza fetch in modo asincrono per attendere la risposta del server.
  *
- * @param {string} email - L'email inserita dall'utente
- * @param {string} password - La password inserita dall'utente
- * @returns {Object} - I dati dell'utente restituiti dal server se il login ha successo
+ * @param {string} email - L'email inserita dall'utente nel modulo.
+ * @param {string} password - La password inserita dall'utente in chiaro (verrà cifrata o gestita dal backend).
+ * @returns {Promise<Object>} Una Promise che si risolve con i dati dell'utente (es. token JWT, dati profilo) restituiti dal server.
+ * @throws {Error} Lancia un errore se il server restituisce uno stato di errore (es. 401 Non Autorizzato) o se la rete è offline.
  */
 export async function loginUser(email, password) {
     try {
-        // Usiamo fetch per fare una richiesta di tipo POST al tuo AuthController Java
+        // fetch avvia la richiesta HTTP. "await" mette in pausa la funzione finché il server non risponde.
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
+            method: 'POST', // Usiamo POST perché stiamo inviando dati sensibili nel corpo della richiesta
             headers: {
                 // Diciamo al server che stiamo inviando dati in formato JSON
                 'Content-Type': 'application/json'
@@ -28,16 +34,16 @@ export async function loginUser(email, password) {
             })
         });
 
-        // Se il server risponde con un errore (es. 401 Unauthorized o 404 Not Found)
+        // Verifichiamo se il codice di stato HTTP è un successo (es. 200 OK)
         if (!response.ok) {
-            // "Lanciamo" un errore che verrà catturato dal nostro login.js
+            // Se non è ok (es. 401 o 404), generiamo un errore per interrompere il flusso
             throw new Error('Credenziali non valide o errore del server');
         }
 
         // Se la risposta è OK (200), convertiamo la risposta del server in un oggetto JavaScript
         const userData = await response.json();
 
-        // Restituiamo i dati (che presumibilmente conterranno il token, il nome e il ruolo)
+        // Restituiamo i dati in modo che chi ha chiamato la funzione (es. login.js) possa usarli
         return userData;
 
     } catch (error) {
