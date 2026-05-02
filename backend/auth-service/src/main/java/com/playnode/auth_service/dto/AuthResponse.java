@@ -4,7 +4,8 @@ public class AuthResponse {
     private String message;
     private boolean success;
 
-    public AuthResponse() {}
+    public AuthResponse() {
+    }
 
     public AuthResponse(String message, boolean success) {
         this.message = message;

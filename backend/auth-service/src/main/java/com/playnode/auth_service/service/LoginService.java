@@ -23,9 +23,11 @@ public class LoginService {
      * @return AuthResponse con esito del login
      */
     public AuthResponse login(LoginRequest request) {
+        // Elimina spazio
+        String emailPulita = request.getEmail().trim().toLowerCase();
 
         // Cerca l'utente per email
-        Utente u = rutente.findByEmail(request.getEmail());
+        Utente u = rutente.findByEmail(emailPulita);
 
         if (u == null) {
             return new AuthResponse("Utente non trovato", false);

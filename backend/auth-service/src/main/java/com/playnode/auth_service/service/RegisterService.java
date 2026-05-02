@@ -24,9 +24,11 @@ public class RegisterService {
      * @return AuthResponse con esito della registrazione
      */
     public AuthResponse register(RegisterRequest request) {
+        // Elimina spazi
+        String emailPulita = request.getEmail().trim().toLowerCase();
 
         // Verifica se l'email esiste già
-        if (repositoryUtente.findByEmail(request.getEmail()) != null) {
+        if (repositoryUtente.findByEmail(emailPulita) != null) {
             return new AuthResponse("Email già registrata", false);
         }
 
@@ -35,7 +37,7 @@ public class RegisterService {
 
         // Crea il nuovo utente
         Utente utente = new Utente();
-        utente.setEmail(request.getEmail());
+        utente.setEmail(emailPulita);
         utente.setPassword(hashedPassword);
         utente.setRuolo(request.getRuolo());
         utente.setUsername(request.getUsername());

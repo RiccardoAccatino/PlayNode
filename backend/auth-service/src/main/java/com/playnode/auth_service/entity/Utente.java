@@ -1,8 +1,10 @@
 package com.playnode.auth_service.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-    @Entity
+@Entity
     @Table(name = "Utente")
     public class Utente {
 
@@ -22,10 +24,12 @@ import jakarta.persistence.*;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
+        @JdbcTypeCode(SqlTypes.NAMED_ENUM)
         private RuoloTipo ruolo;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
+        @JdbcTypeCode(SqlTypes.NAMED_ENUM)
         private SessoTipo sesso;
 
         // costruttore vuoto

@@ -1,5 +1,5 @@
 /**
- * Questo modulo centralizza tutte le chiamate di rete (HTTP) verso le API del backend Java.
+ * Questa classe centralizza tutte le chiamate di rete (HTTP) verso le API del backend Java.
  */
 
 /**
@@ -49,5 +49,38 @@ export async function loginUser(email, password) {
     } catch (error) {
         console.error("Errore di rete durante il login:", error);
         throw error; // Passiamo l'errore al file login.js per mostrare il messaggio a schermo
+    }
+}
+
+/**
+ * Invia i dati di un nuovo utente al backend per la registrazione.
+ *
+ * @param {Object} userData - Un oggetto contenente tutti i dati compilati nel form.
+ * @returns {Promise<Object>} La risposta del server (es. dati utente o messaggio di conferma).
+ * @throws {Error} Lancia un errore se la registrazione fallisce (es. email già esistente).
+ */
+export async function registerUser(userData) {
+    try {
+        // Facciamo una richiesta POST all'endpoint di registrazione del tuo backend Java
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // Trasformiamo l'oggetto JavaScript in formato JSON per il server
+            body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) {
+            // Se il server risponde con un errore (es. 400 Bad Request), lanciamo un'eccezione
+            throw new Error('Errore durante la registrazione. Controlla i dati o prova un\'altra email.');
+        }
+
+        // Se tutto va bene, restituiamo i dati forniti dal server
+        return await response.json();
+
+    } catch (error) {
+        console.error("Errore di rete durante la registrazione:", error);
+        throw error;
     }
 }
