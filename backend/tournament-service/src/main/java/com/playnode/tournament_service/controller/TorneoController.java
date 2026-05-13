@@ -2,6 +2,9 @@ package com.playnode.tournament_service.controller;
 
 import com.playnode.tournament_service.dto.TorneoDTO;
 import com.playnode.tournament_service.service.TorneoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,50 +13,51 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tornei") // Tutti gli URL inizieranno con questo
-@CrossOrigin(origins = "*")    // Permette al frontend di fare richieste
+@RequestMapping("/api/tornei")
+@Tag(name = "Tornei", description = "API per la gestione del ciclo di vita dei tornei")
+@CrossOrigin(origins = "*")
 public class TorneoController {
 
     @Autowired
     private TorneoService torneoService;
 
-    // API per ottenere la lista di tutti i tornei
-    // GET: /api/tornei
+    @Operation(summary = "Ottieni tutti i tornei", description = "Restituisce una lista di tutti i tornei presenti nel sistema.")
     @GetMapping
     public ResponseEntity<List<TorneoDTO>> getAllTornei() {
         List<TorneoDTO> tornei = torneoService.ottieniTuttiITornei();
         return ResponseEntity.ok(tornei);
     }
 
-    // API per creare un nuovo torneo
-    // POST: /api/tornei
+    @Operation(summary = "Crea un nuovo torneo", description = "Registra un nuovo torneo validando che la data di fine sia successiva a quella di inizio.")
+    @ApiResponse(responseCode = "201", description = "Torneo creato con successo")
+    @ApiResponse(responseCode = "400", description = "Dati del torneo non validi (es. errore nelle date)")
     @PostMapping
     public ResponseEntity<?> creaNuovoTorneo(@RequestBody TorneoDTO torneoDTO) {
         try {
             TorneoDTO torneoCreato = torneoService.creaTorneo(torneoDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(torneoCreato);
         } catch (IllegalArgumentException e) {
-            // Se le date sono sbagliate, catturiamo l'eccezione e mandiamo un "400 Bad Request"
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    // API per ottenere un singolo torneo tramite il suo ID
-    // GET: /api/tornei/{id}
+
+    @Operation(summary = "Ottieni torneo per ID", description = "Recupera i dettagli completi di un torneo specifico tramite il suo ID.")
+    @ApiResponse(responseCode = "200", description = "Torneo trovato")
+    @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @GetMapping("/{id}")
     public ResponseEntity<TorneoDTO> getTorneoById(@PathVariable Long id) {
         TorneoDTO torneo = torneoService.ottieniTorneoPerId(id);
 
         if (torneo != null) {
-            return ResponseEntity.ok(torneo); // 200 OK
+            return ResponseEntity.ok(torneo);
         } else {
-            return ResponseEntity.notFound().build(); // 404 Not Found se l'ID non esiste
+            return ResponseEntity.notFound().build();
         }
     }
 
-
-
-    // API per modificare un torneo esistente
-    // PUT: /api/tornei/{id}
+    @Operation(summary = "Aggiorna un torneo", description = "Modifica i dati di un torneo esistente identificato dall'ID.")
+    @ApiResponse(responseCode = "200", description = "Torneo aggiornato")
+    @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @PutMapping("/{id}")
     public ResponseEntity<?> aggiornaTorneo(
             @PathVariable Long id,
@@ -67,22 +71,20 @@ public class TorneoController {
                 return ResponseEntity.notFound().build();
             }
         } catch (IllegalArgumentException e) {
-            // Anche qui, gestiamo l'errore se l'utente prova a modificare le date in modo errato
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // API per eliminare un torneo
-    // DELETE: /api/tornei/{id}
+    @Operation(summary = "Elimina un torneo", description = "Rimuove definitivamente un torneo dal database tramite il suo ID.")
+    @ApiResponse(responseCode = "204", description = "Torneo eliminato correttamente")
+    @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminaTorneo(@PathVariable Long id) {
         boolean eliminato = torneoService.eliminaTorneo(id);
 
         if (eliminato) {
-            // 204 No Content è lo standard per una cancellazione andata a buon fine
             return ResponseEntity.noContent().build();
         } else {
-            // 404 Not Found se proviamo a eliminare un torneo che non esiste
             return ResponseEntity.notFound().build();
         }
     }
