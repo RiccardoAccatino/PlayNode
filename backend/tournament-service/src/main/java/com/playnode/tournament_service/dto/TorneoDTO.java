@@ -13,6 +13,7 @@ public class TorneoDTO {
     private Long idTipologiaGioco;
     private LocalDate dataInizio;
     private LocalDate dataFine;
+    private String classifica;
 
     // NUOVO CAMPO: Lista dei locali associati al torneo
     private List<Long> localiIds = new ArrayList<>();
@@ -42,7 +43,11 @@ public class TorneoDTO {
     public LocalDate getDataFine() { return dataFine; }
     public void setDataFine(LocalDate dataFine) { this.dataFine = dataFine; }
 
-    // NUOVI GETTER E SETTER
+
     public List<Long> getLocaliIds() { return localiIds; }
     public void setLocaliIds(List<Long> localiIds) { this.localiIds = localiIds; }
+
+    public String getClassifica() {return classifica;}
+
+    public void setClassifica(String classifica) {this.classifica = classifica;}
 }
