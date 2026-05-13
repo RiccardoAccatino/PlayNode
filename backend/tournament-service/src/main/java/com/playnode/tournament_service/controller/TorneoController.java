@@ -28,12 +28,15 @@ public class TorneoController {
     // API per creare un nuovo torneo
     // POST: /api/tornei
     @PostMapping
-    public ResponseEntity<TorneoDTO> creaNuovoTorneo(@RequestBody TorneoDTO torneoDTO) {
-        TorneoDTO torneoCreato = torneoService.creaTorneo(torneoDTO);
-        // Ritorniamo lo stato 201 (Created)
-        return ResponseEntity.status(HttpStatus.CREATED).body(torneoCreato);
+    public ResponseEntity<?> creaNuovoTorneo(@RequestBody TorneoDTO torneoDTO) {
+        try {
+            TorneoDTO torneoCreato = torneoService.creaTorneo(torneoDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(torneoCreato);
+        } catch (IllegalArgumentException e) {
+            // Se le date sono sbagliate, catturiamo l'eccezione e mandiamo un "400 Bad Request"
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
-
     // API per ottenere un singolo torneo tramite il suo ID
     // GET: /api/tornei/{id}
     @GetMapping("/{id}")
@@ -47,24 +50,25 @@ public class TorneoController {
         }
     }
 
-    // Aggiungi questo metodo dentro TorneoController.java
+
 
     // API per modificare un torneo esistente
     // PUT: /api/tornei/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<TorneoDTO> aggiornaTorneo(
+    public ResponseEntity<?> aggiornaTorneo(
             @PathVariable Long id,
             @RequestBody TorneoDTO torneoDTO) {
+        try {
+            TorneoDTO torneoAggiornato = torneoService.aggiornaTorneo(id, torneoDTO);
 
-        // Chiamiamo il nostro Service passandogli l'ID da cercare e i nuovi dati
-        TorneoDTO torneoAggiornato = torneoService.aggiornaTorneo(id, torneoDTO);
-
-        // Se l'aggiornamento è andato a buon fine (il torneo esisteva)
-        if (torneoAggiornato != null) {
-            return ResponseEntity.ok(torneoAggiornato); // Rispondiamo con stato 200 (OK) e i nuovi dati
-        } else {
-            // Se il torneo con quell'ID non esiste, restituiamo 404 (Not Found)
-            return ResponseEntity.notFound().build();
+            if (torneoAggiornato != null) {
+                return ResponseEntity.ok(torneoAggiornato);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (IllegalArgumentException e) {
+            // Anche qui, gestiamo l'errore se l'utente prova a modificare le date in modo errato
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
