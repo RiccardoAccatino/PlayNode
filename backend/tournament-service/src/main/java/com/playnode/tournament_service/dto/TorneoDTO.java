@@ -2,6 +2,8 @@ package com.playnode.tournament_service.dto;
 
 import com.playnode.tournament_service.entity.ModalitaGiocoTipo;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TorneoDTO {
     private Long id;
@@ -11,6 +13,9 @@ public class TorneoDTO {
     private Long idTipologiaGioco;
     private LocalDate dataInizio;
     private LocalDate dataFine;
+
+    // NUOVO CAMPO: Lista dei locali associati al torneo
+    private List<Long> localiIds = new ArrayList<>();
 
     // Costruttore vuoto
     public TorneoDTO() {}
@@ -36,4 +41,8 @@ public class TorneoDTO {
 
     public LocalDate getDataFine() { return dataFine; }
     public void setDataFine(LocalDate dataFine) { this.dataFine = dataFine; }
+
+    // NUOVI GETTER E SETTER
+    public List<Long> getLocaliIds() { return localiIds; }
+    public void setLocaliIds(List<Long> localiIds) { this.localiIds = localiIds; }
 }

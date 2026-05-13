@@ -2,6 +2,7 @@ package com.playnode.tournament_service.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.*;
 
 @Entity
 @Table(name = "torneo")
@@ -61,4 +62,15 @@ public class Torneo {
 
     public LocalDate getDataFine() { return dataFine; }
     public void setDataFine(LocalDate dataFine) { this.dataFine = dataFine; }
+
+    // NUOVO CAMPO: Mappatura automatica con la tabella Torneo_locale
+    @ElementCollection
+    @CollectionTable(
+            name = "torneo_locale", // Il nome della tabella nel tuo database
+            joinColumns = @JoinColumn(name = "id_torneo") // La colonna che fa riferimento a questo torneo
+    )
+    @Column(name = "id_locale") // La colonna che contiene l'ID del locale
+    private List<Long> localiIds = new ArrayList<>();
+    public List<Long> getLocaliIds() { return localiIds; }
+    public void setLocaliIds(List<Long> localiIds) { this.localiIds = localiIds;}
 }

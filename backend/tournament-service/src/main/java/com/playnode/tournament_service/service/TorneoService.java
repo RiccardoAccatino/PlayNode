@@ -35,7 +35,12 @@ public class TorneoService {
         torneo.setTipologiaGiocoId(nuovoTorneoDTO.getIdTipologiaGioco());
         torneo.setDataInizio(nuovoTorneoDTO.getDataInizio());
         torneo.setDataFine(nuovoTorneoDTO.getDataFine());
-        torneo.setClassifica("Da definire"); // Impostazione di default
+        torneo.setClassifica("Da definire");
+
+        // NUOVA RIGA: Salviamo anche i locali!
+        if (nuovoTorneoDTO.getLocaliIds() != null) {
+            torneo.setLocaliIds(nuovoTorneoDTO.getLocaliIds());
+        }
 
         // Salviamo nel DB
         Torneo torneoSalvato = torneoRepository.save(torneo);
@@ -52,6 +57,10 @@ public class TorneoService {
         dto.setIdTipologiaGioco(torneo.getTipologiaGiocoId());
         dto.setDataInizio(torneo.getDataInizio());
         dto.setDataFine(torneo.getDataFine());
+
+        // NUOVA RIGA: Estraiamo anche i locali per il frontend!
+        dto.setLocaliIds(torneo.getLocaliIds());
+
         return dto;
     }
 }
