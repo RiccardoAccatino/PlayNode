@@ -7,7 +7,8 @@
  *
  * @constant {string}
  */
-const API_BASE_URL = 'http://localhost:8080/api';
+const GAME_API_URL = 'http://localhost:8080/api'; // Per le partite
+const AUTH_API_URL = 'http://localhost:8081/api/auth'; // Per il login
 
 /**
  * Effettua una richiesta di Login al backend (auth-service) inviando le credenziali dell'utente.
@@ -21,7 +22,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 export async function loginUser(email, password) {
     try {
         // fetch avvia la richiesta HTTP. "await" mette in pausa la funzione finché il server non risponde.
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const response = await fetch(`${ AUTH_API_URL}/auth/login`, {
             method: 'POST', // Usiamo POST perché stiamo inviando dati sensibili nel corpo della richiesta
             headers: {
                 // Diciamo al server che stiamo inviando dati in formato JSON
