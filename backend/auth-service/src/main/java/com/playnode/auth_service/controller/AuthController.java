@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:63342", methods = {RequestMethod.POST, RequestMethod.OPTIONS}, allowedHeaders = "*")
 public class AuthController {
 
     @Autowired
@@ -42,8 +42,9 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        AuthResponse response = loginService.login(request);
+        System.out.println("Login tentato con email: " + request.getEmail());
 
+        AuthResponse response = loginService.login(request);
         if (response.isSuccess()) {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } else {
