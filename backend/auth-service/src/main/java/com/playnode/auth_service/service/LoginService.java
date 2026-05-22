@@ -17,11 +17,6 @@ public class LoginService {
     @Autowired
     private PasswordVerifyService passwordVerifyService;
 
-    /**
-     * Autentica un utente
-     * @param request contiene email e password
-     * @return AuthResponse con esito del login
-     */
     public AuthResponse login(LoginRequest request) {
         // Elimina spazio
         String emailPulita = request.getEmail().trim().toLowerCase();
@@ -38,6 +33,13 @@ public class LoginService {
             return new AuthResponse("Password errata", false);
         }
 
-        return new AuthResponse("Login completato con successo", true);
+        return new AuthResponse(
+                "Login completato con successo",
+                true,
+                u.getId().longValue(),
+                u.getUsername(),
+                u.getEmail(),
+                u.getRuolo()
+        );
     }
 }
