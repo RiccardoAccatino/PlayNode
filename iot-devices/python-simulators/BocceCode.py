@@ -9,18 +9,19 @@ def calcola_punteggio(boccino, bocce_blu, bocce_rosse):
     if not bocce_blu and not bocce_rosse:
         return None, 0, [], []
 
-    # Calcola tutte le distanze
-    dist_blu   = [(b, distanza(boccino, b)) for b in bocce_blu]
+    # Calcola tutte le distanze tupla --> [(0,distanza),(1,distanza)]
+    dist_blu   = [(b, distanza(boccino, b)) for b in bocce_blu] #tupla che crea una coppia (boccia, distanza) per ogni boccia rilevata
     dist_rosse = [(b, distanza(boccino, b)) for b in bocce_rosse]
 
     # Ordina per distanza
-    dist_blu.sort(key=lambda x: x[1])
+    dist_blu.sort(key=lambda x: x[1])#ordinamento in base alla distanza (contenuta nella cella 1 della tupla)
     dist_rosse.sort(key=lambda x: x[1])
 
     # Chi è più vicino?
-    min_blu   = dist_blu[0][1]   if dist_blu   else float('inf')
+    min_blu   = dist_blu[0][1]   if dist_blu   else float('inf') #prende il primo elemento in posizione della tupla ad indice 1
     min_rossa = dist_rosse[0][1] if dist_rosse else float('inf')
 
+    #assegno i punti in base a quente bocce sono più vicine al boccino rispetto all' avversario
     if min_blu < min_rossa:
         # Blu vince — conta quante blu sono più vicine di tutte le rosse
         punti = sum(1 for _, d in dist_blu if d < min_rossa)
