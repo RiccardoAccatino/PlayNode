@@ -1,9 +1,13 @@
 from ultralytics import YOLO
+import config
 import cv2
 import math
 
+client = config.get_mqtt_client()
+
 def distanza(p1, p2):
     return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
 
 def calcola_punteggio(boccino, bocce_blu, bocce_rosse):
     if not bocce_blu and not bocce_rosse:
@@ -93,10 +97,16 @@ if boccino is not None:
     cv2.rectangle(frame, (0, 0), (800, 50), (0, 0, 0), -1)  # sfondo nero
     cv2.putText(frame, f"PUNTO A {team}: {punti} {'boccia' if punti == 1 else 'bocce'}!",
                 (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0, colore_team, 2)
+    # --- PUBBLICAZIONE PUNTEGGIO MQTT
+    if team is not None:
+        messaggio = f"{team} --> {punti} {'punto' if punti == 1 else 'punti'}"
+        client.publish(config.TOPIC, messaggio)
+        print(f"Inviato via MQTT: {messaggio}")
 
 else:
     cv2.putText(frame, "Boccino non trovato",
                 (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+    clent.publish(TOPIC,f"Boccino non rilevato!")
 
 cv2.imshow("Bocce", frame)
 cv2.waitKey(0)
