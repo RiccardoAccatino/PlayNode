@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayNode - Schermo Gioco</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚽%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Stato partita (aria-live per screen reader) -->
+        <div id="game-status" class="status" aria-live="polite">In attesa di giocatori...</div>
+
+        <!-- Elementi gioco (timer, punteggi, log) -->
+        <div id="game-elements">
+            <!-- Timer -->
+            <div id="timer" class="timer" aria-label="Timer partita">05:00</div>
+
+            <!-- Punteggi -->
+            <div class="scores" aria-label="Punteggi">
+                <div class="score-team" aria-labelledby="team1-label">
+                    <div id="team1-label" class="team-label">Squadra 1</div>
+                    <div class="team-score" id="score1" aria-label="Punteggio Squadra 1, zero">0</div>
+                </div>
+                <div class="score-team" aria-labelledby="team2-label">
+                    <div id="team2-label" class="team-label">Squadra 2</div>
+                    <div class="team-score" id="score2" aria-label="Punteggio Squadra 2, zero">0</div>
+                </div>
+            </div>
+
+            <!-- Ultimo evento / Log -->
+            <div id="event-log" class="log" aria-live="assertive">Pronto per iniziare...</div>
+        </div>
+
+        <!-- Carousel -->
+        <div id="carousel" class="carousel" aria-label="Carosello promozionale">
+            <div class="carousel-slide active" data-slide-index="0">Prossimo Torneo di Freccette: Iscriviti ora!</div>
+            <div class="carousel-slide" data-slide-index="1">Offerta Speciale: 2 Medie a 10€</div>
+            <div class="carousel-slide" data-slide-index="2">Happy Hour dalle 18:00 - 20:00!</div>
+        </div>
+        <!-- Carousel indicators -->
+        <div id="carousel-indicators" class="carousel-indicators" aria-label="Indicatori carosello">
+            <button class="indicator active" data-slide-to="0" aria-label="Slide 1, selezionata"></button>
+            <button class="indicator" data-slide-to="1" aria-label="Slide 2"></button>
+            <button class="indicator" data-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+
+        <!-- Pulsanti di debug (nascosti di default) -->
+        <div id="debug-panel" class="debug-panel" aria-label="Pannello di debug">
+            <button id="debug-goal1">Goal Squadra 1</button>
+            <button id="debug-goal2">Goal Squadra 2</button>
+            <button id="debug-reset">Reset</button>
+        </div>
+
+        <!-- Overlay goal animation -->
+        <div id="goal-overlay" class="goal-overlay" aria-hidden="true">GOAL!</div>
+    </div>
+
+    <!-- Debug toggle (hidden but accessible via keyboard) -->
+    <button id="debug-toggle" class="debug-toggle" aria-label="Attiva modalità debug">🐞</button>
+
+    <script src="app.js"></script>
+</body>
+</html>
