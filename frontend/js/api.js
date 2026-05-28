@@ -1,5 +1,6 @@
 const GAME_API_URL = 'http://localhost:8080/api';
 const AUTH_API_URL = 'http://localhost:8081/api/auth';
+const API_BASE = 'http://localhost:8082/api';
 
 export async function loginUser(email, password) {
     try {

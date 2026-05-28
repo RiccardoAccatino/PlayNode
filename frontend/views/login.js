@@ -278,7 +278,7 @@ export function renderLogin(onSuccess) {
 
             // 5. Normalizzazione dei dati: ci assicuriamo che le variabili abbiano un valore
             // Usiamo l'operatore || (OR) in modo da supportare nomi di variabili sia in italiano che in inglese dal backend
-            const nomeUtente = userData.nome || userData.name || 'Utente';
+            const nomeUtente =  userData.name || 'Utente';
             const ruoloUtente = userData.ruolo || userData.role || 'player';
 
             // Estrapoliamo le prime due lettere del nome per creare un "avatar testuale"
