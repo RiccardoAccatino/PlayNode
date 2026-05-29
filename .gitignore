@@ -39,3 +39,10 @@ docker/.env
 # target/           # Da decommentare se usate Java (Maven)
 # build/            # Da decommentare se usate Java (Gradle) o C++
 # venv/             # Da decommentare se usate Python
+
+# =========================
+# Ignora le cartelle di persistenza MQTT
+# =========================
+*-tcplocalhost-1883/
+*.lck
+*.msg

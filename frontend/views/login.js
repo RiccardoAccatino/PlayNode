@@ -2,7 +2,7 @@
  * Questo file esporta una singola funzione principale `renderLogin` che si occupa di:
  * 1. Iniettare l'HTML del modulo di login nel contenitore principale dell'app.
  * 2. Gestire l'interazione dell'utente (click, digitazione).
- * 3. Comunicare con il backend tramite il modulo `api.js`.
+ * 3. Comunicare con il backend tramite il modulo `api.js` per l'autenticazione.
  */
 
 import {loginUser} from '../js/api.js';
@@ -14,10 +14,13 @@ import {loginUser} from '../js/api.js';
  * @param {Function} onSuccess - Una funzione (callback) passata dal file principale (app.js).
  *                               Viene invocata SOLO quando il login ha successo, passando
  *                               i dati dell'utente per permettere ad app.js di caricare la dashboard.
+ *                               L'oggetto utente deve contenere: id, name, initials, role.
  */
 export function renderLogin(onSuccess) {
-    /* ── Dati demo aggiornati con il database reale ── */
-    const MOCK_USERS = [
+    /* ── Dati demo per facilitare i test durante lo sviluppo ── */
+    /* NOTE: Queste credenziali sono solo per ambienti di sviluppo.
+     * In produzione, rimuovere questa sezione e fare affidamento esclusivamente sull'API reale. */
+    const DEMO_CREDENTIALS = [
         {
             email: 'angie.albitres@gmail.com',
             password: 'PlayNode2026!',
@@ -52,25 +55,25 @@ export function renderLogin(onSuccess) {
         background:var(--bg); font-family:var(--fb);
       ">
         <div style="width:100%;max-width:380px;padding:0 16px">
-     
+
           <!-- logo -->
           <div style="text-align:center; margin-bottom:32px; margin-top:32px">
             <div style="display:inline-flex; align-items:center; gap:12px; margin-bottom:6px">
-              
+
               <!-- Immagine logo -->
-              <img 
-                src="./assets/img/Logo.png" 
-                alt="PlayNode Logo" 
+              <img
+                src="./assets/img/Logo.png"
+                alt="PlayNode Logo"
                 style="width: 45px; height: 45px; object-fit: contain;"
               />
-              
+
               <!-- Nome del progetto -->
               <span style="font-family:var(--ff); font-size:24px; font-weight:800; color:#fff; letter-spacing:-.3px">
                 PlayNode
               </span>
             </div>
           </div>
-     
+
           <!-- card -->
           <div style="
             background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:28px;
@@ -79,13 +82,13 @@ export function renderLogin(onSuccess) {
             <div style="font-size:11px;color:var(--txt3);margin-bottom:22px">
               Inserisci le credenziali del tuo account
             </div>
-     
+
             <!-- box errore: Nascosto di default (display:none), mostrato solo se il login fallisce -->
             <div id="login-error" style="
               display:none;background:var(--red-bg);border:1px solid var(--red);
               color:var(--red-t);font-size:11px;padding:8px 12px;border-radius:7px;margin-bottom:14px;
             "></div>
-     
+
             <!-- email -->
             <div style="margin-bottom:14px">
               <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Email</label>
@@ -94,7 +97,7 @@ export function renderLogin(onSuccess) {
                 border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
               " />
             </div>
-     
+
             <!-- password con bottone mostra/nascondi -->
             <div style="margin-bottom:20px">
               <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Password</label>
@@ -104,25 +107,25 @@ export function renderLogin(onSuccess) {
                   border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
                 " />
                 <button id="toggle-pwd-btn" type="button" style="
-                  position:absolute; right:10px; background:none; border:none; cursor:pointer; 
+                  position:absolute; right:10px; background:none; border:none; cursor:pointer;
                   font-size:14px; color:var(--txt3); padding:0; display:flex; align-items:center;
                 ">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
-                  <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
-                  <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
-                  <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
-                </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
+                    <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
+                    <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+                    <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+                  </svg>
                 </button>
               </div>
             </div>
-     
+
             <!-- bottone submit per avviare il login -->
             <button id="login-btn" style="
               width:100%;padding:10px;background:var(--acc);border:none;border-radius:8px;
               color:#fff;font-family:var(--ff);font-size:13px;font-weight:700;cursor:pointer;
               transition:opacity .15s;
             ">Accedi</button>
-     
+
             <!-- divider -->
             <div style="
               display:flex;align-items:center;gap:10px;margin:18px 0;
@@ -131,7 +134,7 @@ export function renderLogin(onSuccess) {
               <span style="font-size:10px;color:var(--txt3)">oppure</span>
               <div style="flex:1;height:1px;background:var(--bdr)"></div>
             </div>
-     
+
             <!-- vai a registrazione -->
             <button id="go-register-btn" style="
               width:100%;padding:9px;background:none;border:1px solid var(--bdr);border-radius:8px;
@@ -139,17 +142,17 @@ export function renderLogin(onSuccess) {
               transition:background .15s;
             ">Non hai un account? <span style="color:var(--acc2);font-weight:500">Registrati</span></button>
           </div>
-     
+
           <!-- hint credenziali demo -->
           <div style="
             margin-top:14px;background:var(--surf2);border:1px solid var(--bdr);
             border-radius:9px;padding:12px 14px;
           ">
             <div style="font-size:10px;color:var(--txt3);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px">
-              Credenziali demo (password: PlayNode2026!)
+              Credenziali demo (solo per sviluppo - password: PlayNode2026!)
             </div>
-            ${MOCK_USERS.map(u => `
-              <div class="demo-fill" data-email="${u.email}" style="
+            ${DEMO_CREDENTIALS.map(u => `
+              <div class="demo-fill" data-email="${u.email}" data-password="${u.password}" data-name="${u.name}" data-role="${u.role}" data-initials="${u.initials}" style="
                 display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:6px;
                 cursor:pointer;transition:background .15s;
               ">
@@ -168,7 +171,7 @@ export function renderLogin(onSuccess) {
                 ">${u.role}</span>
               </div>`).join('')}
           </div>
-     
+
           <!-- footer -->
           <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--txt3)">
             Dappia · Ricky · Angie - 2026
@@ -236,10 +239,9 @@ export function renderLogin(onSuccess) {
         el.addEventListener('mouseenter', () => el.style.background = 'var(--surf3)');
         el.addEventListener('mouseleave', () => el.style.background = '');
         el.addEventListener('click', () => {
-            // Inserisce l'email associata al pulsante
+            // Inserisce l'email e la password associate al pulsante
             emailInput.value = el.dataset.email;
-            // Inserisce la nuova password corretta
-            passwordInput.value = 'PlayNode2026!';
+            passwordInput.value = el.dataset.password;
             hideError();
         });
     });
@@ -247,6 +249,8 @@ export function renderLogin(onSuccess) {
     /**
      * Funzione principale asincrona che gestisce la comunicazione con il server per il Login.
      * È asincrona (`async`) perché deve attendere la risposta del server.
+     *
+     * @throws {Error} Se le credenziali sono non valide o se si verifica un errore di rete
      */
     async function attemptLogin() {
         hideError(); // Resettiamo eventuali errori precedenti all'avvio del tentativo
@@ -276,6 +280,7 @@ export function renderLogin(onSuccess) {
             if (userData.token) {
                 localStorage.setItem('token', userData.token);
                 localStorage.setItem('userId', String(userData.userId));
+                localStorage.setItem('userRole', userData.ruolo || userData.role);
             }
 
             // 5. Normalizzazione dei dati: ci assicuriamo che le variabili abbiano un valore
