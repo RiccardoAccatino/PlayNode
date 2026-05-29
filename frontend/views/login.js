@@ -7,6 +7,7 @@
 
 import {loginUser} from '../js/api.js';
 
+
 /**
  * Disegna la schermata di login e aggancia tutti gli eventi necessari.
  *
@@ -274,6 +275,7 @@ export function renderLogin(onSuccess) {
             // Verrà usato per le successive richieste autenticate (es. chiamate alle API dei tornei).
             if (userData.token) {
                 localStorage.setItem('token', userData.token);
+                localStorage.setItem('userId', String(userData.userId));
             }
 
             // 5. Normalizzazione dei dati: ci assicuriamo che le variabili abbiano un valore
@@ -286,6 +288,7 @@ export function renderLogin(onSuccess) {
 
             // 6. Completamento: chiamiamo la funzione passata da app.js passandole l'oggetto strutturato
             onSuccess({
+                id: userData.userId,
                 name: nomeUtente,
                 initials: iniziali,
                 role: ruoloUtente
