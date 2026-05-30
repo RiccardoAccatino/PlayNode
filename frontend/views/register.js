@@ -11,8 +11,8 @@ import {registerUser} from '../js/api.js';
  * Disegna la schermata di registrazione e aggancia gli eventi di navigazione e validazione.
  *
  * @param {Function} onSuccess - Callback invocata da app.js. Viene chiamata solo
- *                               se la chiamata API ha successo, passando i dati dell'utente.
- *                               L'oggetto utente deve contenere: id, name, initials, role.
+ * se la chiamata API ha successo, passando i dati dell'utente.
+ * L'oggetto utente deve contenere: id, name, initials, role.
  */
 export function renderRegister(onSuccess) {
 
@@ -176,16 +176,6 @@ export function renderRegister(onSuccess) {
 
                   <div class="field-err" id="err-pwd2" style="${errStyle()}"></div>
                 </div>
-
-                <!-- Checkbox termini di servizio -->
-                <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;margin-bottom:6px">
-                  <input id="reg-terms" type="checkbox" style="margin-top:2px;accent-color:var(--acc)" />
-                  <span style="font-size:11px;color:var(--txt2);line-height:1.5">
-                    Accetto i <span style="color:var(--acc2)">Termini di servizio</span> e la
-                    <span style="color:var(--acc2)">Privacy policy</span> *
-                  </span>
-                </label>
-                <div class="field-err" id="err-terms" style="${errStyle()}"></div>
 
                 <!-- Pulsanti di navigazione step 2 -->
                 <div style="display:flex;gap:8px;margin-top:20px">
@@ -383,7 +373,6 @@ export function renderRegister(onSuccess) {
         // 1. Recupero valori dallo Step 2
         const pwd = document.getElementById('reg-pwd').value;
         const pwd2 = document.getElementById('reg-pwd2').value;
-        const terms = document.getElementById('reg-terms').checked;
 
         // Validazione finale frontend
         if (pwd.length < 8) {
@@ -392,10 +381,6 @@ export function renderRegister(onSuccess) {
         }
         if (pwd !== pwd2) {
             showFieldErr('err-pwd2', 'Le password non corrispondono');
-            valid = false;
-        }
-        if (!terms) {
-            showFieldErr('err-terms', 'Devi accettare i termini di servizio');
             valid = false;
         }
 

@@ -2,6 +2,9 @@ package com.playnode.auth_service.dto;
 
 import com.playnode.auth_service.entity.RuoloTipo;
 
+/**
+ * DTO per la risposta di autenticazione (login/register)
+ */
 public class AuthResponse {
     private String message;
     private boolean success;
@@ -10,8 +13,10 @@ public class AuthResponse {
     private String username;
     private String email;
     private RuoloTipo ruolo;
+    private String token;
 
-    public AuthResponse() {}
+    public AuthResponse() {
+    }
 
     public AuthResponse(String message, boolean success) {
         this.message = message;
@@ -28,24 +33,74 @@ public class AuthResponse {
         this.ruolo = ruolo;
     }
 
+    // Costruttore con token JWT
+    public AuthResponse(String message, boolean success, Long userId, String username, String email, RuoloTipo ruolo,
+            String token) {
+        this.message = message;
+        this.success = success;
+        this.userId = userId;
+        this.username = username;
+        this.email = email;
+        this.ruolo = ruolo;
+        this.token = token;
+    }
+
     // Getters e Setters
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    public String getMessage() {
+        return message;
+    }
 
-    public boolean isSuccess() { return success; }
-    public void setSuccess(boolean success) { this.success = success; }
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public boolean isSuccess() {
+        return success;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public Long getUserId() {
+        return userId;
+    }
 
-    public RuoloTipo getRuolo() { return ruolo; }
-    public void setRuolo(RuoloTipo ruolo) { this.ruolo = ruolo; }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public RuoloTipo getRuolo() {
+        return ruolo;
+    }
+
+    public void setRuolo(RuoloTipo ruolo) {
+        this.ruolo = ruolo;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 
     @Override
     public String toString() {
@@ -56,6 +111,7 @@ public class AuthResponse {
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", ruolo=" + ruolo +
+                ", token='" + (token != null ? "[PRESENT]" : "[NULL]") + '\'' +
                 '}';
     }
 }
