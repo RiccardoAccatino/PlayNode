@@ -10,7 +10,8 @@ import java.util.Optional;
 
 /**
  * Questa classe è il "cervello" per le statistiche.
- * L'annotazione @Service dice a Spring Boot di gestire questa classe automaticamente.
+ * L'annotazione @Service dice a Spring Boot di gestire questa classe
+ * automaticamente.
  */
 @Service
 public class StatisticaService {
@@ -21,16 +22,18 @@ public class StatisticaService {
     private StatisticaRepository statisticaRepository;
 
     /**
-     * Questo metodo cerca le statistiche di un utente nel database e le trasforma in un DTO.
-     * Se l'utente non ha ancora statistiche, restituisce un DTO azzerato invece di null.
+     * Questo metodo cerca le statistiche di un utente nel database e le trasforma
+     * in un DTO.
+     * Se l'utente non ha ancora statistiche, restituisce un DTO azzerato invece di
+     * null.
+     * 
      * @param utenteId l'ID dell'utente da cercare.
      * @return Il DTO con le statistiche, oppure null se l'utente non esiste.
      */
     public StatisticaUtenteDTO ottieniStatistichePerUtente(Long utenteId) {
-        // 1. Chiediamo al Repository di cercare l'Entità nel database
-        Optional<StatisticaUtente> statisticaOpzionale = statisticaRepository.findById(utenteId);
 
-        // Creiamo la scatola DTO da restituire
+        // Usiamo la query personalizzata che hai definito nel repository
+        Optional<StatisticaUtente> statisticaOpzionale = statisticaRepository.findByIdUtente(utenteId);
         StatisticaUtenteDTO dto = new StatisticaUtenteDTO();
 
         // 2. Se l'abbiamo trovata nel database, la mappiamo normalmente
@@ -50,8 +53,8 @@ public class StatisticaService {
             dto.setPartiteGiocate(0);
             dto.setVittorie(0);
             dto.setPunteggioTotale(0);
-            dto.setIdLocale("1");
-            dto.setNomeGioco("Nessuno");
+            dto.setIdLocale("-");
+            dto.setNomeGioco("Nessuna Partita");
         }
 
         return dto;

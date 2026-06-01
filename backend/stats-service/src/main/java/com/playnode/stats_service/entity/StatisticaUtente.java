@@ -1,31 +1,30 @@
 package com.playnode.stats_service.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Immutable;
 
 /**
  * Questa classe rappresenta la tabella "StatisticaUtente" nel database.
  */
 @Entity
+@Immutable
+@Table(name = "statistica_utente")
 public class StatisticaUtente {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Rinominato in "utenteId" per combaciare con il Service e il DTO
     private Long utenteId;
-
-    // NUOVI CAMPI AGGIUNTI PER GLI ADMIN
-    private String idLocale; // Es. "LOC-007"
-    private String nomeGioco; // Es. "Calciobalilla"
-
+    private String idLocale;
+    private String nomeGioco;
     private int punteggioTotale;
     private int partiteGiocate;
 
     // Aggiunto il campo "vittorie" che mancava ed era richiesto dal Service
     private int vittorie;
 
-    // Costruttore vuoto: Spring Boot lo richiede obbligatoriamente per leggere i dati dal database
+    // Costruttore vuoto: Spring Boot lo richiede obbligatoriamente per leggere i
+    // dati dal database
     public StatisticaUtente() {
     }
 
@@ -88,4 +87,5 @@ public class StatisticaUtente {
     public void setVittorie(int vittorie) {
         this.vittorie = vittorie;
     }
-} // <-- La classe finisce correttamente qui, con un'unica parentesi di chiusura finale!
+} // <-- La classe finisce correttamente qui, con un'unica parentesi di chiusura
+  // finale!
