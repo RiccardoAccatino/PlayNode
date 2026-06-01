@@ -68,11 +68,58 @@ function handleAuthSuccess(user) {
 // ============================================================================
 
 /**
+ * Funzione helper per decodificare il Token JWT nel frontend.
+ * Ci permette di leggere l'username e il ruolo direttamente dal token!
+ */
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
  * Inizializza l'applicazione quando il DOM è completamente caricato.
  * Avvia automaticamente la navigazione alla pagina di login.
  * @returns {void}
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Cerchiamo se esiste già un token salvato
+    const token = localStorage.getItem('token');
+
+    if (token) {
+        // 2. Decodifichiamo il token
+        const payload = parseJwt(token);
+
+        // 3. Controlliamo se il token è valido e non è scaduto
+        // payload.exp è in secondi, Date.now() è in millisecondi
+        if (payload && (payload.exp * 1000) > Date.now()) {
+            console.log("Bentornato! Sessione recuperata con successo.");
+
+            // 4. Ricostruiamo l'oggetto utente usando i dati scritti dentro il JWT!
+            const user = {
+                id: payload.userId,
+                name: payload.username,
+                initials: payload.username.substring(0, 2).toUpperCase(),
+                role: payload.role // Es. "Giocatore", "Gestore", ecc.
+            };
+
+            // 5. Lo mandiamo dritto alla dashboard saltando il login
+            renderDashboard(user);
+            return; // Termina qui la funzione
+        } else {
+            console.warn("Il token è scaduto. Pulizia in corso...");
+            localStorage.clear();
+        }
+    }
+
+    // Se non c'è token o è scaduto, andiamo al login normalmente
     navigateTo('login');
 });
 

@@ -1,7 +1,7 @@
 /**
- * file: dashboard.js (REFACTORED CON CONTROLLO AUTORIZZAZIONE)
- * Gestisce l'interfaccia principale dopo il login
- * Verifica i permessi per ogni pagina
+ * file: dashboard.js
+ * Gestisce l'interfaccia principale (Layout), la Navbar, la Sidebar e il Footer.
+ * Verifica i permessi per ogni pagina.
  */
 
 import * as playerModule from './player.js';
@@ -20,15 +20,13 @@ import * as adminGameModule from './admin-game.js';
  */
 export function renderDashboard(userData) {
 
-    // 1. ADATTIAMO I RUOLI REALI DEL DATABASE ALLA LOGICA DEL DESIGN
-    // Mappiamo i ruoli restituiti dal backend ai ruoli utilizzati nell'interfaccia
+    // 1. MAPPATURA DEI RUOLI
     let mappedRole = 'player';
     if (userData.role === 'Gestore') mappedRole = 'locale';
     if (userData.role === 'AdminPiattaforma') mappedRole = 'platform';
     if (userData.role === 'AdminGioco') mappedRole = 'admin-game';
 
-    // 2. DEFINISCI I PERMESSI PER RUOLO
-    // Definisce quali ruoli hanno accesso a quali sezioni dell'applicazione
+    // 2. PERMESSI
     const ROLE_PERMISSIONS = {
         player: ['player'],                           // Solo accesso alla sezione player
         locale: ['locale'],                           // Solo accesso alla sezione locale
@@ -47,12 +45,11 @@ export function renderDashboard(userData) {
         return allowedRoles.includes(requiredRole);
     }
 
-    // 3. CONFIGURAZIONE DEI MENU CON CONTROLLO PERMESSI
-    // Definisce la struttura dei menu e delle pagine per ogni ruolo
+    // 3. CONFIGURAZIONE MENU
     const ROLES = {
         player: {
-            nav: ['Dashboard', 'Giochi', 'Tornei', 'Profilo'], // Menu orizzontale superiore
-            sidebar: null,                                       // Nessuna sidebar per i giocatori
+            nav: ['Dashboard', 'Giochi', 'Tornei', 'Profilo'],
+            sidebar: null,
             pages: {
                 'Dashboard': () => hasAccess('player') ? playerModule.playerDashboard() : unauthorizedPage(),
                 'Giochi': () => hasAccess('player') ? playerModule.playerGames() : unauthorizedPage(),
@@ -61,9 +58,9 @@ export function renderDashboard(userData) {
             }
         },
         locale: {
-            nav: [],                                             // Nessun menu orizzontale per i gestori locali
+            nav: [],
             sidebar: ['Panoramica', 'Giochi del Locale', 'Partite Live', 'Dispositivi', 'Statistiche Locale', 'Impostazioni'],
-            sideIcons: ['📊', '🎮', '▶️', '📡', '📈', '⚙️'],     // Icone per gli elementi della sidebar
+            sideIcons: ['📊', '🎮', '▶️', '📡', '📈', '⚙️'],
             pages: {
                 'Panoramica': () => hasAccess('locale') ? localeModule.localeOverview() : unauthorizedPage(),
                 'Giochi del Locale': () => hasAccess('locale') ? localeModule.localeGames() : unauthorizedPage(),
@@ -74,7 +71,7 @@ export function renderDashboard(userData) {
             }
         },
         platform: {
-            nav: [],                                             // Nessun menu orizzontale per gli admin piattaforma
+            nav: [],
             sidebar: ['Overview Globale', 'Utenti', 'Locali', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema', 'Log & Audit'],
             sideIcons: ['🌐', '👥', '🏠', '🎲', '🏆', '🖥️', '📋'],
             pages: {
@@ -88,7 +85,7 @@ export function renderDashboard(userData) {
             }
         },
         'admin-game': {
-            nav: [],                                             // Nessun menu orizzontale per gli admin gioco
+            nav: [],
             sidebar: ['Dashboard', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema'],
             sideIcons: ['📊', '🎲', '🏆', '🖥️'],
             pages: {
@@ -120,7 +117,7 @@ export function renderDashboard(userData) {
                 <div style="font-size:48px">🚫</div>
                 <div style="font-family:var(--ff);font-size:24px;font-weight:700">Accesso Negato</div>
                 <div style="font-size:14px;color:var(--txt3)">Non hai i permessi per visualizzare questa pagina</div>
-                <button id="logout-btn-error" style="margin-top:16px;padding:10px 20px;background:var(--red);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:500">Torna al Login</button>
+                <button id="logout-btn-error" class="act-btn" style="padding: 10px 20px;">Torna al Login</button>
             </div>
         `;
     }
@@ -136,19 +133,20 @@ export function renderDashboard(userData) {
       <div class="app">
         <!-- TOPBAR -->
         <div class="topbar">
+          <button class="hamburger" id="hamburger-btn">☰</button>
+          
           <div class="logo">
-            <div class="logo-dot"></div>
-            Connected Games
+            <img src="./assets/img/Logo.png" alt="PlayNode Logo" />
+            <span>PlayNode</span>
             <span class="logo-pill">UPO 25/26</span>
           </div>
 
           <div class="nav" id="topnav"></div>
 
           <div class="user-chip">
-            <div class="avatar" id="av-initials">${userData.initials}</div>
-            <span class="uname" id="av-name">${userData.name}</span>
-            <span style="font-size:10px;color:var(--txt3);margin-left:8px;padding:2px 8px;background:var(--surf2);border-radius:4px">${userData.role}</span>
-            <button id="logout-btn" style="background:transparent; border:1px solid var(--bdr); color:var(--txt2); padding:4px 8px; border-radius:6px; cursor:pointer; font-size:11px; margin-left:10px;">Esci</button>
+            <div class="avatar">${userData.initials}</div>
+            <span class="uname">${userData.name}</span>
+            <button id="logout-btn" class="logout-btn-nav">Esci</button>
           </div>
         </div>
 
@@ -160,13 +158,16 @@ export function renderDashboard(userData) {
 
         <!-- FOOTER -->
         <div class="footer">
-          <span class="ft">Connected Games Platform</span>
-          <span class="ft-sep">·</span>
-          <span class="ft" id="ft-authors">Dappia · Ricky · Angie</span>
-          <span class="ft-sep">·</span>
-          <span class="ft">PISSIR Lab — A.A. 2025/2026</span>
-          <span class="ft-sep" style="margin-left:auto">v0.2.0-alpha</span>
-          <span class="ft" id="ft-date"></span>
+          <div class="footer-left">
+            <span class="ft">PlayNode</span>
+            <span class="ft-sep">·</span>
+            <span class="ft">Dappia · Ricky · Angie</span>
+          </div>
+          <div>
+            <span class="ft">v1.0.0</span>
+            <span class="ft-sep">·</span>
+            <span class="ft" id="ft-date"></span>
+          </div>
         </div>
       </div>
     `;
@@ -174,17 +175,24 @@ export function renderDashboard(userData) {
     document.getElementById('app-root').innerHTML = appHtml;
     document.getElementById('ft-date').textContent = new Date().toLocaleDateString('it-IT');
 
-    // 6. FUNZIONI PER COSTRUIRE IL MENU DINAMICO
+    // 6. COSTRUZIONE NAVIGAZIONE
     /**
      * Costruisce dinamicamente il menu di navigazione orizzontale (topbar).
      * Crea i pulsanti di navigazione e assegna gli eventi di click per cambiare pagina.
      *
      * @returns {void}
      */
-    function buildNav() {
-        const nav = document.getElementById('topnav');
-        nav.innerHTML = '';
-        if(cfg.nav) {
+    const sb = document.getElementById('sidebar');
+    const nav = document.getElementById('topnav');
+    const hamburger = document.getElementById('hamburger-btn');
+
+    const menuItems = cfg.sidebar || cfg.nav;
+    const menuIcons = cfg.sideIcons || ['🏠', '🎮', '🏆', '👤'];
+
+    function buildNavigation() {
+        if (cfg.nav && window.innerWidth > 850) {
+            sb.classList.add('hidden');
+            hamburger.style.display = 'none';
             cfg.nav.forEach((label, i) => {
                 const b = document.createElement('button');
                 b.className = 'nav-btn' + (i === 0 ? ' active' : '');
@@ -197,39 +205,40 @@ export function renderDashboard(userData) {
                 nav.appendChild(b);
             });
         }
-    }
+        else {
+            nav.innerHTML = '';
+            sb.classList.remove('hidden');
+            hamburger.style.display = 'block';
 
-    /**
-     * Costruisce dinamicamente la sidebar di navigazione verticale.
-     * Crea i pulsanti della sidebar con icone e assegna gli eventi di click per cambiare pagina.
-     *
-     * @returns {void}
-     */
-    function buildSidebar() {
-        const sb = document.getElementById('sidebar');
-        if (!cfg.sidebar) {
-            sb.classList.add('hidden');
-            return;
+            const lbl = document.createElement('div');
+            lbl.className = 'sb-label';
+            lbl.textContent = 'Navigazione';
+            sb.appendChild(lbl);
+
+            menuItems.forEach((label, i) => {
+                const b = document.createElement('button');
+                b.className = 'sb-btn' + (i === 0 ? ' active' : '');
+                b.innerHTML = `<span class="sb-icon">${menuIcons[i] || '•'}</span> ${label}`;
+                b.onclick = () => {
+                    document.querySelectorAll('.sb-btn').forEach(x => x.classList.remove('active'));
+                    b.classList.add('active');
+                    showPage(label);
+                    if(window.innerWidth <= 850) sb.classList.remove('open');
+                };
+                sb.appendChild(b);
+            });
         }
-        sb.classList.remove('hidden');
-        sb.innerHTML = '';
-        const lbl = document.createElement('div');
-        lbl.className = 'sb-label';
-        lbl.textContent = 'Navigazione';
-        sb.appendChild(lbl);
-
-        cfg.sidebar.forEach((label, i) => {
-            const b = document.createElement('button');
-            b.className = 'sb-btn' + (i === 0 ? ' active' : '');
-            b.innerHTML = `<span class="sb-icon">${cfg.sideIcons[i]}</span>${label}`;
-            b.onclick = () => {
-                document.querySelectorAll('.sb-btn').forEach(x => x.classList.remove('active'));
-                b.classList.add('active');
-                showPage(label);
-            };
-            sb.appendChild(b);
-        });
     }
+
+    hamburger.addEventListener('click', () => {
+        sb.classList.toggle('open');
+    });
+
+    window.addEventListener('resize', () => {
+        nav.innerHTML = '';
+        sb.innerHTML = '';
+        buildNavigation();
+    });
 
     /**
      * Mostra la pagina richiesta nell'area contenuto principale.
@@ -243,7 +252,7 @@ export function renderDashboard(userData) {
         if (fn) {
             main.innerHTML = fn();
         } else {
-            main.innerHTML = `<div class="pg-title">${name}</div><p style="color:var(--txt3);font-size:13px;margin-top:8px">Pagina in costruzione.</p>`;
+            main.innerHTML = `<div class="pg-title">${name}</div><div class="pg-sub">Pagina in costruzione.</div>`;
         }
     }
 
@@ -254,16 +263,34 @@ export function renderDashboard(userData) {
      *
      * @returns {void}
      */
-    function attachLogoutHandler() {
-        const logoutBtn = document.getElementById('logout-btn') || document.getElementById('logout-btn-error');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userRole');
-                document.dispatchEvent(new CustomEvent('cgp:goto', { detail: 'login' }));
-            });
+    async function handleLogout() {
+        const token = localStorage.getItem('token');
+        const btn = document.getElementById('logout-btn');
+        if(btn) {
+            btn.textContent = '...';
+            btn.disabled = true;
         }
+
+        if (token) {
+            try {
+                await fetch('http://localhost:8081/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (error) {
+                console.error("Errore durante il logout dal server:", error);
+            }
+        }
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userRole');
+        document.dispatchEvent(new CustomEvent('cgp:goto', { detail: 'login' }));
+    }
+
+    const logoutBtn = document.getElementById('logout-btn') || document.getElementById('logout-btn-error');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
     }
 
     // 8. INIZIALIZZAZIONE
@@ -273,9 +300,7 @@ export function renderDashboard(userData) {
      *
      * @returns {void}
      */
-    buildNav();
-    buildSidebar();
-    attachLogoutHandler();
-    const firstPage = cfg.nav[0] || (cfg.sidebar && cfg.sidebar[0]);
+    buildNavigation();
+    const firstPage = menuItems[0];
     if (firstPage) showPage(firstPage);
 }
