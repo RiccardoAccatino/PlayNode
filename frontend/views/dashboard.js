@@ -16,7 +16,7 @@ import { getUserStats } from '../js/api.js';
  * l'interfaccia utente con navigazione, sidebar e contenuto delle pagine.
  *
  * @param {Object} userData - Oggetto contenente i dati dell'utente autenticato
- *                            Deve contenere almeno le proprietà: id, name, initials, role
+ * Deve contenere almeno le proprietà: id, name, initials, role
  * @returns {void}
  */
 export function renderDashboard(userData) {
@@ -139,7 +139,6 @@ export function renderDashboard(userData) {
           <div class="logo">
             <img src="./assets/img/Logo.png" alt="PlayNode Logo" />
             <span>PlayNode</span>
-            <span class="logo-pill">UPO 25/26</span>
           </div>
 
           <div class="nav" id="topnav"></div>
@@ -191,7 +190,7 @@ export function renderDashboard(userData) {
     const menuIcons = cfg.sideIcons || ['🏠', '🎮', '🏆', '👤'];
 
     function buildNavigation() {
-        if (cfg.nav && window.innerWidth > 850) {
+        if (cfg.nav && cfg.nav.length > 0 && window.innerWidth > 850) {
             sb.classList.add('hidden');
             hamburger.style.display = 'none';
             cfg.nav.forEach((label, i) => {
@@ -209,7 +208,8 @@ export function renderDashboard(userData) {
         else {
             nav.innerHTML = '';
             sb.classList.remove('hidden');
-            hamburger.style.display = 'block';
+
+            hamburger.style.display = window.innerWidth > 850 ? 'none' : 'block';
 
             const lbl = document.createElement('div');
             lbl.className = 'sb-label';
@@ -252,6 +252,57 @@ export function renderDashboard(userData) {
         const main = document.getElementById('main-content');
         if (fn) {
             main.innerHTML = await fn();
+
+            if (name === 'Tornei' && (mappedRole === 'platform' || mappedRole === 'admin-game')) {
+                const modal = document.getElementById('modal-nuovo-torneo');
+                const btnNuovo = document.getElementById('btn-nuovo-torneo');
+                const btnAnnulla = document.getElementById('btn-annulla-torneo');
+                const btnSalva = document.getElementById('btn-salva-torneo');
+
+                // Apre la modale
+                if (btnNuovo && modal) {
+                    btnNuovo.addEventListener('click', () => modal.style.display = 'flex');
+                }
+
+                // Chiude la modale
+                if (btnAnnulla && modal) {
+                    btnAnnulla.addEventListener('click', () => modal.style.display = 'none');
+                }
+
+                // Salva il torneo
+                if (btnSalva) {
+                    btnSalva.addEventListener('click', async () => {
+                        const nameInput = document.getElementById('new-t-name').value.trim();
+                        const gameInput = document.getElementById('new-t-game').value;
+
+                        if (!nameInput) {
+                            alert("Inserisci un nome per il torneo!");
+                            return;
+                        }
+
+                        btnSalva.textContent = "Salvataggio...";
+                        btnSalva.disabled = true;
+
+                        try {
+                            const { createTournament } = await import('../js/api.js');
+
+                            await createTournament({
+                                nome: nameInput,
+                                tipoGioco: gameInput,
+                                stato: 'In arrivo'
+                            });
+
+                            modal.style.display = 'none';
+                            showPage('Tornei');
+
+                        } catch (error) {
+                            alert("Errore nel salvataggio. Controlla che il server dei tornei sia acceso.");
+                            btnSalva.textContent = "Salva Torneo";
+                            btnSalva.disabled = false;
+                        }
+                    });
+                }
+            }
         } else {
             main.innerHTML = `<div class="pg-title">${name}</div><div class="pg-sub">Pagina in costruzione.</div>`;
         }

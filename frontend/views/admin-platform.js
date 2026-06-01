@@ -2,6 +2,7 @@
  * file: admin-platform.js
  * Pagine e componenti per gli ADMIN PIATTAFORMA
  */
+import { getAllTournaments, createTournament } from '../js/api.js';
 
 export function platformOverview() {
     return `
@@ -71,7 +72,7 @@ export function platformUsers() {
       <div class="pg-title">Gestione Utenti</div>
       <div class="pg-sub">Tutti gli utenti registrati sulla piattaforma</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="act-btn">+ Nuovo utente</button>
+        <button class="act-btn">+  Nuovo utente</button>
       </div>
       <div class="card">
         <table class="tbl">
@@ -112,7 +113,7 @@ export function platformLocali() {
       <div class="pg-title">Gestione Locali</div>
       <div class="pg-sub">Tutti i locali registrati sulla piattaforma</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="act-btn">+ Nuovo locale</button>
+        <button class="act-btn">+  Nuovo locale</button>
       </div>
       <div class="card">
         <table class="tbl">
@@ -153,7 +154,7 @@ export function platformGames() {
       <div class="pg-title">Tipi di Gioco</div>
       <div class="pg-sub">Definizione giochi e configurazione sensori</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="act-btn">+ Nuovo tipo gioco</button>
+        <button class="act-btn">+  Nuovo tipo gioco</button>
       </div>
       <div class="card">
         <table class="tbl">
@@ -186,44 +187,89 @@ export function platformGames() {
       </div>`;
 }
 
-export function platformTournaments() {
+export async function platformTournaments() {
+    const tornei = await getAllTournaments();
+
+    function getStatusBadge(status) {
+        const s = (status || 'in arrivo').toLowerCase();
+        if (s.includes('corso') || s === 'active') return 'b-grn';
+        if (s.includes('arrivo') || s === 'pending') return 'b-blu';
+        return 'b-amb'; // Concluso
+    }
+
+
     return `
       <div class="pg-title">Gestione Tornei</div>
       <div class="pg-sub">Crea e gestisci tornei multi-locale</div>
+      
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="act-btn">+ Nuovo torneo</button>
+        <button id="btn-nuovo-torneo" class="act-btn">+  Nuovo torneo</button>
       </div>
+      
       <div class="card">
         <table class="tbl">
           <thead>
             <tr>
-              <th>Torneo</th>
+              <th>ID</th>
+              <th>Nome Torneo</th>
               <th>Gioco</th>
               <th>Locali</th>
-              <th>Partecipanti</th>
-              <th>Stato</th>
-              <th></th>
+              <th>Status</th>
+              <th>Azioni</th>
             </tr>
           </thead>
           <tbody>
-            ${[
-        {name:'Calcioballica Primavera 2026',game:'⚽ Calcioballica',locali:5,players:14,status:'in corso'},
-        {name:'Coppa Biliardo Milano',game:'🎱 Biliardo',locali:2,players:8,status:'in corso'},
-        {name:'Campionato Freccette 2026',game:'🎯 Freccette',locali:3,players:0,status:'in arrivo'},
-        {name:'Gran Torneo Bocce 2025',game:'🎳 Bocce',locali:4,players:16,status:'concluso'}
-    ].map(t=>`
+            ${tornei.length > 0 ? tornei.map(t => `
               <tr>
-                <td style="font-weight:500;font-size:12px">${t.name}</td>
-                <td>${t.game}</td>
-                <td>${t.locali}</td>
-                <td>${t.players||'—'}</td>
-                <td><span class="badge ${t.status==='in corso'?'b-grn':t.status==='in arrivo'?'b-blu':'b-amb'}">${t.status}</span></td>
+                <td style="font-size:11px;color:var(--txt3)">#${t.id}</td>
+                <td style="font-weight:500;font-size:12px">${t.nome}</td>
+                <td>${t.tipoGioco || 'Calciobalilla'}</td>
+                <td>${t.numeroLocali || '—'}</td>
+                <td><span class="badge ${getStatusBadge(t.stato)}">${t.stato || 'In arrivo'}</span></td>
                 <td><button class="act-btn">Gestisci</button></td>
               </tr>
-            `).join('')}
+            `).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">Nessun torneo trovato. Creane uno nuovo!</td></tr>`}
           </tbody>
         </table>
-      </div>`;
+      </div>
+
+      <div id="modal-nuovo-torneo" style="
+          display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;
+      ">
+         <div class="card" style="width: 400px; max-width: 90%; background: var(--surf); border: 1px solid var(--bdr);">
+            <div class="card-hd" style="margin-bottom: 20px;">Crea Nuovo Torneo</div>
+            
+            <div style="margin-bottom:14px">
+              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Nome Torneo</label>
+              <input id="new-t-name" type="text" placeholder="Es. Coppa Primavera" style="
+                width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
+                border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
+              " />
+            </div>
+
+            <div style="margin-bottom:20px">
+              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Gioco</label>
+              <select id="new-t-game" style="
+                width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
+                border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
+              ">
+                <option value="Calciobalilla">Calciobalilla</option>
+                <option value="Biliardo">Biliardo</option>
+                <option value="Freccette">Freccette</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="btn-annulla-torneo" style="
+                  padding:8px 16px;background:none;border:1px solid var(--bdr);border-radius:6px;
+                  color:var(--txt2);cursor:pointer;
+                ">Annulla</button>
+                <button id="btn-salva-torneo" class="act-btn">Salva Torneo</button>
+            </div>
+         </div>
+      </div>
+    `;
 }
 
 export function platformMonitor() {

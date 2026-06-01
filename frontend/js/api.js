@@ -230,3 +230,37 @@ export async function getAllTornei() {
         return [];
     }
 }
+
+/**
+ * Recupera tutti i tornei.
+ * * @returns {Promise<Array>} Array contenente gli oggetti torneo
+ */
+export async function getAllTournaments() {
+    return await getAllTornei();
+}
+
+/**
+ * Crea un nuovo torneo nel database tramite il tournament-service.
+ * Sfrutta fetchWithAuth per iniettare automaticamente il token JWT e gli header.
+ *
+ * @param {Object} tournamentData - Oggetto con i dati del torneo (es. nome, tipoGioco, stato)
+ * @returns {Promise<Object>} La risposta del server con il torneo appena creato
+ * @throws {Error} Se il salvataggio fallisce
+ */
+export async function createTournament(tournamentData) {
+    try {
+        const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei`, {
+            method: 'POST',
+            body: JSON.stringify(tournamentData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Errore nella creazione del torneo: HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Errore durante createTournament:", error);
+        throw error;
+    }
+}
