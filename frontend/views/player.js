@@ -1,92 +1,151 @@
+import { getUserStats, getUserHistory } from '../js/api.js';
+
+/**
+ * Mostra la dashboard principale del giocatore.
+ * Scarica asincronamente i veri dati dal microservizio stats-service.
+ */
 export function playerDashboard() {
+    // 1. Assegniamo un ID unico al div che conterrà i dati
+    const containerId = 'player-dash-container';
+
+    // 2. Facciamo partire la richiesta asincrona per recuperare i dati reali
+    loadDashboardData(containerId);
+
+    // 3. Restituiamo il contenitore vuoto con la scritta "Caricamento..."
     return `
       <div class="pg-title">La mia Dashboard</div>
       <div class="pg-sub">Benvenuto — ecco il tuo riepilogo personale</div>
-
-      <div class="stats-row">
-        <div class="scard"><div class="scard-lbl">Partite totali</div><div class="scard-val">74</div><div class="scard-delta up">+6 questa settimana</div></div>
-        <div class="scard"><div class="scard-lbl">% vittorie</div><div class="scard-val" style="color:var(--grn)">61%</div><div class="scard-delta up">+3% vs mese scorso</div></div>
-        <div class="scard"><div class="scard-lbl">Rank globale</div><div class="scard-val" style="color:var(--gold)">#12</div><div class="scard-delta up">+4 posizioni</div></div>
-        <div class="scard"><div class="scard-lbl">Tornei vinti</div><div class="scard-val">2</div><div class="scard-delta neutral">su 5 partecipati</div></div>
+      <div id="${containerId}">
+          <div style="text-align: center; padding: 40px; color: var(--txt3);">
+             Caricamento statistiche in corso...
+          </div>
       </div>
-
-      <div class="row2">
-        <div class="card">
-          <div class="card-hd">Partite per settimana (ultime 8)</div>
-          <div class="chart-wrap">
-            ${[3,5,2,7,4,6,8,5].map((v,i)=>{
-        const labels=['S5','S6','S7','S8','S9','S10','S11','S12'];
-        const wins=Math.round(v*0.6); const losses=v-wins;
-        const maxH=80; const h=Math.round((v/8)*maxH);
-        const wh=Math.round((wins/v)*h); const lh=h-wh;
-        return `<div class="bar-col">
-                <div class="bar-val">${v}</div>
-                <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:1px">
-                  <div class="bar-seg" style="height:${wh}px;background:var(--grn)"></div>
-                  <div class="bar-seg" style="height:${lh}px;background:var(--red);border-radius:0"></div>
-                </div>
-                <div class="bar-lbl">${labels[i]}</div>
-              </div>`;
-    }).join('')}
-          </div>
-          <div style="display:flex;gap:12px;margin-top:4px">
-            <span style="font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--grn);border-radius:2px;display:inline-block"></span>Vittorie</span>
-            <span style="font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--red);border-radius:2px;display:inline-block"></span>Sconfitte</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd">Abilità per gioco</div>
-          <div style="margin-top:4px">
-            ${[
-        {name:'Calciobalilla',pct:82,color:'var(--acc)'},
-        {name:'Biliardo',pct:63,color:'#8b5cf6'},
-        {name:'Freccette',pct:51,color:'var(--grn)'},
-        {name:'Bocce',pct:34,color:'var(--amb)'}
-    ].map(s=>`
-              <div class="skill-row">
-                <div class="skill-name">${s.name}</div>
-                <div class="skill-bar"><div class="skill-fill" style="width:${s.pct}%;background:${s.color}"></div></div>
-                <div class="skill-pct">${s.pct}%</div>
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>
-
-      <div class="row2">
-        <div class="card">
-          <div class="card-hd">Ultime 5 partite</div>
-          ${[
-        {ico:'⚽',title:'Calciobalilla · Bar Belvedere',meta:'oggi 14:32',score:'5-3',win:true},
-        {ico:'🎯',title:'Freccette · Circolo Milano',meta:'ieri',score:'281 pts',win:false},
-        {ico:'⚽',title:'Calciobalilla · Casa propria',meta:'2 gg fa',score:'7-4',win:true},
-        {ico:'🎱',title:'Biliardo · Sala Torino',meta:'3 gg fa',score:'8 balls',win:true},
-        {ico:'🎳',title:'Bocce · Giardini Roma',meta:'5 gg fa',score:'13-9',win:false},
-    ].map(m=>`
-            <div class="match-row">
-              <span class="m-ico">${m.ico}</span>
-              <div class="m-info"><div class="m-title">${m.title}</div><div class="m-meta">${m.meta}</div></div>
-              <span class="m-score">${m.score}</span>
-              <span class="result ${m.win?'win':'loss'}">${m.win?'Vinta':'Persa'}</span>
-            </div>`).join('')}
-        </div>
-        <div class="card">
-          <div class="card-hd">Attività mensile</div>
-          <div style="margin-bottom:8px;font-size:10px;color:var(--txt3)">Partite giocate — aprile 2026</div>
-          <div class="heat-grid">
-            ${Array.from({length:30},(_,i)=>{
-        const v=Math.random();
-        const bg = v<.2?'var(--surf2)':v<.5?'#0f2d1f':v<.8?'#14532d':'var(--grn)';
-        return `<div class="heat-cell" style="background:${bg}" title="Giorno ${i+1}"></div>`;
-    }).join('')}
-          </div>
-          <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
-            <span style="font-size:9px;color:var(--txt3)">Meno</span>
-            ${['var(--surf2)','#0f2d1f','#14532d','var(--grn)'].map(c=>`<div style="width:10px;height:10px;background:${c};border-radius:2px"></div>`).join('')}
-            <span style="font-size:9px;color:var(--txt3)">Più</span>
-          </div>
-        </div>
-      </div>`;
+    `;
 }
+
+/**
+ * Funzione asincrona che scarica i dati e "inietta" il tuo esatto HTML nel contenitore.
+ */
+async function loadDashboardData(containerId) {
+    try {
+        const userId = localStorage.getItem('userId');
+
+        // Chiamate parallele alle nostre API
+        const [stats, history] = await Promise.all([
+            getUserStats(userId),
+            getUserHistory(userId)
+        ]);
+
+        const container = document.getElementById(containerId);
+        if (!container) return; // Se l'utente ha cambiato pagina nel frattempo, interrompe.
+
+        // Se il server non restituisce statistiche (utente nuovo), usiamo valori di default
+        const s = stats || {
+            partiteTotali: 0,
+            percentualeVittorie: 0.0,
+            rankGlobale: 0,
+            torneiVinti: 0
+        };
+
+        const winRate = Math.round(s.percentualeVittorie);
+        const rank = s.rankGlobale > 0 ? `#${s.rankGlobale}` : 'N/D';
+
+        // Prepara la storia delle ultime partite
+        const recentMatches = history && history.length > 0 ? history.slice(0, 5) : [];
+
+        container.innerHTML = `
+          <div class="stats-row">
+            <div class="scard"><div class="scard-lbl">Partite totali</div><div class="scard-val">${s.partiteTotali}</div><div class="scard-delta neutral">Dall'iscrizione</div></div>
+            <div class="scard"><div class="scard-lbl">% vittorie</div><div class="scard-val" style="color:var(--grn)">${winRate}%</div><div class="scard-delta neutral">Media globale</div></div>
+            <div class="scard"><div class="scard-lbl">Rank globale</div><div class="scard-val" style="color:var(--gold)">${rank}</div><div class="scard-delta neutral">Su PlayNode</div></div>
+            <div class="scard"><div class="scard-lbl">Tornei vinti</div><div class="scard-val">${s.torneiVinti}</div><div class="scard-delta neutral">Miglior player</div></div>
+          </div>
+    
+          <div class="row2">
+            <div class="card">
+              <div class="card-hd">Partite per settimana (ultime 8)</div>
+              <div class="chart-wrap">
+                ${[3,5,2,7,4,6,8,5].map((v,i)=>{
+            const labels=['S5','S6','S7','S8','S9','S10','S11','S12'];
+            const wins=Math.round(v*0.6); const losses=v-wins;
+            const maxH=80; const h=Math.round((v/8)*maxH);
+            const wh=Math.round((wins/v)*h); const lh=h-wh;
+            return `<div class="bar-col">
+                            <div class="bar-val">${v}</div>
+                            <div style="display:flex;flex-direction:column;align-items:center;width:100%;gap:1px">
+                              <div class="bar-seg" style="height:${wh}px;background:var(--grn)"></div>
+                              <div class="bar-seg" style="height:${lh}px;background:var(--red);border-radius:0"></div>
+                            </div>
+                            <div class="bar-lbl">${labels[i]}</div>
+                          </div>`;
+        }).join('')}
+              </div>
+              <div style="display:flex;gap:12px;margin-top:4px">
+                <span style="font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--grn);border-radius:2px;display:inline-block"></span>Vittorie</span>
+                <span style="font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--red);border-radius:2px;display:inline-block"></span>Sconfitte</span>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-hd">Abilità per gioco</div>
+              <div style="margin-top:4px">
+                ${[
+            {name:'Calciobalilla',pct:82,color:'var(--acc)'},
+            {name:'Biliardo',pct:63,color:'#8b5cf6'},
+            {name:'Freccette',pct:51,color:'var(--grn)'},
+            {name:'Bocce',pct:34,color:'var(--amb)'}
+        ].map(skill=>`
+                  <div class="skill-row">
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="skill-bar"><div class="skill-fill" style="width:${skill.pct}%;background:${skill.color}"></div></div>
+                    <div class="skill-pct">${skill.pct}%</div>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+    
+          <div class="row2">
+            <div class="card">
+              <div class="card-hd">Ultime 5 partite</div>
+              ${recentMatches.length > 0 ? recentMatches.map(m=>`
+                <div class="match-row">
+                  <span class="m-ico">🎮</span> <div class="m-info">
+                     <div class="m-title">Partita #${m.idPartita}</div>
+                     <div class="m-meta">${new Date(m.dataRegistrazione).toLocaleDateString()}</div>
+                  </div>
+                  <span class="m-score">${m.punteggioFinale !== null ? m.punteggioFinale : '-'}</span>
+                  <span class="result ${m.vittoria?'win':'loss'}">${m.vittoria?'Vinta':'Persa'}</span>
+                </div>`).join('') : '<div style="font-size:11px; color:var(--txt3); padding:10px 0;">Nessuna partita registrata.</div>'}
+            </div>
+            
+            <div class="card">
+              <div class="card-hd">Attività mensile</div>
+              <div style="margin-bottom:8px;font-size:10px;color:var(--txt3)">Partite giocate — Questo mese</div>
+              <div class="heat-grid">
+                ${Array.from({length:30},(_,i)=>{
+            const v=Math.random();
+            const bg = v<.2?'var(--surf2)':v<.5?'#0f2d1f':v<.8?'#14532d':'var(--grn)';
+            return `<div class="heat-cell" style="background:${bg}" title="Giorno ${i+1}"></div>`;
+        }).join('')}
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+                <span style="font-size:9px;color:var(--txt3)">Meno</span>
+                ${['var(--surf2)','#0f2d1f','#14532d','var(--grn)'].map(c=>`<div style="width:10px;height:10px;background:${c};border-radius:2px"></div>`).join('')}
+                <span style="font-size:9px;color:var(--txt3)">Più</span>
+              </div>
+            </div>
+          </div>`;
+    } catch (err) {
+        console.error("Errore fetch dashboard:", err);
+        const container = document.getElementById(containerId);
+        if(container) container.innerHTML = `<div style="color:var(--red);">Errore nel caricamento dei dati dal server. Controlla che stats-service sia avviato.</div>`;
+    }
+}
+
+
+/* ======================================================================
+   TUTTE LE ALTRE FUNZIONI SONO INTATTE (Mockup visivi per ora)
+   ====================================================================== */
 
 export function playerGames() {
     return `

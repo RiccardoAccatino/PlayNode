@@ -12,9 +12,9 @@ import {loginUser} from '../js/api.js';
  * Disegna la schermata di login e aggancia tutti gli eventi necessari.
  *
  * @param {Function} onSuccess - Una funzione (callback) passata dal file principale (app.js).
- *                               Viene invocata SOLO quando il login ha successo, passando
- *                               i dati dell'utente per permettere ad app.js di caricare la dashboard.
- *                               L'oggetto utente deve contenere: id, name, initials, role.
+ * Viene invocata SOLO quando il login ha successo, passando
+ * i dati dell'utente per permettere ad app.js di caricare la dashboard.
+ * L'oggetto utente deve contenere: id, name, initials, role.
  */
 export function renderLogin(onSuccess) {
     /* ── Dati demo per facilitare i test durante lo sviluppo ── */
@@ -51,22 +51,15 @@ export function renderLogin(onSuccess) {
      */
     const html = `
       <div id="login-root" style="
-        min-height:100vh; display:flex; align-items:center; justify-content:center;
-        background:var(--bg); font-family:var(--fb);
+        position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        background: var(--bg); font-family: var(--fb); padding: 40px 0;
       ">
-        <div style="width:100%;max-width:380px;padding:0 16px">
+        <div style="width:100%;max-width:380px;padding:0 16px;z-index:10;">
 
-          <!-- logo -->
-          <div style="text-align:center; margin-bottom:32px; margin-top:32px">
+          <div style="text-align:center; margin-bottom:32px;">
             <div style="display:inline-flex; align-items:center; gap:12px; margin-bottom:6px">
-
               <!-- Immagine logo -->
-              <img
-                src="./assets/img/Logo.png"
-                alt="PlayNode Logo"
-                style="width: 45px; height: 45px; object-fit: contain;"
-              />
-
+              <img src="./assets/img/Logo.png" alt="PlayNode Logo" style="width: 45px; height: 45px; object-fit: contain;" />
               <!-- Nome del progetto -->
               <span style="font-family:var(--ff); font-size:24px; font-weight:800; color:#fff; letter-spacing:-.3px">
                 PlayNode
@@ -92,7 +85,7 @@ export function renderLogin(onSuccess) {
             <!-- email -->
             <div style="margin-bottom:14px">
               <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Email</label>
-              <input id="login-email" type="email" placeholder="mario@cgp.it" style="
+              <input id="login-email" type="email" placeholder="mario@email.it" style="
                 width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                 border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
               " />
@@ -173,10 +166,9 @@ export function renderLogin(onSuccess) {
           </div>
 
           <!-- footer -->
-          <div style="text-align:center;margin-top:18px;font-size:10px;color:var(--txt3)">
+          </div> <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--txt3); z-index: 5;">
             Dappia · Ricky · Angie - 2026
           </div>
-        </div>
       </div>`;
 
     // 1. Iniettiamo l'HTML generato all'interno del contenitore base (index.html)
@@ -226,12 +218,12 @@ export function renderLogin(onSuccess) {
      * Funzioni helper per gestire la visualizzazione degli errori
      */
     function showError(msg) {
-        errorBox.textContent = msg;         // Inserisce il testo dell'errore
-        errorBox.style.display = 'block';   // Rende visibile il box rosso
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
     }
 
     function hideError() {
-        errorBox.style.display = 'none';    // Nasconde il box rosso
+        errorBox.style.display = 'none';
     }
 
     /* autofill credenziali demo */
@@ -268,7 +260,7 @@ export function renderLogin(onSuccess) {
         // 2. Feedback visivo: modifichiamo il bottone per far capire all'utente che stiamo elaborando la richiesta
         loginBtn.textContent = 'Accesso in corso…';
         loginBtn.style.opacity = '.7';
-        loginBtn.disabled = true; // Impedisce doppi click accidentali
+        loginBtn.disabled = true;
 
         try {
             // 3. Chiamata al backend: usiamo la funzione importata da api.js

@@ -202,10 +202,9 @@ export function renderRegister(onSuccess) {
           </div>
 
           <!-- footer -->
-          <div style="text-align:center;margin-top:14px;font-size:10px;color:var(--txt3)">
+          </div> <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--txt3); z-index: 5;">
             Dappia · Ricky · Angie - 2026
           </div>
-        </div>
       </div>`;
 
     document.getElementById('app-root').innerHTML = html;
