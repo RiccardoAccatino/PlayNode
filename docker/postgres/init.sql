@@ -168,3 +168,33 @@ create table Evento_iot(
         on update cascade
         on delete cascade
 );
+
+/*
+TABELLE PROVISSORIE
+
+CREATE TABLE statistica_utente (
+    id SERIAL PRIMARY KEY,
+    utente_id INT NOT NULL,
+    id_locale INT NOT NULL,
+    nome_gioco VARCHAR(100) NOT NULL,
+    partite_giocate INT DEFAULT 0,
+    vittorie INT DEFAULT 0,
+    punteggio_totale INT DEFAULT 0,
+    FOREIGN KEY (utente_id) REFERENCES Utente(id_utente)
+       ON UPDATE CASCADE
+       ON DELETE CASCADE,
+    FOREIGN KEY (id_locale) REFERENCES Locale(id_locale)
+       ON UPDATE CASCADE
+       ON DELETE CASCADE
+);
+
+CREATE TABLE storico_partita (
+    id SERIAL PRIMARY KEY,
+    utente_id INT NOT NULL,
+    gioco_id INT NOT NULL,
+    data_partita TIMESTAMP NOT NULL,
+    punteggio_ottenuto INT DEFAULT 0,
+    FOREIGN KEY (utente_id) REFERENCES Utente(id_utente)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+); */

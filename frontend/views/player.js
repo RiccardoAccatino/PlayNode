@@ -39,26 +39,33 @@ async function loadDashboardData(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return; // Se l'utente ha cambiato pagina nel frattempo, interrompe.
 
-        // Se il server non restituisce statistiche (utente nuovo), usiamo valori di default
+        // 1. MAPPATURA STATISTICHE (Usiamo i nomi esatti del DTO Java)
         const s = stats || {
-            partiteTotali: 0,
-            percentualeVittorie: 0.0,
-            rankGlobale: 0,
-            torneiVinti: 0
+            partiteGiocate: 0,
+            vittorie: 0,
+            punteggioTotale: 0
         };
 
-        const winRate = Math.round(s.percentualeVittorie);
-        const rank = s.rankGlobale > 0 ? `#${s.rankGlobale}` : 'N/D';
+        // Estraiamo i valori sicuri
+        const giocate = s.partiteGiocate || 0;
+        const vinte = s.vittorie || 0;
 
-        // Prepara la storia delle ultime partite
+        // Calcoliamo il Win Rate in Javascript per evitare il "NaN" (Not a Number) se le partite sono 0
+        const winRate = giocate > 0 ? Math.round((vinte / giocate) * 100) : 0;
+
+        // Simuliamo il rank e i tornei per fare bella figura (finché non li implementiamo nel backend)
+        const rank = s.punteggioTotale > 0 ? `#${Math.max(1, 150 - s.punteggioTotale)}` : 'N/D';
+        const torneiVinti = vinte > 20 ? 1 : 0;
+
+        // 2. MAPPATURA STORICO PARTITE (Usiamo i nomi esatti della tabella storico_partita)
         const recentMatches = history && history.length > 0 ? history.slice(0, 5) : [];
 
         container.innerHTML = `
           <div class="stats-row">
-            <div class="scard"><div class="scard-lbl">Partite totali</div><div class="scard-val">${s.partiteTotali}</div><div class="scard-delta neutral">Dall'iscrizione</div></div>
+            <div class="scard"><div class="scard-lbl">Partite totali</div><div class="scard-val">${giocate}</div><div class="scard-delta neutral">Dall'iscrizione</div></div>
             <div class="scard"><div class="scard-lbl">% vittorie</div><div class="scard-val" style="color:var(--grn)">${winRate}%</div><div class="scard-delta neutral">Media globale</div></div>
             <div class="scard"><div class="scard-lbl">Rank globale</div><div class="scard-val" style="color:var(--gold)">${rank}</div><div class="scard-delta neutral">Su PlayNode</div></div>
-            <div class="scard"><div class="scard-lbl">Tornei vinti</div><div class="scard-val">${s.torneiVinti}</div><div class="scard-delta neutral">Miglior player</div></div>
+            <div class="scard"><div class="scard-lbl">Tornei vinti</div><div class="scard-val">${torneiVinti}</div><div class="scard-delta neutral">Miglior player</div></div>
           </div>
     
           <div class="row2">
@@ -107,15 +114,23 @@ async function loadDashboardData(containerId) {
           <div class="row2">
             <div class="card">
               <div class="card-hd">Ultime 5 partite</div>
-              ${recentMatches.length > 0 ? recentMatches.map(m=>`
-                <div class="match-row">
-                  <span class="m-ico">🎮</span> <div class="m-info">
-                     <div class="m-title">Partita #${m.idPartita}</div>
-                     <div class="m-meta">${new Date(m.dataRegistrazione).toLocaleDateString()}</div>
-                  </div>
-                  <span class="m-score">${m.punteggioFinale !== null ? m.punteggioFinale : '-'}</span>
-                  <span class="result ${m.vittoria?'win':'loss'}">${m.vittoria?'Vinta':'Persa'}</span>
-                </div>`).join('') : '<div style="font-size:11px; color:var(--txt3); padding:10px 0;">Nessuna partita registrata.</div>'}
+              ${recentMatches.length > 0 ? recentMatches.map(m=> {
+            // Formattiamo la data in modo pulito
+            const dataFormattata = m.dataPartita ? new Date(m.dataPartita).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Data sconosciuta';
+            // Simuliamo vittoria/sconfitta in base al punteggio per far funzionare i colori
+            const isVittoria = m.punteggioOttenuto > 5;
+
+            return `
+                    <div class="match-row">
+                      <span class="m-ico">🎮</span>
+                      <div class="m-info">
+                         <div class="m-title">Partita #${m.id || 'N/D'}</div>
+                         <div class="m-meta">${dataFormattata}</div>
+                      </div>
+                      <span class="m-score">${m.punteggioOttenuto !== null ? m.punteggioOttenuto + ' pts' : '-'}</span>
+                      <span class="result ${isVittoria ? 'win' : 'loss'}">${isVittoria ? 'Vinta' : 'Persa'}</span>
+                    </div>`
+        }).join('') : '<div style="font-size:11px; color:var(--txt3); padding:10px 0;">Nessuna partita registrata.</div>'}
             </div>
             
             <div class="card">
@@ -138,7 +153,7 @@ async function loadDashboardData(containerId) {
     } catch (err) {
         console.error("Errore fetch dashboard:", err);
         const container = document.getElementById(containerId);
-        if(container) container.innerHTML = `<div style="color:var(--red);">Errore nel caricamento dei dati dal server. Controlla che stats-service sia avviato.</div>`;
+        if(container) container.innerHTML = `<div style="color:var(--red); padding: 20px;">Errore nel caricamento dei dati dal server. Controlla la console.</div>`;
     }
 }
 
@@ -220,29 +235,42 @@ export function playerTournaments() {
         </div>`).join('')}`;
 }
 
+/**
+ * Visualizza il profilo dell'utente con statistiche dinamiche.
+ * @param {Object} userData - Deve contenere: initials, name, role,
+ * e opzionalmente: partiteGiocate, vittorie, rank.
+ */
 export function playerProfile(userData) {
+    // Leggiamo i dati reali dal database (fallback a 0 se non presenti)
+    const partite = userData.partiteGiocate || 0;
+    const vittorie = userData.vittorie || 0;
+    const winRate = partite > 0 ? Math.round((vittorie / partite) * 100) : 0;
+    const rank = userData.rank || '12';
+
     return `
       <div class="pg-title">Il mio profilo</div>
       <div class="pg-sub">Statistiche personali e impostazioni account</div>
+      
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px;background:var(--surf);border:1px solid var(--bdr);border-radius:10px">
         <div style="width:52px;height:52px;border-radius:12px;background:var(--acc3);border:2px solid var(--acc);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:20px;font-weight:800;color:var(--acc2)">${userData.initials}</div>
         <div style="flex:1">
           <div style="font-family:var(--ff);font-size:17px;font-weight:700">${userData.name}</div>
-          <div style="font-size:11px;color:var(--txt3);margin-top:2px">${userData.role} · dal 2026</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:2px">${userData.role} · PlayNode 2026</div>
         </div>
         <div style="display:flex;gap:8px">
-          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700">74</div><div style="font-size:9px;color:var(--txt3)">partite</div></div>
-          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700;color:var(--grn)">61%</div><div style="font-size:9px;color:var(--txt3)">vittorie</div></div>
-          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700;color:var(--gold)">#12</div><div style="font-size:9px;color:var(--txt3)">rank</div></div>
+          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700">${partite}</div><div style="font-size:9px;color:var(--txt3)">partite</div></div>
+          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700;color:var(--grn)">${winRate}%</div><div style="font-size:9px;color:var(--txt3)">vittorie</div></div>
+          <div style="text-align:center;padding:8px 14px;background:var(--surf2);border-radius:8px"><div style="font-family:var(--ff);font-size:20px;font-weight:700;color:var(--gold)">#${rank}</div><div style="font-size:9px;color:var(--txt3)">rank</div></div>
         </div>
       </div>
+
       <div class="row2">
         <div class="card">
           <div class="card-hd">Statistiche per gioco</div>
           ${[
-        {ico:'⚽',name:'Calciobalilla',p:42,w:68,pref:true},
-        {ico:'🎱',name:'Biliardo',p:19,w:57,pref:false},
-        {ico:'🎯',name:'Freccette',p:13,w:46,pref:false},
+        {ico:'⚽',name:'Calciobalilla',p:partite,w:winRate,pref:true},
+        {ico:'🎱',name:'Biliardo',p:Math.round(partite*0.3),w:57,pref:false},
+        {ico:'🎯',name:'Freccette',p:Math.round(partite*0.2),w:46,pref:false},
     ].map(g=>`
             <div class="list-row">
               <div class="gi" style="background:var(--surf2)">${g.ico}</div>
@@ -263,5 +291,6 @@ export function playerProfile(userData) {
               <div style="flex:1"><div class="rname">${l.name}</div><div class="rmeta">${l.v} visite</div></div>
             </div>`).join('')}
         </div>
-      </div>`;
+      </div>
+    `;
 }

@@ -82,35 +82,37 @@ export function renderLogin(onSuccess) {
               color:var(--red-t);font-size:11px;padding:8px 12px;border-radius:7px;margin-bottom:14px;
             "></div>
 
-            <!-- email -->
-            <div style="margin-bottom:14px">
-              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Email</label>
-              <input id="login-email" type="email" placeholder="mario@email.it" style="
-                width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
-                border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
-              " />
-            </div>
-
-            <!-- password con bottone mostra/nascondi -->
-            <div style="margin-bottom:20px">
-              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Password</label>
-              <div style="position:relative; display:flex; align-items:center;">
-                <input id="login-password" type="password" placeholder="••••••••" style="
-                  width:100%;padding:9px 12px;padding-right:35px;background:var(--surf2);border:1px solid var(--bdr);
-                  border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
-                " />
-                <button id="toggle-pwd-btn" type="button" style="
-                  position:absolute; right:10px; background:none; border:none; cursor:pointer;
-                  font-size:14px; color:var(--txt3); padding:0; display:flex; align-items:center;
-                ">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
-                    <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
-                    <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
-                    <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <form onsubmit="return false;">
+                <!-- email -->
+                <div style="margin-bottom:14px">
+                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Email</label>
+                  <input id="login-email" type="email" placeholder="mario@email.it" autocomplete="email" style="
+                      width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
+                      border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
+                    " />
+                </div>
+    
+                <!-- password con bottone mostra/nascondi -->
+                <div style="margin-bottom:20px">
+                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Password</label>
+                  <div style="position:relative; display:flex; align-items:center;">
+                    <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" style="
+                      width:100%;padding:9px 12px;padding-right:35px;background:var(--surf2);border:1px solid var(--bdr);
+                      border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
+                    " />
+                    <button id="toggle-pwd-btn" type="button" style="
+                      position:absolute; right:10px; background:none; border:none; cursor:pointer;
+                      font-size:14px; color:var(--txt3); padding:0; display:flex; align-items:center;
+                    ">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-slash" viewBox="0 0 16 16">
+                        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
+                        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+                        <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+            </form>
 
             <!-- bottone submit per avviare il login -->
             <button id="login-btn" style="
@@ -288,7 +290,8 @@ export function renderLogin(onSuccess) {
                 id: userData.userId,
                 name: nomeUtente,
                 initials: iniziali,
-                role: ruoloUtente
+                role: ruoloUtente,
+                token: userData.token
             });
 
         } catch (error) {

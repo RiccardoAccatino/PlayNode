@@ -96,3 +96,18 @@ INSERT INTO Evento_iot (partita_id, timestamp_evento, valore) VALUES
     (1, '2026-06-01 18:07:34', 'Goal: Squadra 2'),
     (1, '2026-06-01 18:10:05', 'Fallo: Frullata'),
     (3, CURRENT_TIMESTAMP, 'Goal: Squadra 1');
+
+/*
+TABELLE PROVISSORIE
+
+INSERT INTO statistica_utente (id_locale, nome_gioco, partite_giocate, punteggio_totale, utente_id, vittorie) VALUES
+    (1, 'Calciobalilla Smart', 42, 350, 5, 28),
+    (1, 'Freccette Digitali', 13, 2100, 5, 6),
+    (2, 'Ping Pong IoT', 19, 180, 5, 11);
+
+INSERT INTO storico_partita (data_partita, gioco_id, punteggio_ottenuto, utente_id) VALUES
+    ('2026-05-25 18:00:00', 1, 10, 5),
+    ('2026-05-28 20:30:00', 3, 501, 5),
+    ('2026-05-30 21:15:00', 1, 8, 5),
+    ('2026-06-01 14:30:00', 2, 2, 5),
+    (CURRENT_TIMESTAMP, 1, 10, 5);*/

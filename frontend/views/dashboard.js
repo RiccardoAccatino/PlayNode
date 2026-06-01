@@ -8,6 +8,7 @@ import * as playerModule from './player.js';
 import * as localeModule from './locale.js';
 import * as platformModule from './admin-platform.js';
 import * as adminGameModule from './admin-game.js';
+import { getUserStats } from '../js/api.js';
 
 /**
  * Renderizza la dashboard principale dell'applicazione dopo il login.
@@ -54,7 +55,7 @@ export function renderDashboard(userData) {
                 'Dashboard': () => hasAccess('player') ? playerModule.playerDashboard() : unauthorizedPage(),
                 'Giochi': () => hasAccess('player') ? playerModule.playerGames() : unauthorizedPage(),
                 'Tornei': () => hasAccess('player') ? playerModule.playerTournaments() : unauthorizedPage(),
-                'Profilo': () => hasAccess('player') ? playerModule.playerProfile(userData) : unauthorizedPage()
+                'Profilo': () => hasAccess('player') ? showProfileWithStats() : unauthorizedPage(),
             }
         },
         locale: {
@@ -145,7 +146,7 @@ export function renderDashboard(userData) {
 
           <div class="user-chip">
             <div class="avatar">${userData.initials}</div>
-            <span class="uname">${userData.name}</span>
+            <span class="uname">${userData.name && userData.name !== 'undefined' ? userData.name : 'Utente'}</span>
             <button id="logout-btn" class="logout-btn-nav">Esci</button>
           </div>
         </div>
@@ -246,11 +247,11 @@ export function renderDashboard(userData) {
      * @param {string} name - Il nome della pagina da visualizzare (deve corrispondere a una chiave in cfg.pages)
      * @returns {void}
      */
-    function showPage(name) {
+    async function showPage(name) {
         const fn = cfg.pages[name];
         const main = document.getElementById('main-content');
         if (fn) {
-            main.innerHTML = fn();
+            main.innerHTML = await fn();
         } else {
             main.innerHTML = `<div class="pg-title">${name}</div><div class="pg-sub">Pagina in costruzione.</div>`;
         }
@@ -286,6 +287,31 @@ export function renderDashboard(userData) {
         localStorage.removeItem('userId');
         localStorage.removeItem('userRole');
         document.dispatchEvent(new CustomEvent('cgp:goto', { detail: 'login' }));
+    }
+
+    /**
+     * Recupera le statistiche al volo e mostra il profilo.
+     * Questa funzione serve a "iniettare" i dati reali nel componente profilo.
+     */
+    async function showProfileWithStats() {
+        const userId = localStorage.getItem('userId');
+
+        // Aggiungi un piccolo stato di caricamento mentre la funzione scarica i dati
+        const main = document.getElementById('main-content');
+        if(main) main.innerHTML = "Caricamento profilo...";
+
+        const stats = await getUserStats(userId);
+
+        const dataPerProfilo = {
+            name: userData.name,
+            initials: userData.initials,
+            role: userData.role,
+            partiteGiocate: stats ? stats.partiteGiocate : 0,
+            vittorie: stats ? stats.vittorie : 0,
+            rank: stats && stats.punteggioTotale ? Math.max(1, 150 - stats.punteggioTotale) : 'N/D'
+        };
+
+        return playerModule.playerProfile(dataPerProfilo);
     }
 
     const logoutBtn = document.getElementById('logout-btn') || document.getElementById('logout-btn-error');

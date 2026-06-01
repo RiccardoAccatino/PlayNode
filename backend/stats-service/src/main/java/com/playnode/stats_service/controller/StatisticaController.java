@@ -22,21 +22,16 @@ public class StatisticaController {
     private StatisticaService statisticaService;
 
     /**
-     * Quando qualcuno va sull'indirizzo /api/statistiche/{id}, questo metodo si attiva.
-     * Restituisce il nostro nuovo DTO invece dell'Entità.
+     * Quando qualcuno va sull'indirizzo /api/statistiche/{utenteId}, questo metodo si attiva.
+     * Restituisce sempre un 200 OK con il DTO popolato (o azzerato).
      */
     @GetMapping("/{utenteId}")
     public ResponseEntity<StatisticaUtenteDTO> ottieniStatisticheUtente(@PathVariable Long utenteId) {
 
-        // Chiediamo al Service di fare tutto il lavoro duro (cercare e trasformare)
+        // Il Service cercherà nel DB usando il metodo corretto o genererà un fallback a zero
         StatisticaUtenteDTO statisticheDto = statisticaService.ottieniStatistichePerUtente(utenteId);
 
-        // Se il Service ha trovato i dati, rispondiamo con un bel "200 OK" e inviamo il DTO
-        if (statisticheDto != null) {
-            return ResponseEntity.ok(statisticheDto);
-        } else {
-            // Se non ha trovato nulla, rispondiamo con un "404 Not Found" (Non trovato)
-            return ResponseEntity.notFound().build();
-        }
+        // Rispondiamo sempre con 200 OK inviando il DTO
+        return ResponseEntity.ok(statisticheDto);
     }
 }

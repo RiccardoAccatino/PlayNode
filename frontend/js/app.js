@@ -47,6 +47,24 @@ export function navigateTo(viewName) {
     // Nota: Il dashboard viene gestito tramite handleAuthSuccess dopo il login/registrazione
 }
 
+function decodeToken(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    const payload = JSON.parse(jsonPayload);
+
+    // Ritorna l'oggetto coerente che la tua dashboard si aspetta
+    return {
+        id: payload.userId,
+        name: payload.username, // Prende il nome dal token generato nel LoginService
+        initials: payload.username.substring(0, 2).toUpperCase(),
+        role: payload.role
+    };
+}
+
 /**
  * Callback di successo per l'autenticazione.
  * Questa funzione viene passata come "callback" a renderLogin e renderRegister.
@@ -57,9 +75,14 @@ export function navigateTo(viewName) {
  *                        Deve contenere almeno le proprietà: id, name, initials, role.
  * @returns {void}
  */
-function handleAuthSuccess(user) {
-    console.log("Autenticazione completata con successo!", user);
+function handleAuthSuccess(userData) {
+    // 1. Salva il token nel localStorage
+    localStorage.setItem('token', userData.token);
 
+    // 2. Decodifica il token appena ricevuto per ottenere i dati "ufficiali"
+    const user = decodeToken(userData.token);
+
+    // 3. Renderizza la dashboard
     renderDashboard(user);
 }
 
@@ -105,9 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Ricostruiamo l'oggetto utente usando i dati scritti dentro il JWT!
             const user = {
                 id: payload.userId,
-                name: payload.username,
-                initials: payload.username.substring(0, 2).toUpperCase(),
-                role: payload.role // Es. "Giocatore", "Gestore", ecc.
+                // Se il nome dal token è nullo, prova a estrarlo dall'email o usa un default
+                name: payload.username || 'Giocatore',
+                initials: (payload.username || 'GU').substring(0, 2).toUpperCase(),
+                role: payload.role || 'player'
             };
 
             // 5. Lo mandiamo dritto alla dashboard saltando il login
