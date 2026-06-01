@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Filter che intercetta tutte le richieste HTTP per validare il JWT token.
@@ -33,6 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -54,30 +57,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             token = authHeader.substring(7);
         }
 
-        // Se il token è valido, popola il SecurityContext
-        if (token != null && jwtService.validateToken(token)) {
-            // Estrae i claims dal token
-            Long userId = jwtService.extractUserId(token);
-            String email = jwtService.extractEmail(token);
-            String role = jwtService.extractRole(token);
+        // Se il token NON è nullo, NON è nella lista nera, ed è valido, popola il SecurityContext
+        if (token != null && !tokenBlacklistService.isBlacklisted(token) && jwtService.validateToken(token)) {
 
-            // Crea le autorità con il prefisso ROLE_
-            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            // Estrae i claims dal token
+            String email = jwtService.extractEmail(token);
+            String ruolo = jwtService.extractRole(token);
+
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + ruolo.toUpperCase());
 
             // Crea un UsernamePasswordAuthenticationToken e lo memorizza nel
             // SecurityContext
             // Principal: userId (identificativo univoco)
             // Credentials: null (non usato in JWT, il token è già nel header)
             // Authorities: ruoli estratti dal token con prefisso ROLE_
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userId,
-                    null, authorities);
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    email, null, Collections.singletonList(authority)
+            );
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            // Imposta dettagli aggiuntivi per tracciamento
-            authenticationToken.setDetails(email);
-
-            // Memorizza l'autenticazione nel SecurityContext
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
         // Continua la catena di filter

@@ -3,6 +3,7 @@ package com.playnode.auth_service.controller;
 import com.playnode.auth_service.dto.AuthResponse;
 import com.playnode.auth_service.dto.LoginRequest;
 import com.playnode.auth_service.dto.RegisterRequest;
+import com.playnode.auth_service.security.TokenBlacklistService;
 import com.playnode.auth_service.service.LoginService;
 import com.playnode.auth_service.service.RegisterService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private LoginService loginService;
+
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
 
     /**
      * Endpoint per registrazione
@@ -81,17 +85,12 @@ public class AuthController {
     /**
      * Endpoint per logout
      * POST /api/auth/logout
-     * 
-     * Placeholder per logout. In futuro, può essere usato per:
-     * - Invalidare il token nel backend (blacklist)
-     * - Registrare l'evento di logout
-     * - Pulire i dati della sessione
-     *
-     * @return Risposta di successo
+     * * Invalida il token inserendolo nella Blacklist lato server.
+     * Contemporaneamente, il frontend si occuperà di rimuoverlo dal localStorage.
      */
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logout(HttpServletRequest request) {
-        // Estrae il token da invalidare (per future implementazioni)
+        // Estrae il token dall'header
         String authHeader = request.getHeader("Authorization");
         String token = null;
         
@@ -99,9 +98,15 @@ public class AuthController {
             token = authHeader.substring(7);
         }
 
+        // Se abbiamo trovato un token, lo mettiamo nella lista nera!
+        if (token != null) {
+            tokenBlacklistService.addToBlacklist(token);
+            System.out.println("Token inserito nella blacklist con successo.");
+        }
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("message", "Logout completato con successo");
+        response.put("message", "Logout completato con successo. Token invalidato nel backend.");
         response.put("timestamp", System.currentTimeMillis());
 
         return ResponseEntity.ok(response);
