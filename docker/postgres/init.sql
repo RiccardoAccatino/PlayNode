@@ -25,7 +25,9 @@ create table Utente(
 -- Squadra
 create table Squadra(
     id_squadra serial primary key,
-    nome_squadra varchar(100) not null unique
+    nome_squadra varchar(100) not null unique,
+    id_tipologia_gioco INT,
+    foreign key(id_tipologia_gioco) references Tipologia_gioco(id_tipologia_gioco)
 );
 
 --Membro della squadra
