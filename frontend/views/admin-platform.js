@@ -2,7 +2,7 @@
  * file: admin-platform.js
  * Pagine e componenti per gli ADMIN PIATTAFORMA
  */
-import { getAllTournaments, createTournament, updateTournament } from '../js/api.js';
+import { getAllTournaments, createTournament, updateTournament, getAllTipologieGioco } from '../js/api.js';
 
 export function platformOverview() {
   return `
@@ -188,14 +188,30 @@ export function platformGames() {
 }
 
 export async function platformTournaments() {
-  const tornei = await getAllTournaments();
+  const [torneiNonOrdinati, tipologieGioco] = await Promise.all([
+    getAllTournaments(),
+    getAllTipologieGioco()
+  ]);
 
-  const NOMI_GIOCHI = {
-    1: 'Calciobalilla',
-    2: 'Ping Pong',
-    3: 'Freccette',
-    4: 'Bocce'
-  };
+  const tornei = torneiNonOrdinati.sort((a, b) => a.id - b.id);
+
+  const giochiDisponibili = tipologieGioco && tipologieGioco.length > 0 ? tipologieGioco : [
+    { idTipologiaGioco: 1, nomeTipologiaGioco: 'Gioco 1' },
+    { idTipologiaGioco: 2, nomeTipologiaGioco: 'Gioco 2' },
+    { idTipologiaGioco: 3, nomeTipologiaGioco: 'Gioco 3' },
+    { idTipologiaGioco: 4, nomeTipologiaGioco: 'Gioco 4' }
+  ];
+
+  const NOMI_GIOCHI = {};
+  let opzioniGiochiHtml = '';
+
+  giochiDisponibili.forEach(g => {
+    const idGioco = g.id || g.idTipologiaGioco || g.id_tipologia_gioco;
+    const nomeGioco = g.nome || g.nomeTipologiaGioco || g.nome_tipologia_gioco;
+
+    NOMI_GIOCHI[idGioco] = nomeGioco;
+    opzioniGiochiHtml += `<option value="${idGioco}">${nomeGioco}</option>`;
+  });
 
   function getStatusBadge(status) {
     const s = (status || 'in arrivo').toLowerCase();
@@ -262,7 +278,7 @@ export async function platformTournaments() {
             <input type="hidden" id="modal-t-id" value="" />
 
             <div style="margin-bottom:14px">
-              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Nome Torneo</label>
+              <label for="modal-t-name" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Nome Torneo</label>
               <input id="modal-t-name" type="text" placeholder="Es. Coppa Primavera" style="
                 width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                 border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
@@ -271,19 +287,16 @@ export async function platformTournaments() {
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom:14px">
                 <div>
-                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Gioco</label>
+                  <label for="modal-t-game" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Gioco</label>
                   <select id="modal-t-game" style="
                     width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                     border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
                   ">
-                    <option value="1">Calciobalilla Smart</option>
-                    <option value="2">Ping Pong IoT</option>
-                    <option value="3">Freccette Digitali</option>
-                    <option value="4">Bocce Elettroniche</option>
+                    ${opzioniGiochiHtml}
                   </select>
                 </div>
                 <div>
-                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Modalità</label>
+                  <label for="modal-t-mod" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Modalità</label>
                   <select id="modal-t-mod" style="
                     width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                     border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
@@ -296,14 +309,14 @@ export async function platformTournaments() {
 
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom:14px">
                 <div>
-                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Data Inizio</label>
+                  <label for="modal-t-start" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Data Inizio</label>
                   <input type="date" id="modal-t-start" style="
                     width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                     border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
                   " />
                 </div>
                 <div>
-                  <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Data Fine (Opzionale)</label>
+                  <label for="modal-t-end" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Data Fine (Opzionale)</label>
                   <input type="date" id="modal-t-end" style="
                     width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                     border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
@@ -312,7 +325,7 @@ export async function platformTournaments() {
             </div>
             
             <div style="margin-bottom:14px">
-              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Stato Classifica</label>
+              <label for="modal-t-status" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Stato Classifica</label>
               <select id="modal-t-status" style="
                 width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
                 border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
@@ -324,7 +337,7 @@ export async function platformTournaments() {
             </div>
 
             <div style="margin-bottom:20px">
-              <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Regole del Torneo</label>
+              <label for="modal-t-rules" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Regole del Torneo</label>
               <textarea id="modal-t-rules" rows="3" placeholder="Es. Eliminazione diretta..." style="
                 width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr); resize:vertical;
                 border-radius:7px;color:var(--txt);font-family:var(--fb);font-size:13px;outline:none;
@@ -365,7 +378,7 @@ export async function platformTournaments() {
         modalTitle.textContent = "Crea Nuovo Torneo";
         idInput.value = "";
         nameInput.value = "";
-        gameInput.value = "1";
+        gameInput.value = Object.keys(NOMI_GIOCHI)[0] || "1";
         modInput.value = "Squadre";
         startInput.value = today;
         endInput.value = "";
@@ -384,7 +397,7 @@ export async function platformTournaments() {
           modalTitle.textContent = `Modifica Torneo #${torneo.id}`;
           idInput.value = torneo.id;
           nameInput.value = torneo.nome || "";
-          gameInput.value = torneo.idTipologiaGioco || "1";
+          gameInput.value = torneo.idTipologiaGioco || Object.keys(NOMI_GIOCHI)[0] || "1";
           modInput.value = torneo.modalita || "Squadre";
           startInput.value = torneo.dataInizio || today;
           endInput.value = torneo.dataFine || "";

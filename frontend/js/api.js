@@ -294,7 +294,7 @@ export async function getAllTipologieGioco() {
         if (!response.ok) return [];
         return await response.json();
     } catch (error) {
-        console.error("Errore fetch tipologie gioco:", error);
+        // console.error("Errore fetch tipologie gioco:", error); <-- COMMENTA QUESTA RIGA
         return [];
     }
 }
