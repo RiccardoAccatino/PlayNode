@@ -13,6 +13,9 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    container_name: playnode_postgres
+    env_file:
+      - ../.env
     ports:
       - "5433:5432"
     volumes:
@@ -22,6 +25,8 @@ services:
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: playnode-mosquitto
+    env_file:
+      - ../.env
     restart: always
     ports:
       - "1883:1883"
