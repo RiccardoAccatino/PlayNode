@@ -1,39 +1,40 @@
 # =========================================================================
-# Come provarlo (Rimanendo sempre nella cartella radice 'PlayNode'):
+# GUIDA RAPIDA DOCKER PLAYNODE
+# Assicurati di eseguire questi comandi dalla cartella radice 'PlayNode'
 #
-# Pulisci tutto:
-# docker-compose --env-file .env -f docker/docker-compose.yml down -v
+# 1. Per fare tabula rasa (cancella DB e volumi):
+#    docker-compose --env-file .env -f docker/docker-compose.yml down -v
 #
-# Avvia con il .env corretto:
-# docker-compose --env-file .env -f docker/docker-compose.yml up -d
+# 2. Per avviare tutta l'infrastruttura pulita:
+#    docker-compose --env-file .env -f docker/docker-compose.yml up -d
 # =========================================================================
 
 # version: '3.8'
 services:
   postgres:
     image: postgres:15
+    container_name: playnode_postgres
+    restart: always
+    env_file:
+      - ../.env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    container_name: playnode_postgres
-    env_file:
-      - ../.env
     ports:
       - "5435:5432"
     volumes:
-      # Mappa init.sql e gli assegna il prefisso 01 (parte per primo)
+      # Mappa gli script SQL: verranno eseguiti in ordine alfabetico SOLO al primo avvio
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      # Mappa populate.sql e gli assegna il prefisso 02 (parte subito dopo)
       - ./postgres/populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
       - playnode_db_data:/var/lib/postgresql/data
 
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: playnode-mosquitto
+    restart: always
     env_file:
       - ../.env
-    restart: always
     ports:
       - "1883:1883"
       - "9001:9001"

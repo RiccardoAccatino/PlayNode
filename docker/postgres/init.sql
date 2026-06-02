@@ -2,7 +2,6 @@
 -- CREAZIONE TABELLE (DDL)
 -- ==========================================
 
-
 -- tipi enum
 create type sesso_tipo as enum ('Maschio','Femmina','Altro');
 create type ruolo_tipo as enum ('Giocatore', 'Gestore', 'AdminGioco', 'AdminPiattaforma');
@@ -20,6 +19,18 @@ create table Utente(
     ruolo ruolo_tipo not null,
     sesso sesso_tipo not null,
     oauth_provider varchar(50)
+);
+
+--Tipologia del gioco
+create table Tipologia_gioco(
+    id_tipologia_gioco serial primary key,
+    nome_tipologia_gioco varchar(100) not null,
+    descrizione varchar(250) not null,
+    regole varchar(300) not null,
+    admin_creatore_id int,
+    foreign key(admin_creatore_id) references Utente(id_utente)
+        on update cascade
+        on delete set null
 );
 
 -- Squadra
@@ -43,19 +54,7 @@ create table Membro_squadra(
         on delete cascade
 );
 
--- Tipologia del gioco
-create table Tipologia_gioco(
-    id_tipologia_gioco serial primary key,
-    nome_tipologia_gioco varchar(100) not null,
-    descrizione varchar(250) not null,
-    regole varchar(300) not null,
-    admin_creatore_id int,
-    foreign key(admin_creatore_id) references Utente(id_utente)
-        on update cascade
-        on delete set null
-);
-
--- Locale dove si possono trovare i giochi fisici
+--Locale dove si possono trovare i giochi fisici
 create table Locale(
     id_locale serial primary key,
     nome varchar(100) not null,
@@ -170,6 +169,10 @@ create table Evento_iot(
         on update cascade
         on delete cascade
 );
+
+-- ==========================================
+-- CREAZIONE VISTE
+-- ==========================================
 
 -- 1. Vista per lo Storico Partite
 -- Estrapola dinamicamente i dati ogni volta che viene richiesta
