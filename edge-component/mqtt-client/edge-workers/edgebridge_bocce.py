@@ -52,11 +52,14 @@ def on_message(client, userdata, msg):
     try:
         dati = json.loads(payload)
 
-        # CASO A: Il Backend ci dice che è iniziata una nuova partita
-        if msg.topic == MQTT_TOPIC_COMANDI:
-            if "nuova_partita_id" in dati:
-                PARTITA_ATTIVA = dati["nuova_partita_id"]
-                print(f"\n🔄 [COMANDO SERVER] Nuova partita avviata! ID aggiornato a: {PARTITA_ATTIVA}")
+        # CASO A: Il Backend ci dice che è iniziata o finita una partita
+                if msg.topic == MQTT_TOPIC_COMANDI:
+                    if "nuova_partita_id" in dati:
+                        PARTITA_ATTIVA = dati["nuova_partita_id"]
+                        print(f"\n🔄 [COMANDO SERVER] Nuova partita avviata! ID aggiornato a: {PARTITA_ATTIVA}")
+                    elif "termina_partita" in dati: # AGGIUNGI QUESTO
+                        PARTITA_ATTIVA = None
+                        print("\n🛑 [COMANDO SERVER] Partita terminata. Punti bloccati.")
 
         # CASO B: La telecamera OpenCV ci invia un punteggio
         elif msg.topic == MQTT_TOPIC_PUNTEGGIO:
