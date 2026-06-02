@@ -24,10 +24,10 @@ INSERT INTO Utente (username, email, password, ruolo, sesso) VALUES
 -- 2. SQUADRE
 INSERT INTO Squadra (nome_squadra) VALUES
 ('Leoni del Biliardino'), -- 1
-('Tigri del Ping Pong'),  -- 2
+('Ghepardi da Biliardino'), -- 2
 ('I Senza Speranza'),     -- 3
 ('Bocciofili DOC'),       -- 4
-('Dart Vaders');          -- 5
+('Bocce D''Acciaio');       -- 5
 
 
 -- 3. MEMBRI DELLE SQUADRE
@@ -39,11 +39,9 @@ INSERT INTO Membro_squadra (id_utente, id_squadra) VALUES
 (5, 5), (12, 5); -- Angie e Chiara nella squadra 5 (Angie è in due squadre)
 
 
--- 4. TIPOLOGIE DI GIOCO
+-- 4. TIPOLOGIE DI GIOCO 
 INSERT INTO Tipologia_gioco (nome_tipologia_gioco, descrizione, regole, admin_creatore_id) VALUES
-('Calciobalilla Smart', 'Calcio balilla con sensori ottici 2v2', 'Vince la prima squadra che arriva a 10 goal. Vietato il gancio e la rullata.', 2),
-('Ping Pong IoT', 'Tavolo da ping pong con rilevamento rimbalzi e touch', 'Al meglio dei 3 set da 11 punti.', 2),
-('Freccette Digitali', 'Bersaglio smart con calcolo automatico dei punti', 'Modalità 501 classica. Chiusura al doppio.', 2),
+('Calciobalilla Smart', 'Calcio balilla con sensori ottici 2v2', 'Vince la prima squadra che arriva a 9 goal. Vietato il gancio e la rullata.', 2),
 ('Bocce Elettroniche', 'Campo da bocce con telecamere e misurazione ottica', 'Partita a 13 punti. Penalità per lancio oltre linea.', 2);
 
 
@@ -66,31 +64,31 @@ INSERT INTO Componente_edge (address, locale_id, stato) VALUES
 ('55:66:77:88:99:AA', 4, 'Online');  -- 7
 
 
--- 7. GIOCHI FISICI
+-- 7. GIOCHI FISICI 
 INSERT INTO Gioco_fisico (tipologia_gioco_id, locale_id, edge_id) VALUES
-(1, 1, 1), -- 1. Calciobalilla nella Taverna
-(3, 1, 2), -- 2. Freccette nella Taverna
-(2, 2, 3), -- 3. Ping Pong al Circolo
-(1, 2, 4), -- 4. Calciobalilla al Circolo
-(3, 3, 5), -- 5. Freccette al Bar Sport
-(2, 3, 6), -- 6. Ping Pong al Bar Sport
-(4, 4, 7); -- 7. Bocce alla Bocciofila
+(1, 1, 1), -- 1. Calciobalilla nella Taverna (ID 1)
+(1, 1, 2), -- 2. Calciobalilla nella Taverna (ID 1)
+(1, 2, 3), -- 3. Calciobalilla al Circolo (ID 1)
+(1, 2, 4), -- 4. Calciobalilla al Circolo (ID 1)
+(2, 3, 5), -- 5. Bocce al Bar Sport (ID 2)
+(2, 3, 6), -- 6. Bocce al Bar Sport (ID 2)
+(2, 4, 7); -- 7. Bocce alla Bocciofila (ID 2)
 
 
 -- 8. TORNEI
 INSERT INTO Torneo (nome_torneo, modalita, regole_del_torneo, classifica, tipologia_gioco_id, data_inizio, data_fine) VALUES
 ('Coppa Estiva Biliardino', 'Squadre', 'Eliminazione diretta. La finale si gioca al meglio di 3.', 'Da definire', 1, '2026-06-01', '2026-06-15'),
-('Campionato Ping Pong 1v1', 'Individuale', 'Gironi all''italiana seguiti da playoff.', 'In corso', 2, '2026-05-01', NULL),
-('Master Dart Milano', 'Individuale', '501 chiusura obbligatoria al centro.', 'Terminato', 3, '2026-03-01', '2026-03-20'),
-('Trofeo della Rampa', 'Squadre', 'Round Robin bocce a coppie.', 'Terminato', 4, '2026-04-10', '2026-04-15');
+('Campionato Calciobalilla 1v1', 'Individuale', 'Gironi all''italiana seguiti da playoff.', 'In corso', 1, '2026-05-01', NULL),
+('Master Bocce Milano', 'Individuale', 'Gara di accosto.', 'Terminato', 2, '2026-03-01', '2026-03-20'),
+('Trofeo della Rampa', 'Squadre', 'Round Robin bocce a coppie.', 'Terminato', 2, '2026-04-10', '2026-04-15');
 
 
 -- 9. TORNEO_LOCALE
 INSERT INTO Torneo_locale (id_torneo, id_locale) VALUES
 (1, 1), (1, 2), -- Coppa Biliardino in due locali
-(2, 2), (2, 3), -- Coppa Ping Pong al Circolo e al Bar Sport
-(3, 3),         -- Dart al Bar Sport
-(4, 4);         -- Bocce alla Bocciofila
+(2, 2),         -- Campionato Calciobalilla al Circolo
+(3, 3),         -- Master Bocce al Bar Sport
+(4, 4);         -- Trofeo Bocce alla Bocciofila
 
 
 -- =========================================================================
@@ -98,53 +96,53 @@ INSERT INTO Torneo_locale (id_torneo, id_locale) VALUES
 -- Tutte le partite hanno timestamp progressivi per popolare bene i grafici
 -- =========================================================================
 
--- GENNAIO / FEBBRAIO (Freccette al Bar Sport, Gioco 5)
+-- GENNAIO / FEBBRAIO (Bocce al Bar Sport, Gioco 5)
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
 (5, NULL, '2026-01-10 18:00:00', '2026-01-10 18:20:00', 'Sincronizzata_Offline'), -- Partita 1
 (5, NULL, '2026-01-15 19:00:00', '2026-01-15 19:30:00', 'Realtime'), -- Partita 2
 (5, NULL, '2026-02-05 21:00:00', '2026-02-05 21:45:00', 'Realtime'); -- Partita 3
 
 INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VALUES
-(1, 5, 501, true), (1, 6, 320, false),  -- Angie vince contro Lisa
-(2, 5, 480, false), (2, 7, 501, true),  -- Angie perde contro Giulio
-(3, 5, 501, true), (3, 8, 410, false);  -- Angie vince contro Sara
+(1, 5, 13, true), (1, 6, 8, false),  -- Angie vince contro Lisa
+(2, 5, 11, false), (2, 7, 13, true),  -- Angie perde contro Giulio
+(3, 5, 13, true), (3, 8, 10, false);  -- Angie vince contro Sara
 
--- MARZO (Torneo Master Dart Milano, Gioco 5)
+-- MARZO (Torneo Master Bocce Milano, Gioco 5)
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
 (5, 3, '2026-03-10 18:00:00', '2026-03-10 18:25:00', 'Realtime'), -- Partita 4
 (5, 3, '2026-03-15 20:00:00', '2026-03-15 20:30:00', 'Realtime'), -- Partita 5
 (5, 3, '2026-03-18 21:00:00', '2026-03-18 21:45:00', 'Realtime'); -- Partita 6
 
 INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VALUES
-(4, 5, 501, true), (4, 9, 300, false),  -- Angie batte Marco
-(5, 5, 501, true), (5, 10, 450, false), -- Angie batte Elena
-(6, 5, 490, false), (6, 11, 501, true); -- Angie perde la finale contro Paolo
+(4, 5, 13, true), (4, 9, 5, false),  -- Angie batte Marco
+(5, 5, 13, true), (5, 10, 9, false), -- Angie batte Elena
+(6, 5, 12, false), (6, 11, 13, true); -- Angie perde la finale contro Paolo
 
--- APRILE (Ping Pong al Circolo Sportivo, Gioco 3)
+-- APRILE (Calciobalilla Individuale al Circolo Sportivo, Gioco 3)
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
 (3, NULL, '2026-04-05 16:00:00', '2026-04-05 16:15:00', 'Realtime'), -- Partita 7
 (3, NULL, '2026-04-12 17:00:00', '2026-04-12 17:25:00', 'Realtime'), -- Partita 8
 (3, NULL, '2026-04-20 18:30:00', '2026-04-20 19:00:00', 'Realtime'); -- Partita 9
 
 INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VALUES
-(7, 5, 11, true), (7, 12, 8, false),    -- Angie batte Chiara
-(8, 5, 9, false), (8, 13, 11, true),    -- Angie perde contro Roberto
-(9, 5, 11, true), (9, 14, 5, false);    -- Angie batte Lucia
+(7, 5, 9, true), (7, 12, 6, false),    -- Angie batte Chiara
+(8, 5, 8, false), (8, 13, 9, true),    -- Angie perde contro Roberto
+(9, 5, 9, true), (9, 14, 4, false);    -- Angie batte Lucia
 
--- MAGGIO (Tante partite per alzare il volume mensile. Ping Pong Torneo + Amichevoli)
+-- MAGGIO (Tante partite per alzare il volume mensile. Calciobalilla Torneo + Amichevoli)
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
 (3, 2, '2026-05-02 18:00:00', '2026-05-02 18:20:00', 'Realtime'), -- Partita 10
 (3, 2, '2026-05-08 19:00:00', '2026-05-08 19:30:00', 'Realtime'), -- Partita 11
 (3, 2, '2026-05-15 20:00:00', '2026-05-15 20:25:00', 'Realtime'), -- Partita 12
 (3, NULL, '2026-05-20 17:00:00', '2026-05-20 17:15:00', 'Realtime'), -- Partita 13
-(2, NULL, '2026-05-25 21:00:00', '2026-05-25 21:40:00', 'Realtime'); -- Partita 14 (Freccette)
+(5, NULL, '2026-05-25 21:00:00', '2026-05-25 21:40:00', 'Realtime'); -- Partita 14 (Bocce Amichevole)
 
 INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VALUES
-(10, 5, 11, true), (10, 7, 6, false),
-(11, 5, 11, true), (11, 8, 9, false),
-(12, 5, 11, true), (12, 9, 7, false),
-(13, 5, 11, true), (13, 10, 4, false),
-(14, 5, 501, true), (14, 6, 200, false);
+(10, 5, 9, true), (10, 7, 5, false),
+(11, 5, 9, true), (11, 8, 7, false),
+(12, 5, 9, true), (12, 9, 6, false),
+(13, 5, 9, true), (13, 10, 2, false),
+(14, 5, 13, true), (14, 6, 11, false);
 
 
 -- =========================================================================
@@ -152,27 +150,27 @@ INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VAL
 -- =========================================================================
 
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
-(1, NULL, '2026-05-10 21:00:00', '2026-05-10 21:30:00', 'Realtime'), -- Partita 15 (Squadra 1 vs Squadra 2)
-(1, NULL, '2026-05-12 21:00:00', '2026-05-12 21:45:00', 'Sincronizzata_Offline'), -- Partita 16 (Squadra 1 vs Squadra 3)
+(1, NULL, '2026-05-10 21:00:00', '2026-05-10 21:30:00', 'Realtime'), -- Partita 15 (Squadra 1 vs Squadra 2 - Calciobalilla)
+(1, NULL, '2026-05-12 21:00:00', '2026-05-12 21:45:00', 'Sincronizzata_Offline'), -- Partita 16 (Squadra 1 vs Squadra 3 - Calciobalilla)
 (7, 4, '2026-04-12 15:00:00', '2026-04-12 16:30:00', 'Realtime'), -- Partita 17 (Bocce torneo: Squadra 4 vs Squadra 5)
 (1, 1, CURRENT_TIMESTAMP - INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '30 minutes', 'Realtime'), -- Partita 18 (Torneo Biliardino oggi)
-(1, 1, CURRENT_TIMESTAMP, NULL, 'Realtime'); -- Partita 19 (IN CORSO ORA!)
+(1, 1, CURRENT_TIMESTAMP, NULL, 'Realtime'); -- Partita 19 (IN CORSO ORA! Torneo Biliardino)
 
 INSERT INTO Partecipa (partita_id, squadra_id, punteggio_finale, vittoria) VALUES
-(15, 1, 10, true), (15, 2, 8, false),
-(16, 1, 10, true), (16, 3, 5, false),
+(15, 1, 9, true), (15, 2, 7, false),
+(16, 1, 9, true), (16, 3, 5, false),
 (17, 4, 13, true), (17, 5, 11, false),
-(18, 1, 10, true), (18, 4, 2, false),
+(18, 1, 9, true), (18, 4, 2, false),
 (19, 1, 5, false), (19, 2, 7, false); -- Partita in corso (vittoria ancora false per entrambe)
 
 -- Altre partite individuali per variare i dati globali per gli altri utenti
 INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
-(2, NULL, '2026-06-01 10:00:00', '2026-06-01 10:30:00', 'Realtime'), -- Partita 20
-(3, NULL, '2026-06-01 11:00:00', '2026-06-01 11:15:00', 'Realtime'); -- Partita 21
+(3, NULL, '2026-06-01 10:00:00', '2026-06-01 10:30:00', 'Realtime'), -- Partita 20 (Calciobalilla)
+(5, NULL, '2026-06-01 11:00:00', '2026-06-01 11:15:00', 'Realtime'); -- Partita 21 (Bocce)
 
 INSERT INTO Partecipa (partita_id, giocatore_id, punteggio_finale, vittoria) VALUES
-(20, 6, 501, true), (20, 7, 450, false),
-(21, 8, 11, true), (21, 9, 9, false);
+(20, 6, 9, true), (20, 7, 4, false),
+(21, 8, 13, true), (21, 9, 9, false);
 
 
 -- =========================================================================

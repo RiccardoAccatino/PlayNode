@@ -2,7 +2,9 @@
  * file: admin-platform.js
  * Pagine e componenti per gli ADMIN PIATTAFORMA
  */
-import { getAllTournaments, createTournament, updateTournament, getAllTipologieGioco } from '../js/api.js';
+
+// Importiamo TUTTE le chiamate API dentro l'oggetto "Api"
+import * as Api from '../js/api.js';
 
 export function platformOverview() {
   return `
@@ -150,11 +152,13 @@ export function platformLocali() {
 }
 
 export function platformGames() {
+  setTimeout(initPlatformGames, 0);
+
   return `
       <div class="pg-title">Tipi di Gioco</div>
       <div class="pg-sub">Definizione giochi e configurazione sensori</div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="act-btn">+  Nuovo tipo gioco</button>
+        <button id="btn-nuovo-gioco" class="act-btn">+ Nuovo tipo gioco</button>
       </div>
       <div class="card">
         <table class="tbl">
@@ -167,30 +171,111 @@ export function platformGames() {
               <th></th>
             </tr>
           </thead>
-          <tbody>
-            ${[
-      { ico: '⚽', name: 'Calcioballica', sensors: 3, inst: 12, matches: 847 },
-      { ico: '🎯', name: 'Freccette', sensors: 1, inst: 5, matches: 312 },
-      { ico: '🎱', name: 'Biliardo', sensors: 2, inst: 4, matches: 189 },
-      { ico: '🎳', name: 'Bocce', sensors: 2, inst: 3, matches: 98 }
-    ].map(g => `
-              <tr>
-                <td><span style="font-size:14px">${g.ico}</span> <span style="font-weight:500;font-size:12px">${g.name}</span></td>
-                <td>${g.sensors}</td>
-                <td>${g.inst}</td>
-                <td>${g.matches}</td>
-                <td><button class="act-btn">Config sensori</button></td>
-              </tr>
-            `).join('')}
+          <tbody id="games-tbody">
+            <tr><td colspan="5" style="text-align:center; padding: 20px;">Caricamento giochi in corso...</td></tr>
           </tbody>
         </table>
-      </div>`;
+      </div>
+
+      <div id="modal-new-game" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+          <div class="card" style="width: 400px; max-width: 90%; background: var(--surf); border: 1px solid var(--bdr);">
+              <div class="card-hd" style="margin-bottom: 20px;">Crea Nuovo Tipo Gioco</div>
+              
+              <div style="margin-bottom:14px">
+                  <label for="mg-name" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Nome Gioco</label>
+                  <input id="mg-name" type="text" placeholder="Es. Ping Pong Elettronico" style="width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;color:var(--txt); outline:none;" />
+              </div>
+              <div style="margin-bottom:14px">
+                  <label for="mg-desc" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Descrizione</label>
+                  <textarea id="mg-desc" rows="2" style="width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;color:var(--txt); outline:none; resize:vertical;"></textarea>
+              </div>
+              <div style="margin-bottom:20px">
+                  <label for="mg-rules" style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Regole base</label>
+                  <textarea id="mg-rules" rows="2" style="width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;color:var(--txt); outline:none; resize:vertical;"></textarea>
+              </div>
+              
+              <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                  <button id="btn-close-game" style="padding:8px 16px;background:none;border:1px solid var(--bdr);border-radius:6px;color:var(--txt2);cursor:pointer;">Annulla</button>
+                  <button id="btn-save-game" class="act-btn">Salva Gioco</button>
+              </div>
+          </div>
+      </div>
+    `;
+}
+
+// Logica asincrona pura che gestisce i dati
+async function initPlatformGames() {
+  const tbody = document.getElementById('games-tbody');
+  const modal = document.getElementById('modal-new-game');
+
+  // 1. Fetch dei dati dal backend tramite l'oggetto Api
+  const giochi = await Api.getAllTipologieGioco();
+
+  // 2. Renderizziamo la tabella
+  if (giochi.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">Nessun gioco presente nel database. Aggiungine uno!</td></tr>`;
+  } else {
+    tbody.innerHTML = giochi.map(g => `
+            <tr>
+              <td><span style="font-size:14px">🎮</span> <span style="font-weight:500;font-size:12px">${g.nome || g.nomeTipologiaGioco}</span></td>
+              <td>${g.sensors || 0}</td>
+              <td>${g.inst || 0}</td>
+              <td>${g.matches || 0}</td>
+              <td><button class="act-btn btn-config" data-id="${g.id || g.idTipologiaGioco}">Config sensori</button></td>
+            </tr>
+        `).join('');
+  }
+
+  // 3. Gestione Eventi Modale
+  document.getElementById('btn-nuovo-gioco').onclick = () => {
+    document.getElementById('mg-name').value = '';
+    document.getElementById('mg-desc').value = '';
+    document.getElementById('mg-rules').value = '';
+    modal.style.display = 'flex';
+  };
+
+  document.getElementById('btn-close-game').onclick = () => {
+    modal.style.display = 'none';
+  };
+
+  // 4. Salvataggio
+  document.getElementById('btn-save-game').onclick = async () => {
+    const name = document.getElementById('mg-name').value.trim();
+    const desc = document.getElementById('mg-desc').value.trim();
+    const rules = document.getElementById('mg-rules').value.trim();
+
+    if (!name || !desc || !rules) {
+      alert("Compila tutti i campi prima di salvare.");
+      return;
+    }
+
+    const btnSave = document.getElementById('btn-save-game');
+    btnSave.innerText = "Salvataggio...";
+    btnSave.disabled = true;
+
+    // Chiamata API aggiornata
+    const success = await Api.createTipologiaGioco({
+      nomeTipologiaGioco: name,
+      descrizione: desc,
+      regole: rules
+    });
+
+    if (success) {
+      modal.style.display = 'none';
+      initPlatformGames();
+    } else {
+      alert("Si è verificato un errore durante il salvataggio.");
+    }
+
+    btnSave.innerText = "Salva Gioco";
+    btnSave.disabled = false;
+  };
 }
 
 export async function platformTournaments() {
   const [torneiNonOrdinati, tipologieGioco] = await Promise.all([
-    getAllTournaments(),
-    getAllTipologieGioco()
+    Api.getAllTournaments(),
+    Api.getAllTipologieGioco()
   ]);
 
   const tornei = torneiNonOrdinati.sort((a, b) => a.id - b.id);
@@ -435,9 +520,9 @@ export async function platformTournaments() {
 
         try {
           if (idInput.value) {
-            await updateTournament(idInput.value, payload);
+            await Api.updateTournament(idInput.value, payload);
           } else {
-            await createTournament(payload);
+            await Api.createTournament(payload);
           }
           modal.style.display = 'none';
           document.querySelector('.sb-btn.active')?.click() || document.querySelector('.nav-btn.active')?.click();

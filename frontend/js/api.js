@@ -294,7 +294,20 @@ export async function getAllTipologieGioco() {
         if (!response.ok) return [];
         return await response.json();
     } catch (error) {
-        // console.error("Errore fetch tipologie gioco:", error); <-- COMMENTA QUESTA RIGA
+        //console.error("Errore fetch tipologie gioco:", error);
         return [];
+    }
+}
+
+export async function createTipologiaGioco(datiGioco) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/tipologie-gioco`, {
+            method: 'POST',
+            body: JSON.stringify(datiGioco)
+        });
+        return response.ok;
+    } catch (error) {
+        //console.error("Errore salvataggio:", error);
+        return false;
     }
 }

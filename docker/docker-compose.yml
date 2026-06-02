@@ -1,9 +1,12 @@
-#Come provarlo:
-# (aprire l'applicazione docker desktop)
-# cd docker
-# docker-compose down -v
-# docker-compose up -d
-# Avviare i microservizi
+# =========================================================================
+# Come provarlo (Rimanendo sempre nella cartella radice 'PlayNode'):
+#
+# Pulisci tutto:
+# docker-compose --env-file .env -f docker/docker-compose.yml down -v
+#
+# Avvia con il .env corretto:
+# docker-compose --env-file .env -f docker/docker-compose.yml up -d
+# =========================================================================
 
 # version: '3.8'
 services:
@@ -17,9 +20,12 @@ services:
     env_file:
       - ../.env
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Mappa init.sql e gli assegna il prefisso 01 (parte per primo)
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      # Mappa populate.sql e gli assegna il prefisso 02 (parte subito dopo)
+      - ./postgres/populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
       - playnode_db_data:/var/lib/postgresql/data
 
   mosquitto:
