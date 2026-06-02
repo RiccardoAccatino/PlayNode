@@ -7,6 +7,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/partite")
+@CrossOrigin(origins = "*") // Eliminare dopo il merge con iu web
 public class PartitaController {
 
     private final PartitaService partitaService;
