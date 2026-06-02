@@ -264,3 +264,37 @@ export async function createTournament(tournamentData) {
         throw error;
     }
 }
+
+/**
+ * Aggiorna un torneo esistente
+ */
+export async function updateTournament(id, tournamentData) {
+    try {
+        const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(tournamentData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Errore nell'aggiornamento: HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Errore durante updateTournament:", error);
+        throw error;
+    }
+}
+
+/**
+ * Ottiene l'elenco di tutte le tipologie di gioco dal database.
+ */
+export async function getAllTipologieGioco() {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/tipologie-gioco`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.error("Errore fetch tipologie gioco:", error);
+        return [];
+    }
+}
