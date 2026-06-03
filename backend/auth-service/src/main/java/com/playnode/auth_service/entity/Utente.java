@@ -1,15 +1,17 @@
 package com.playnode.auth_service.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-    @Entity
+@Entity
     @Table(name = "Utente")
     public class Utente {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         @Column(name = "id_utente")
-        private Long id;
+        private Integer id;
 
         @Column(nullable = false, unique = true)
         private String username;
@@ -22,10 +24,12 @@ import jakarta.persistence.*;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
+        @JdbcTypeCode(SqlTypes.NAMED_ENUM)
         private RuoloTipo ruolo;
 
         @Enumerated(EnumType.STRING)
         @Column(nullable = false)
+        @JdbcTypeCode(SqlTypes.NAMED_ENUM)
         private SessoTipo sesso;
 
         // costruttore vuoto
@@ -40,8 +44,8 @@ import jakarta.persistence.*;
             this.sesso = sesso;
         }
         //fetter e setter
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
+        public Integer getId() { return id; }
+        public void setId(Integer id) { this.id = id; }
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
