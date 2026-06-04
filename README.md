@@ -21,7 +21,6 @@ Prima di iniziare a lavorare, dovete scaricare una copia del progetto sul vostro
    ```
 
 ---
-
 ## 🌱 2. Lavorare con i Branch (Le "Ramificazioni")
 
 **Regola d'oro:** Non lavorate mai direttamente sul branch `main`. Create sempre un vostro "ramo" separato per le nuove funzionalità o per le correzioni.
@@ -104,4 +103,3 @@ Mentre voi lavorate, altri potrebbero aver aggiornato il progetto. È fondamenta
 5. `git commit -m "Aggiunta nuova feature"` (Salvo in locale)
 6. `git push origin mia-nuova-feature` (Mando su GitHub)
 7. *Andare su GitHub e aprire una Pull Request!*
-

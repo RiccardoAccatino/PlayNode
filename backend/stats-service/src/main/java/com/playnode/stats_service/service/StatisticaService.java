@@ -10,7 +10,8 @@ import java.util.Optional;
 
 /**
  * Questa classe è il "cervello" per le statistiche.
- * L'annotazione @Service dice a Spring Boot di gestire questa classe automaticamente.
+ * L'annotazione @Service dice a Spring Boot di gestire questa classe
+ * automaticamente.
  */
 @Service
 public class StatisticaService {
@@ -21,35 +22,41 @@ public class StatisticaService {
     private StatisticaRepository statisticaRepository;
 
     /**
-     * Questo metodo cerca le statistiche di un utente nel database e le trasforma in un DTO.
+     * Questo metodo cerca le statistiche di un utente nel database e le trasforma
+     * in un DTO.
+     * Se l'utente non ha ancora statistiche, restituisce un DTO azzerato invece di
+     * null.
+     * 
      * @param utenteId l'ID dell'utente da cercare.
      * @return Il DTO con le statistiche, oppure null se l'utente non esiste.
      */
     public StatisticaUtenteDTO ottieniStatistichePerUtente(Long utenteId) {
-        // 1. Chiediamo al Repository di cercare l'Entità nel database
-        // Nota: Assicurati che nel tuo StatisticaRepository ci sia un metodo findById o simile!
-        Optional<StatisticaUtente> statisticaOpzionale = statisticaRepository.findById(utenteId);
 
-        // 2. Se l'abbiamo trovata, la trasformiamo nel nostro DTO
+        // Usiamo la query personalizzata che hai definito nel repository
+        Optional<StatisticaUtente> statisticaOpzionale = statisticaRepository.findByIdUtente(utenteId);
+        StatisticaUtenteDTO dto = new StatisticaUtenteDTO();
+
+        // 2. Se l'abbiamo trovata nel database, la mappiamo normalmente
         if (statisticaOpzionale.isPresent()) {
             StatisticaUtente entita = statisticaOpzionale.get();
 
-            // Creiamo una nuova "scatola" DTO e la riempiamo con i dati dell'Entità
-            StatisticaUtenteDTO dto = new StatisticaUtenteDTO();
             dto.setUtenteId(entita.getUtenteId());
             dto.setPartiteGiocate(entita.getPartiteGiocate());
             dto.setVittorie(entita.getVittorie());
             dto.setPunteggioTotale(entita.getPunteggioTotale());
-
-            // AGGIUNGI QUESTE DUE RIGHE PER I NUOVI CAMPI:
             dto.setIdLocale(entita.getIdLocale());
             dto.setNomeGioco(entita.getNomeGioco());
-
-            // Restituiamo il DTO pronto per essere spedito!
-            return dto;
+        } else {
+            // Se l'utente non ha ancora statistiche nel DB,
+            // invece di dare errore generiamo un profilo pulito con tutti zeri
+            dto.setUtenteId(utenteId);
+            dto.setPartiteGiocate(0);
+            dto.setVittorie(0);
+            dto.setPunteggioTotale(0);
+            dto.setIdLocale("-");
+            dto.setNomeGioco("Nessuna Partita");
         }
 
-        // Se l'utente non ha statistiche nel database, per ora restituiamo null
-        return null;
+        return dto;
     }
 }

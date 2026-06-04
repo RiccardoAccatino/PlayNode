@@ -16,11 +16,16 @@ import java.util.Optional;
 public class PartitaService {
 
     private final PartitaRepository partitaRepository;
-    private final PartecipaRepository partecipaRepository; // Aggiunto il nuovo magazziniere!
+    private final PartecipaRepository partecipaRepository;
+    private final MqttPublisherService mqttPublisherService; // 1. Aggiunto il Publisher
 
-    public PartitaService(PartitaRepository partitaRepository, PartecipaRepository partecipaRepository) {
+    // 2. Aggiunto al costruttore
+    public PartitaService(PartitaRepository partitaRepository,
+                          PartecipaRepository partecipaRepository,
+                          MqttPublisherService mqttPublisherService) {
         this.partitaRepository = partitaRepository;
         this.partecipaRepository = partecipaRepository;
+        this.mqttPublisherService = mqttPublisherService;
     }
 
     public List<PartitaDTO> ottieniTutteLePartite() {
@@ -39,6 +44,10 @@ public class PartitaService {
         nuovaPartita.setTimestampInizio(LocalDateTime.now());
 
         Partita partitaSalvata = partitaRepository.save(nuovaPartita);
+
+        // 3. COMUNICAZIONE ALL'EDGE GATEWAY VIA MQTT
+        mqttPublisherService.inviaComandoAvvioPartita(idGiocoInstallato, partitaSalvata.getIdPartita());
+
         return convertiInDTO(partitaSalvata);
     }
 
