@@ -49,4 +49,24 @@ public class MqttPublisherService {
             System.err.println("❌ Errore invio messaggio MQTT: " + e.getMessage());
         }
     }
+
+    public void inviaComandoTerminaPartita(Long idGiocoInstallato) {
+        try {
+            if (mqttClient != null && mqttClient.isConnected()) {
+                // Stesso topic usato per l'avvio
+                String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
+
+                // JSON che corrisponde a quello atteso dallo script Python
+                String payload = "{\"termina_partita\": true}";
+
+                MqttMessage message = new MqttMessage(payload.getBytes());
+                message.setQos(1);
+
+                mqttClient.publish(topic, message);
+                System.out.println("🛑 Inviato comando MQTT di FINE partita sul topic " + topic);
+            }
+        } catch (MqttException e) {
+            System.err.println("❌ Errore invio messaggio MQTT di terminazione: " + e.getMessage());
+        }
+    }
 }
