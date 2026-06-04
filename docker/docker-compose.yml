@@ -22,7 +22,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5435:5432"
+      - "5433:5432"
     volumes:
       # Mappa gli script SQL: verranno eseguiti in ordine alfabetico SOLO al primo avvio
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql

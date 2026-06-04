@@ -311,3 +311,24 @@ export async function createTipologiaGioco(datiGioco) {
         return false;
     }
 }
+
+/**
+ * Avvia una nuova partita per un gioco installato (nel locale).
+ * Endpoint backend: POST /api/partite/avvia/{idGiocoInstallato}
+ *
+ * @param {string|number} idGiocoInstallato - ID del gioco installato
+ * @returns {Promise<Object|null>} PartitaDTO o null in caso di errore
+ */
+export async function avviaPartita(idGiocoInstallato) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/partite/avvia/${idGiocoInstallato}`, {
+            method: 'POST'
+        });
+        if (!response.ok) return null;
+        return await response.json();
+    } catch (error) {
+        console.error("Errore avvio partita:", error);
+        return null;
+    }
+}
+
