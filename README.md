@@ -21,7 +21,6 @@ Prima di iniziare a lavorare, dovete scaricare una copia del progetto sul vostro
    ```
 
 ---
-
 ## 🌱 2. Lavorare con i Branch (Le "Ramificazioni")
 
 **Regola d'oro:** Non lavorate mai direttamente sul branch `main`. Create sempre un vostro "ramo" separato per le nuove funzionalità o per le correzioni.

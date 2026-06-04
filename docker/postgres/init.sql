@@ -2,7 +2,6 @@
 -- CREAZIONE TABELLE (DDL)
 -- ==========================================
 
-
 -- tipi enum
 create type sesso_tipo as enum ('Maschio','Femmina','Altro');
 create type ruolo_tipo as enum ('Giocatore', 'Gestore', 'AdminGioco', 'AdminPiattaforma');
@@ -22,10 +21,24 @@ create table Utente(
     oauth_provider varchar(50)
 );
 
+--Tipologia del gioco
+create table Tipologia_gioco(
+    id_tipologia_gioco serial primary key,
+    nome_tipologia_gioco varchar(100) not null,
+    descrizione varchar(250) not null,
+    regole varchar(300) not null,
+    admin_creatore_id int,
+    foreign key(admin_creatore_id) references Utente(id_utente)
+        on update cascade
+        on delete set null
+);
+
 -- Squadra
 create table Squadra(
     id_squadra serial primary key,
-    nome_squadra varchar(100) not null unique
+    nome_squadra varchar(100) not null unique,
+    id_tipologia_gioco INT,
+    foreign key(id_tipologia_gioco) references Tipologia_gioco(id_tipologia_gioco)
 );
 
 --Membro della squadra
@@ -41,19 +54,7 @@ create table Membro_squadra(
         on delete cascade
 );
 
--- Tipologia del gioco
-create table Tipologia_gioco(
-    id_tipologia_gioco serial primary key,
-    nome_tipologia_gioco varchar(100) not null,
-    descrizione varchar(250) not null,
-    regole varchar(300) not null,
-    admin_creatore_id int,
-    foreign key(admin_creatore_id) references Utente(id_utente)
-        on update cascade
-        on delete set null
-);
-
--- Locale dove si possono trovare i giochi fisici
+--Locale dove si possono trovare i giochi fisici
 create table Locale(
     id_locale serial primary key,
     nome varchar(100) not null,
@@ -169,32 +170,51 @@ create table Evento_iot(
         on delete cascade
 );
 
-/*
-TABELLE PROVISSORIE
+-- ==========================================
+-- CREAZIONE VISTE
+-- ==========================================
 
-CREATE TABLE statistica_utente (
-    id SERIAL PRIMARY KEY,
-    utente_id INT NOT NULL,
-    id_locale INT NOT NULL,
-    nome_gioco VARCHAR(100) NOT NULL,
-    partite_giocate INT DEFAULT 0,
-    vittorie INT DEFAULT 0,
-    punteggio_totale INT DEFAULT 0,
-    FOREIGN KEY (utente_id) REFERENCES Utente(id_utente)
-       ON UPDATE CASCADE
-       ON DELETE CASCADE,
-    FOREIGN KEY (id_locale) REFERENCES Locale(id_locale)
-       ON UPDATE CASCADE
-       ON DELETE CASCADE
-);
+-- 1. Vista per lo Storico Partite
+-- Estrapola dinamicamente i dati ogni volta che viene richiesta
+CREATE OR REPLACE VIEW storico_partita AS
+SELECT 
+    p.id_partecipa AS id,
+    p.giocatore_id AS utente_id,
+    pa.gioco_fisico_id AS gioco_id,
+    pa.timestamp_inizio AS data_partita,
+    p.punteggio_finale AS punteggio_ottenuto
+FROM Partecipa p
+JOIN Partita pa ON p.partita_id = pa.id_partita
+WHERE p.giocatore_id IS NOT NULL;
 
-CREATE TABLE storico_partita (
-    id SERIAL PRIMARY KEY,
-    utente_id INT NOT NULL,
-    gioco_id INT NOT NULL,
-    data_partita TIMESTAMP NOT NULL,
-    punteggio_ottenuto INT DEFAULT 0,
-    FOREIGN KEY (utente_id) REFERENCES Utente(id_utente)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE
-); */
+
+-- 2. Vista per le Statistiche Utente
+-- Aggrega in tempo reale tutte le partecipazioni calcolando il totale
+CREATE OR REPLACE VIEW statistica_utente AS
+SELECT 
+    p.giocatore_id AS id, -- Usato da Hibernate come Primary Key
+    p.giocatore_id AS utente_id,
+    COUNT(p.id_partecipa) AS partite_giocate,
+    SUM(CASE WHEN p.vittoria THEN 1 ELSE 0 END) AS vittorie,
+    SUM(p.punteggio_finale) AS punteggio_totale,
+    
+    -- Subquery per recuperare l'ID del locale dell'ultima partita giocata
+    (SELECT CAST(gf.locale_id AS VARCHAR) 
+     FROM Partita pa2 
+     JOIN Gioco_fisico gf ON pa2.gioco_fisico_id = gf.id_gioco_fisico 
+     JOIN Partecipa p2 ON p2.partita_id = pa2.id_partita 
+     WHERE p2.giocatore_id = p.giocatore_id 
+     ORDER BY pa2.timestamp_inizio DESC LIMIT 1) AS id_locale,
+     
+    -- Subquery per recuperare il nome dell'ultimo gioco utilizzato
+    (SELECT tg.nome_tipologia_gioco 
+     FROM Partita pa2 
+     JOIN Gioco_fisico gf ON pa2.gioco_fisico_id = gf.id_gioco_fisico 
+     JOIN Tipologia_gioco tg ON gf.tipologia_gioco_id = tg.id_tipologia_gioco
+     JOIN Partecipa p2 ON p2.partita_id = pa2.id_partita 
+     WHERE p2.giocatore_id = p.giocatore_id 
+     ORDER BY pa2.timestamp_inizio DESC LIMIT 1) AS nome_gioco
+     
+FROM Partecipa p
+WHERE p.giocatore_id IS NOT NULL
+GROUP BY p.giocatore_id;

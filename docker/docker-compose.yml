@@ -1,28 +1,40 @@
-#Come provarlo:
-# (aprire l'applicazione docker desktop)
-# cd docker
-# docker-compose down -v
-# docker-compose up -d
-# Avviare i microservizi
+# =========================================================================
+# GUIDA RAPIDA DOCKER PLAYNODE
+# Assicurati di eseguire questi comandi dalla cartella radice 'PlayNode'
+#
+# 1. Per fare tabula rasa (cancella DB e volumi):
+#    docker-compose --env-file .env -f docker/docker-compose.yml down -v
+#
+# 2. Per avviare tutta l'infrastruttura pulita:
+#    docker-compose --env-file .env -f docker/docker-compose.yml up -d
+# =========================================================================
 
 # version: '3.8'
 services:
   postgres:
     image: postgres:15
+    container_name: playnode_postgres
+    restart: always
+    env_file:
+      - ../.env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Mappa gli script SQL: verranno eseguiti in ordine alfabetico SOLO al primo avvio
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./postgres/populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
       - playnode_db_data:/var/lib/postgresql/data
 
   mosquitto:
     image: eclipse-mosquitto:latest
     container_name: playnode-mosquitto
     restart: always
+    env_file:
+      - ../.env
     ports:
       - "1883:1883"
       - "9001:9001"
