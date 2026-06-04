@@ -1,6 +1,7 @@
 package com.playnode.game_service.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnTransformer;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,24 +22,51 @@ public class Partita {
     @Column(name = "timestamp_fine")
     private LocalDateTime timestampFine;
 
-    @Column(name = "stato_sync")
-    private String statoSync = "Realtime"; // Valore di default dal DDL
+    @Column(name = "stato_sync", columnDefinition = "stato_sync_tipo")
+    @ColumnTransformer(write = "?::stato_sync_tipo")
+    private String statoSync = "Realtime"; // Valore di default
 
     // Costruttori, Getter e Setter
-    public Partita() {}
+    public Partita() {
+    }
 
-    public Long getIdPartita() { return idPartita; }
-    public void setIdPartita(Long idPartita) { this.idPartita = idPartita; }
+    public Long getIdPartita() {
+        return idPartita;
+    }
 
-    public Long getGiocoFisicoId() { return giocoFisicoId; }
-    public void setGiocoFisicoId(Long giocoFisicoId) { this.giocoFisicoId = giocoFisicoId; }
+    public void setIdPartita(Long idPartita) {
+        this.idPartita = idPartita;
+    }
 
-    public LocalDateTime getTimestampInizio() { return timestampInizio; }
-    public void setTimestampInizio(LocalDateTime timestampInizio) { this.timestampInizio = timestampInizio; }
+    public Long getGiocoFisicoId() {
+        return giocoFisicoId;
+    }
 
-    public LocalDateTime getTimestampFine() { return timestampFine; }
-    public void setTimestampFine(LocalDateTime timestampFine) { this.timestampFine = timestampFine; }
+    public void setGiocoFisicoId(Long giocoFisicoId) {
+        this.giocoFisicoId = giocoFisicoId;
+    }
 
-    public String getStatoSync() { return statoSync; }
-    public void setStatoSync(String statoSync) { this.statoSync = statoSync; }
+    public LocalDateTime getTimestampInizio() {
+        return timestampInizio;
+    }
+
+    public void setTimestampInizio(LocalDateTime timestampInizio) {
+        this.timestampInizio = timestampInizio;
+    }
+
+    public LocalDateTime getTimestampFine() {
+        return timestampFine;
+    }
+
+    public void setTimestampFine(LocalDateTime timestampFine) {
+        this.timestampFine = timestampFine;
+    }
+
+    public String getStatoSync() {
+        return statoSync;
+    }
+
+    public void setStatoSync(String statoSync) {
+        this.statoSync = statoSync;
+    }
 }

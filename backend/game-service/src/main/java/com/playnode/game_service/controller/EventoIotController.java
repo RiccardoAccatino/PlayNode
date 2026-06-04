@@ -8,7 +8,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/iot")
-@CrossOrigin(origins = "*") // Eliminare dopo il merge con iu web
 public class EventoIotController {
 
     private final EventoIotService eventoIotService;

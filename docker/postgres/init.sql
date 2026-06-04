@@ -10,7 +10,7 @@ create type stato_tipo as enum ('Online', 'Offline');
 create type modalita_gioco_tipo as enum ('Individuale', 'Squadre');
 create type stato_sync_tipo as enum ('Realtime', 'Sincronizzata_Offline');
 
--- Utente
+-- 1. Utente
 create table Utente(
     id_utente serial primary key,
     username varchar(50) not null unique,
@@ -21,7 +21,7 @@ create table Utente(
     oauth_provider varchar(50)
 );
 
---Tipologia del gioco
+-- 2. Tipologia del gioco
 create table Tipologia_gioco(
     id_tipologia_gioco serial primary key,
     nome_tipologia_gioco varchar(100) not null,
@@ -33,7 +33,7 @@ create table Tipologia_gioco(
         on delete set null
 );
 
--- Squadra
+-- 3. Squadra
 create table Squadra(
     id_squadra serial primary key,
     nome_squadra varchar(100) not null unique,
@@ -41,7 +41,7 @@ create table Squadra(
     foreign key(id_tipologia_gioco) references Tipologia_gioco(id_tipologia_gioco)
 );
 
---Membro della squadra
+-- 4. Membro della squadra
 create table Membro_squadra(
     id_utente int,
     id_squadra int,
@@ -54,7 +54,7 @@ create table Membro_squadra(
         on delete cascade
 );
 
---Locale dove si possono trovare i giochi fisici
+-- 5. Locale
 create table Locale(
     id_locale serial primary key,
     nome varchar(100) not null,
@@ -66,7 +66,7 @@ create table Locale(
         on delete restrict
 );
 
--- Componente Edge
+-- 6. Componente Edge
 create table Componente_edge(
     id_componente_edge serial primary key,
     address varchar(17) not null unique,
@@ -77,7 +77,7 @@ create table Componente_edge(
         on delete cascade
 );
 
--- Gioco fisico
+-- 7. Gioco fisico
 create table Gioco_fisico(
     id_gioco_fisico serial primary key,
     tipologia_gioco_id int not null,
@@ -94,7 +94,18 @@ create table Gioco_fisico(
         on delete restrict
 );
 
--- Torneo
+-- 8. Sensore IoT
+create table Sensore(
+    id_sensore serial primary key,
+    gioco_fisico_id int not null,
+    tipo varchar(50) not null,
+    posizione varchar(100) not null,
+    foreign key(gioco_fisico_id) references Gioco_fisico(id_gioco_fisico)
+        on update cascade
+        on delete cascade
+);
+
+-- 9. Torneo
 create table Torneo(
     id_torneo serial primary key,
     nome_torneo varchar(100) not null,
@@ -109,7 +120,7 @@ create table Torneo(
         on delete restrict
 );
 
--- Collegamento torneo e locale
+-- 10. Collegamento torneo e locale
 create table Torneo_locale(
     id_torneo int,
     id_locale int,
@@ -122,7 +133,7 @@ create table Torneo_locale(
         on delete cascade
 );
 
--- Partita
+-- 11. Partita
 create table Partita(
     id_partita serial primary key,
     gioco_fisico_id int not null,
@@ -139,7 +150,7 @@ create table Partita(
         on delete set null
 );
 
--- Collegamneto tra giocatore, squadra e partita
+-- 12. Partecipa
 create table Partecipa(
     id_partecipa serial primary key,
     partita_id int not null,
@@ -159,15 +170,19 @@ create table Partecipa(
         on delete cascade
 );
 
--- Evento Iot: salvataggio dei dati fisici
+-- 13. Evento Iot
 create table Evento_iot(
     id_evento serial primary key,
     partita_id int not null,
+    sensore_id int,
     timestamp_evento timestamp not null,
     valore varchar(50) not null,
     foreign key(partita_id) references Partita(id_partita)
         on update cascade
-        on delete cascade
+        on delete cascade,
+    foreign key(sensore_id) references Sensore(id_sensore)
+        on update cascade
+        on delete set null
 );
 
 -- ==========================================
@@ -192,7 +207,7 @@ WHERE p.giocatore_id IS NOT NULL;
 -- Aggrega in tempo reale tutte le partecipazioni calcolando il totale
 CREATE OR REPLACE VIEW statistica_utente AS
 SELECT 
-    p.giocatore_id AS id, -- Usato da Hibernate come Primary Key
+    p.giocatore_id AS id, 
     p.giocatore_id AS utente_id,
     COUNT(p.id_partecipa) AS partite_giocate,
     SUM(CASE WHEN p.vittoria THEN 1 ELSE 0 END) AS vittorie,
