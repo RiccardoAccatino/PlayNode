@@ -8,7 +8,7 @@ import jakarta.annotation.PostConstruct;
 @Service
 public class MqttPublisherService {
 
-    @Value("${mqtt.broker.url}")
+    @Value("tcp://broker.local:1883")
     private String brokerUrl;
 
     @Value("${mqtt.client.id}")
@@ -21,6 +21,10 @@ public class MqttPublisherService {
         try {
             mqttClient = new MqttClient(brokerUrl, clientId);
             MqttConnectOptions options = new MqttConnectOptions();
+
+            options.setUserName("admin");
+            options.setPassword("admin".toCharArray());
+
             options.setCleanSession(true);
             options.setAutomaticReconnect(true); // Fondamentale per i server
             mqttClient.connect(options);

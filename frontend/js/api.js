@@ -311,3 +311,18 @@ export async function createTipologiaGioco(datiGioco) {
         return false;
     }
 }
+
+
+// POST /api/partite/avvia/{idGiocoInstallato}
+export async function avviaPartita(idGiocoInstallato) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/partite/avvia/${idGiocoInstallato}`, {
+            method: 'POST'
+        });
+        if (!response.ok) return null;
+        return await response.json(); // PartitaDTO
+    } catch (e) {
+        console.error("Errore avvio partita:", e);
+        return null;
+    }
+}

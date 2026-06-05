@@ -6,7 +6,7 @@ import com.playnode.game_service.entity.Partita;
 import com.playnode.game_service.repository.PartecipaRepository;
 import com.playnode.game_service.repository.PartitaRepository;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +52,7 @@ public class PartitaService {
     }
 
     // Ecco la nuova logica per i punteggi!
+    @Transactional
     public PartitaDTO aggiornaPunteggio(Long idPartita, Long idSquadra) {
         Optional<Partita> partitaOp = partitaRepository.findById(idPartita);
 

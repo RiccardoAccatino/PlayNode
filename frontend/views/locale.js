@@ -2,6 +2,7 @@
  * file: locale.js
  * Pagine e componenti per i GESTORI LOCALI
  */
+import * as Api from '../js/api.js';
 
 export function localeOverview() {
     return `
@@ -81,23 +82,29 @@ export function localeLive() {
 }
 
 export function localeGames() {
+    const tbodyId = 'locale-games-tbody';
+
+    setTimeout(() => initLocaleGames(tbodyId), 0);
+
     return `
-      <div class="pg-title">Giochi del Locale</div>
-      <div class="pg-sub">Configurazione e gestione giochi installati</div>
-      <div class="card">
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>Gioco</th>
-              <th>ID</th>
-              <th>Sensori</th>
-              <th>Stato</th>
-              <th>Azioni</th>
-            </tr>
-          </thead>
-          </tbody>
-        </table>
-      </div>`;
+    <div class="pg-title">Giochi del Locale</div>
+    <div class="pg-sub">Configurazione e gestione giochi installati</div>
+    <div class="card">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Gioco</th>
+            <th>ID</th>
+            <th>Sensori</th>
+            <th>Stato</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="${tbodyId}">
+          <tr><td colspan="5" style="text-align:center; padding: 20px;">Caricamento giochi in corso...</td></tr>
+        </tbody>
+      </table>
+    </div>`;
 }
 
 export function localeDevices() {
@@ -199,4 +206,63 @@ export function localeSettings(userData) {
           <button class="danger-btn" style="width:fit-content">Disconnetti locale</button>
         </div>
       </div>`;
+}
+
+
+async function initLocaleGames(tbodyId) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    // Come recuperi l’id del locale?
+    // Opzione A: se il token contiene localeId, salvalo in localStorage al login e leggilo qui.
+    // Per ora metto un fallback:
+    const idLocale = localStorage.getItem('localeId') || 1;
+
+    const giochi = await Api.getGiochiByLocale(idLocale);
+
+    if (!giochi || giochi.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px;">Nessun gioco trovato per questo locale.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = giochi.map(g => {
+        // IMPORTANTISSIMO: qui devi usare i nomi reali del DTO.
+        // Provo a gestire più naming possibili:
+        const idGiocoInstallato = g.idGiocoInstallato || g.id || g.id_gioco_installato;
+        const nome = g.nome || g.nomeGioco || g.nomeTipologiaGioco || g.nome_tipologia_gioco || `Gioco #${idGiocoInstallato}`;
+        const sensori = g.sensors || g.sensori || g.numeroSensori || 0;
+        const ok = (g.ok ?? g.attivo ?? true);
+
+        return `
+      <tr>
+        <td><span style="font-size:14px">🎮</span> ${nome}</td>
+        <td style="font-family:monospace;font-size:11px;color:var(--acc2)">${idGiocoInstallato ?? ''}</td>
+        <td>${sensori} attivi</td>
+        <td><span class="badge ${ok ? 'b-grn' : 'b-red'}">${ok ? 'ok' : 'errore'}</span></td>
+        <td style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="act-btn btn-avvia" data-id="${idGiocoInstallato}">Avvia partita</button>
+          <button class="act-btn">Config</button>
+        </td>
+      </tr>
+    `;
+    }).join('');
+
+    // eventi click per avviare partita
+    tbody.querySelectorAll('.btn-avvia').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.currentTarget.getAttribute('data-id');
+            if (!id) return;
+
+            e.currentTarget.disabled = true;
+            const partita = await Api.avviaPartita(id);
+            e.currentTarget.disabled = false;
+
+            if (!partita) {
+                alert("Errore: impossibile avviare la partita.");
+                return;
+            }
+
+            alert(`Partita avviata! ID: ${partita.id || partita.idPartita || '(id non presente nel DTO)'}`);
+        });
+    });
 }
