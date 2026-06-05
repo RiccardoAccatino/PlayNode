@@ -87,7 +87,13 @@ public class PartitaService {
             Partita partita = partitaOp.get();
             partita.setTimestampFine(LocalDateTime.now());
 
+            // 1. Salva la fine partita nel DB
             Partita partitaAggiornata = partitaRepository.save(partita);
+
+            // 2. COMUNICAZIONE ALL'EDGE GATEWAY VIA MQTT
+            // Diciamo al Raspberry di fermare il tracciamento dei punti
+            mqttPublisherService.inviaComandoTerminaPartita(partita.getGiocoFisicoId());
+
             return convertiInDTO(partitaAggiornata);
         }
         return null;
