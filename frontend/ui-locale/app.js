@@ -14,10 +14,11 @@ const PlayNodeUI = (function () {
     // Parametri di gioco passati via URL (es. ?idGioco=3&maxScore=9&showTimer=false).
     // showTimer=false è il default perché la maggior parte dei giochi del locale
     // (calciobalilla, bocce) finisce a punteggio, non a tempo.
+    // Cambiano in base alla card schiacciata
     const urlParams = new URLSearchParams(window.location.search);
-    const idGiocoInstallato = parseInt(urlParams.get('idGioco'), 10) || 1;
-    const maxScore = parseInt(urlParams.get('maxScore'), 10) || 9;
-    const showTimer = urlParams.get('showTimer') === 'true';
+    let idGiocoInstallato = null;
+    let maxScore = null;
+    let showTimer = false;
 
     // Soglia per il flash "low-time" rosso (solo quando showTimer è true)
     const LOW_TIME_THRESHOLD = 30;
@@ -80,7 +81,7 @@ const PlayNodeUI = (function () {
         // Micro-interazione: Pop effect sul team che ha appena segnato
         const target = team === 1 ? DOM.score1 : DOM.score2;
         target.classList.remove('pop');
-        void target.offsetWidth; // Trigger reflow per riavviare l'animazione
+        void target.offsetWidth;
         target.classList.add('pop');
         setTimeout(() => target.classList.remove('pop'), 400);
     }
@@ -135,7 +136,7 @@ const PlayNodeUI = (function () {
     }
 
     // ==========================================
-    // HTTP HELPERS (fetch nativo, no dipendenze)
+    // HTTP HELPERS
     // ==========================================
     async function apiGet(path) {
         const res = await fetch(`${BASE_URL}${path}`, { method: 'GET' });
@@ -214,9 +215,7 @@ const PlayNodeUI = (function () {
         try {
             const eventi = await apiGet(`/api/iot/partita/${id}`);
 
-            // Fetch OK → backend raggiungibile
             updateConnection(true);
-
             if (!Array.isArray(eventi)) return;
 
             // Conta i goal per squadra aggregando gli eventi
@@ -250,7 +249,6 @@ const PlayNodeUI = (function () {
                 endGame(`${winner} raggiunge ${maxScore} goal! Vince!`);
             }
         } catch (err) {
-            // Backend irraggiungibile o partita non più esistente
             updateConnection(false);
             console.warn('[Polling] errore:', err.message);
         }
@@ -275,15 +273,13 @@ const PlayNodeUI = (function () {
     }
 
     async function endGame(reason) {
-        // Se endGame è già in corso (es. polling+timer
-        // che terminano nello stesso istante), evita di terminare 2 volte.
         if (!state.idPartitaCorrente) return;
 
         const id = state.idPartitaCorrente;
         const finalDuration = formatTime(state.timerSeconds);
         stopLocalTimer();
         stopPolling();
-        state.idPartitaCorrente = null; // blocca ulteriori chiamate
+        state.idPartitaCorrente = null;
 
         const winner = state.score1 > state.score2 ? 'Squadra 1'
             : state.score2 > state.score1 ? 'Squadra 2'
@@ -310,11 +306,12 @@ const PlayNodeUI = (function () {
 
     // ==========================================
     // RESILIENZA: recupero partita attiva all'avvio
+    // Modificata: ora ritorna true se ripristina, false se vuoto
     // ==========================================
     async function checkExistingGame() {
         try {
             const partite = await apiGet('/api/partite');
-            if (!Array.isArray(partite)) return;
+            if (!Array.isArray(partite)) return false;
 
             // Cerca partita in corso associata al nostro gioco installato
             const partitaAttiva = partite.find(p =>
@@ -331,12 +328,10 @@ const PlayNodeUI = (function () {
                 state.lastPolledScore1 = 0;
                 state.lastPolledScore2 = 0;
                 state.timerSeconds = 0;
-                // In modalità cronometro il timer parte sempre da 0.
-                // In modalità countdown ripartiamo da un valore di default
-                // (non abbiamo timestampInizio nel DTO).
+
                 state.timerDirection = showTimer ? 'down' : 'up';
                 if (state.timerDirection === 'down') {
-                    state.timerSeconds = 300; // durata fissa di fallback
+                    state.timerSeconds = 300;
                 }
 
                 renderScore();
@@ -344,17 +339,18 @@ const PlayNodeUI = (function () {
                 switchMode(false);
                 logEvent('Partita ripresa. Sincronizzazione eventi in corso...');
 
-                // Sincronizza subito i punteggi reali aggregando gli eventi.
-                // Questo può scatenare endGame() se la partita era già vinta.
                 await pollEvents();
-                if (!state.idPartitaCorrente) return; // endGame partita in sync
+                if (!state.idPartitaCorrente) return true;
 
                 startLocalTimer();
                 startPolling();
+                return true; // Ripristino eseguito con successo
             }
+            return false; // Nessuna partita attiva sul server
         } catch (err) {
             console.warn('[Resume] nessuna partita recuperabile:', err.message);
             updateConnection(false);
+            return false;
         }
     }
 
@@ -381,7 +377,6 @@ const PlayNodeUI = (function () {
             state.lastPolledScore1 = 0;
             state.lastPolledScore2 = 0;
             state.status = 'Partita in corso';
-            // Cronometro silenzioso di default, countdown solo se showTimer
             state.timerDirection = showTimer ? 'down' : 'up';
             state.timerSeconds = state.timerDirection === 'down' ? 300 : 0;
 
@@ -450,24 +445,70 @@ const PlayNodeUI = (function () {
             DOM.debugPanel.style.display = state.isDebugOpen ? 'flex' : 'none';
         });
     }
+    // ==========================================
+    // MENU DI SETUP 
+    // ==========================================
+    function initSetupMenu() {
+        const setupView = document.getElementById('setup-view');
+        const gameView = document.getElementById('game-view');
+        const cards = document.querySelectorAll('.setup-card');
+
+        cards.forEach(card => {
+            card.addEventListener('click', async (e) => {
+                const btn = e.currentTarget;
+
+                idGiocoInstallato = parseInt(btn.getAttribute('data-id'), 10);
+                maxScore = parseInt(btn.getAttribute('data-max'), 10);
+                showTimer = btn.getAttribute('data-timer') === 'true';
+
+                console.log(`Selezionato Gioco ${idGiocoInstallato}: Vittoria a ${maxScore}, Timer: ${showTimer}`);
+
+                setupView.style.display = 'none';
+                gameView.style.display = 'flex';
+
+                applyTimerVisibility();
+
+                try {
+                    const isResumed = await checkExistingGame();
+                    if (!isResumed) {
+                        console.log('[Setup] Nessuna partita attiva sul server. Avvio automatico...');
+                        await startNewGame();
+                    }
+                } catch (err) {
+                    console.error('[setup] Errore inizializzazione gioco:', err);
+                }
+            });
+        });
+
+        // --- BOTTONE CAMBIA TAVOLO ---
+        const btnBack = document.getElementById('back-to-setup');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                // Ferma il gioco attuale ed evita polling residui
+                if (state.idPartitaCorrente) {
+                    endGame('Partita interrotta dal gestore');
+                }
+                resetToStandby();
+
+                gameView.style.display = 'none';
+                setupView.style.display = 'flex';
+            });
+        }
+    }
 
     // ==========================================
     // INIT
     // ==========================================
     return {
-        init: async function () {
+        init: function () {
+            // Prepara l'interfaccia di base
             updateConnection(false);
-            applyTimerVisibility();
             switchMode(true);
             initDebug();
-            console.log(`PlayNode UI v2.0 — idGioco=${idGiocoInstallato}, maxScore=${maxScore}, showTimer=${showTimer}, backend=${BASE_URL}`);
 
-            // Prova a recuperare una partita in corso (resilienza)
-            try {
-                await checkExistingGame();
-            } catch (err) {
-                console.error('[init] recupero fallito:', err);
-            }
+            initSetupMenu();
+
+            console.log(`PlayNode UI v2.0 Inizializzata — In attesa di selezione tavolo...`);
         }
     };
 })();

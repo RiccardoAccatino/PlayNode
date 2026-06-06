@@ -1,5 +1,5 @@
 /* =========================================
-   PLAYNODE - SCHERMO GIOCO (STYLE.CSS)
+   PLAYNODE - SCHERMO GIOCO 
    ========================================= */
 
 :root {
@@ -24,19 +24,27 @@
     padding: 0;
 }
 
-/* --- Base e Layout Globale --- */
 body {
     background-color: var(--bg-base);
     color: var(--text-main);
     font-family: var(--font-ui);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --- Viste a Schermo Intero --- */
+.fullscreen-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
-    position: relative;
-    padding: 1.5rem 1rem;
+    padding: 20px;
+    z-index: 10;
 }
 
 /* --- Sfondo Animato --- */
@@ -46,7 +54,7 @@ body {
     height: 600px;
     border-radius: 50%;
     filter: blur(120px);
-    z-index: -1;
+    z-index: 1;
     opacity: 0.4;
     animation: drift 20s infinite alternate linear;
 }
@@ -74,13 +82,121 @@ body {
     }
 }
 
-/* --- Header & Logo Minimalista --- */
+/* =========================================
+   ELEMENTI VISTA SETUP
+   ========================================= */
+
+.setup-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.setup-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.6));
+}
+
+.setup-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+}
+
+.setup-subtitle {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 1100px;
+}
+
+.setup-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 2.5rem 1.5rem;
+    color: var(--text-main);
+    text-align: center;
+    cursor: pointer;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.setup-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.setup-card .card-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}
+
+.setup-card h4 {
+    font-family: var(--font-display);
+    color: var(--neon-blue);
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+}
+
+.setup-card p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+
+/* =========================================
+   ELEMENTI VISTA GIOCO
+   ========================================= */
+
+/* --- Bottone Cambia Tavolo (Bello e rotondo, zero quadrati bianchi!) --- */
+.back-btn {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    padding: 0.8rem 1.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s ease;
+    z-index: 1050;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--neon-blue);
+    transform: translateX(-3px);
+}
+
+/* --- Header Gioco --- */
 .minimal-brand {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 8px;
     opacity: 0.65;
-    margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
+    margin-bottom: 2rem;
     transition: opacity 0.25s ease;
 }
 
@@ -102,16 +218,16 @@ body {
     letter-spacing: 2px;
 }
 
-/* --- Indicatore Connessione Edge IoT --- */
+/* --- Badge Connessione --- */
 .connection-badge {
     position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
+    top: 24px;
+    right: 24px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     background: var(--glass-bg);
-    padding: 0.5rem 1rem;
+    padding: 0.8rem 1.5rem;
     border-radius: 50px;
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(10px);
@@ -119,7 +235,6 @@ body {
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
-    transition: all 0.3s;
 }
 
 .connection-badge .dot {
@@ -158,26 +273,21 @@ body {
     }
 }
 
-/* --- Tabellone di Gioco Centrale (Glassmorphism) --- */
+/* --- Tabellone Centrale --- */
 .glass-container {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
     padding: clamp(1.5rem, 4vw, 2.5rem);
-    /* Padding fluido */
     width: 100%;
     max-width: 720px;
-    /* Card leggermente più stretta */
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
     text-align: center;
-    position: relative;
 }
 
 .status-text {
     font-size: clamp(1rem, 2.5vw, 1.15rem);
-    /* Testo fluido */
     color: var(--text-muted);
     font-weight: 500;
     text-transform: uppercase;
@@ -185,11 +295,6 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.game-board {
-    transition: opacity 0.5s ease;
-}
-
-/* --- Timer --- */
 .timer-wrapper {
     margin-bottom: 1.5rem;
 }
@@ -201,7 +306,7 @@ body {
     color: var(--neon-blue);
     text-shadow: 0 0 20px var(--neon-blue-glow);
     line-height: 1;
-    transition: color 0.3s, text-shadow 0.3s, transform 0.1s;
+    transition: color 0.3s;
 }
 
 .timer-display.low-time {
@@ -222,7 +327,6 @@ body {
     }
 }
 
-/* --- Punteggi --- */
 .scores-wrapper {
     display: flex;
     justify-content: space-between;
@@ -279,7 +383,6 @@ body {
     text-shadow: 0 0 50px #fff;
 }
 
-/* --- Log Eventi --- */
 .event-log {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
@@ -288,15 +391,10 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.8rem;
-    font-weight: 500;
     font-size: 0.9rem;
 }
 
-.pulse-icon {
-    animation: blink 2s infinite;
-}
-
-/* --- Animazione Goal Overlay Esplosivo --- */
+/* --- Animazioni Goal e Overlay --- */
 .goal-overlay {
     position: fixed;
     inset: 0;
@@ -377,7 +475,6 @@ body {
     height: 45px;
     font-size: 1.2rem;
     cursor: pointer;
-    backdrop-filter: blur(10px);
     z-index: 9999;
 }
 
@@ -398,11 +495,4 @@ body {
     padding: 0.4rem 0.8rem;
     border-radius: 8px;
     cursor: pointer;
-    font-family: var(--font-ui);
-    font-size: 0.85rem;
-    transition: background 0.2s;
-}
-
-.debug-panel button:hover {
-    background: rgba(255, 255, 255, 0.2);
 }
