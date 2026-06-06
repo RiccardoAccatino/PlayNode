@@ -1,9 +1,11 @@
-package com.playnode.game_service.entity;
+package com.playnode.stats_service.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.ColumnTransformer;
 import java.time.LocalDateTime;
 
+/**
+ * Questa classe rappresenta la tabella "Partita" nel database.
+ */
 @Entity
 @Table(name = "partita")
 public class Partita {
@@ -22,11 +24,6 @@ public class Partita {
     @Column(name = "timestamp_fine")
     private LocalDateTime timestampFine;
 
-    @Column(name = "stato_sync", columnDefinition = "stato_sync_tipo")
-    @ColumnTransformer(write = "?::stato_sync_tipo")
-    private String statoSync = "Realtime"; // Valore di default
-
-    // Costruttori, Getter e Setter
     public Partita() {
     }
 
@@ -60,13 +57,5 @@ public class Partita {
 
     public void setTimestampFine(LocalDateTime timestampFine) {
         this.timestampFine = timestampFine;
-    }
-
-    public String getStatoSync() {
-        return statoSync;
-    }
-
-    public void setStatoSync(String statoSync) {
-        this.statoSync = statoSync;
     }
 }

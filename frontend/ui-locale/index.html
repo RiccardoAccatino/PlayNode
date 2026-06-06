@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayNode - Schermo Gioco</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@700;900&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="../assets/img/Logo.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="ambient-light blue-light"></div>
+    <div class="ambient-light green-light"></div>
+
+    <div id="setup-view" class="fullscreen-view">
+        <header class="setup-header">
+            <img src="../assets/img/Logo.png" alt="PlayNode Logo" class="setup-logo">
+            <h1 class="setup-title">Configurazione Tavolo</h1>
+            <p class="setup-subtitle">Seleziona la modalità di gioco per questo tablet</p>
+        </header>
+
+        <div class="cards-grid">
+            <button class="setup-card" data-id="3" data-max="9" data-timer="false">
+                <span class="card-icon">⚽</span>
+                <h4>Calciobalilla Standard</h4>
+                <p>Punti: 9 | Tempo: No</p>
+            </button>
+
+            <button class="setup-card" data-id="3" data-max="15" data-timer="false">
+                <span class="card-icon">🔥</span>
+                <h4>Calciobalilla Lungo</h4>
+                <p>Punti: 15 | Tempo: No</p>
+            </button>
+
+            <button class="setup-card" data-id="3" data-max="99" data-timer="true">
+                <span class="card-icon">⏱️</span>
+                <h4>Calciobalilla a Tempo</h4>
+                <p>Punti: No | Tempo: 5 Min</p>
+            </button>
+
+            <button class="setup-card" data-id="5" data-max="13" data-timer="false">
+                <span class="card-icon">🎳</span>
+                <h4>Bocce Elettroniche</h4>
+                <p>Punti: 13 | Tempo: No</p>
+            </button>
+        </div>
+    </div>
+
+    <div id="game-view" class="fullscreen-view" style="display: none;">
+
+        <button id="back-to-setup" class="back-btn">
+            🔙 Cambia Tavolo
+        </button>
+
+        <div id="connection-status" class="connection-badge offline" aria-label="Stato connessione Edge">
+            <span class="dot"></span> <span class="text">Edge Disconnesso</span>
+        </div>
+
+        <div>
+            <header class="minimal-brand">
+                <img src="../assets/img/Logo.png" alt="PlayNode Logo" class="brand-logo">
+                <span class="brand-name">PLAYNODE</span>
+            </header>
+        </div>
+
+        <main class="glass-container">
+            <header class="header">
+                <h1 id="game-status" class="status-text" aria-live="polite">In attesa di giocatori...</h1>
+            </header>
+
+            <section id="game-elements" class="game-board">
+                <div class="timer-wrapper">
+                    <div id="timer" class="timer-display" aria-label="Timer partita">05:00</div>
+                </div>
+
+                <div class="scores-wrapper" aria-label="Punteggi">
+                    <div class="score-card team1">
+                        <h2 class="team-label">Squadra 1</h2>
+                        <div class="score-display" id="score1" aria-label="Punteggio Squadra 1">0</div>
+                    </div>
+                    <div class="divider">VS</div>
+                    <div class="score-card team2">
+                        <h2 class="team-label">Squadra 2</h2>
+                        <div class="score-display" id="score2" aria-label="Punteggio Squadra 2">0</div>
+                    </div>
+                </div>
+
+                <div id="event-log" class="event-log" aria-live="assertive">
+                    <span class="pulse-icon">⚡</span> <span id="log-text">Pronto per iniziare...</span>
+                </div>
+            </section>
+
+            <aside id="debug-panel" class="debug-panel" aria-label="Pannello di debug">
+                <button id="debug-conn">🔌 Toggle Edge</button>
+                <button id="debug-goal1">⚽ Goal Sq. 1</button>
+                <button id="debug-goal2">⚽ Goal Sq. 2</button>
+                <button id="debug-reset">🔄 Reset</button>
+            </aside>
+        </main>
+
+        <div id="goal-overlay" class="goal-overlay" aria-hidden="true">
+            <div class="goal-text">GOAL!</div>
+        </div>
+
+        <button id="debug-toggle" class="debug-toggle" aria-label="Attiva debug">🛠️</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

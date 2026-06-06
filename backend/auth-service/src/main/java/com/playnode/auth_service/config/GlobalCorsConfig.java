@@ -21,7 +21,7 @@ public class GlobalCorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // Permette l'invio del token JWT
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(false); // Per il test locale
 
         // Accetta richieste da qualsiasi porta (VS Code 5500, IntelliJ 63342, ecc.)
         config.addAllowedOriginPattern("*");
