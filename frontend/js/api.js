@@ -429,31 +429,6 @@ export async function getSensoriByTipologia(tipologiaId) {
     }
 }
 
-/** Monitor endpoints */
-export async function getMonitorSummary() {
-    try {
-        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/summary`);
-        if (!res.ok) return null;
-        return await res.json();
-    } catch (e) { console.error('getMonitorSummary', e); return null; }
-}
-
-export async function getMonitorLatencies() {
-    try {
-        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/latencies`);
-        if (!res.ok) return [];
-        return await res.json();
-    } catch (e) { console.error('getMonitorLatencies', e); return []; }
-}
-
-export async function getMonitorLogs() {
-    try {
-        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/logs`);
-        if (!res.ok) return [];
-        return await res.json();
-    } catch (e) { console.error('getMonitorLogs', e); return []; }
-}
-
 /**
  * Crea un nuovo sensore.
  * @param {Object} sensoreData  - { tipologiaId, nomeSensore, tipo, descrizione, unitaMisura, valoreMin, valoreMax, attivo }
@@ -510,5 +485,30 @@ export async function toggleSensore(id) {
     } catch {
         return null;
     }
+}
+
+/** Monitor endpoints */
+export async function getMonitorSummary() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/summary`);
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) { console.error('getMonitorSummary', e); return null; }
+}
+
+export async function getMonitorLatencies() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/latencies`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { console.error('getMonitorLatencies', e); return []; }
+}
+
+export async function getMonitorLogs() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/logs`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { console.error('getMonitorLogs', e); return []; }
 }
 

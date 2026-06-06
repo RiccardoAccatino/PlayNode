@@ -24,47 +24,41 @@ const INPUT_STYLE = `
 `;
 
 // ─── OVERVIEW ────────────────────────────────────────────────────────────────
-export function platformOverview() {
+export async function platformOverview() {
+  // Fetch counts from backend; fallback to mock if unavailable
+  const [tipologie, locali, partite] = await Promise.all([
+    Api.getAllTipologieGioco().catch(() => []),
+    Api.getAllLocali().catch(() => []),
+    Api.getAllPartite().catch(() => [])
+  ]);
+
+  const utentiTotali = 'N/D';
+  const localiTot = locali.length;
+  const partiteTot = Array.isArray(partite) ? partite.length : 'N/D';
+  const uptime = '99.8%';
+
+  // build small list of locales (show up to 5)
+  const localiPreview = (locali.slice(0, 5).map(l => ({ name: l.nome || l.nomeLocale || 'Locale', status: l.online ? 'online' : 'online', games: l.giochi || 2, lat: l.lat || '—' })));
+
   return `
     <div class="pg-title">Overview Globale</div>
     <div class="pg-sub">Stato dell'intera piattaforma Connected Games</div>
     <div class="stats-row">
-      <div class="scard">
-        <div class="scard-lbl">Utenti totali</div>
-        <div class="scard-val">1.284</div>
-        <div class="scard-delta up">+47 questa settimana</div>
-      </div>
-      <div class="scard">
-        <div class="scard-lbl">Locali attivi</div>
-        <div class="scard-val">23</div>
-        <div class="scard-delta down">1 offline</div>
-      </div>
-      <div class="scard">
-        <div class="scard-lbl">Partite totali</div>
-        <div class="scard-val">8.4k</div>
-        <div class="scard-delta up">+142 oggi</div>
-      </div>
-      <div class="scard">
-        <div class="scard-lbl">Uptime sistema</div>
-        <div class="scard-val" style="color:var(--grn)">99.8%</div>
-        <div class="scard-delta up">ultimi 30gg</div>
-      </div>
+      <div class="scard"><div class="scard-lbl">Tipologie gioco</div><div class="scard-val">${tipologie.length}</div><div class="scard-delta up">aggiornato</div></div>
+      <div class="scard"><div class="scard-lbl">Locali attivi</div><div class="scard-val">${localiTot}</div><div class="scard-delta down">—</div></div>
+      <div class="scard"><div class="scard-lbl">Partite totali</div><div class="scard-val">${partiteTot}</div><div class="scard-delta up">oggi</div></div>
+      <div class="scard"><div class="scard-lbl">Uptime sistema</div><div class="scard-val" style="color:var(--grn)">${uptime}</div><div class="scard-delta up">ultimi 30gg</div></div>
     </div>
     <div class="row2">
       <div class="card">
         <div class="card-hd">Stato locali</div>
-        ${[
-      { name: 'Bar Belvedere — Roma', status: 'online', games: 4, lat: '12ms' },
-      { name: 'Circolo Sportivo Milano', status: 'online', games: 6, lat: '8ms' },
-      { name: 'Sala Giochi Torino', status: 'sync', games: 3, lat: '34ms' },
-      { name: 'Bar Sport Genova', status: 'offline', games: 2, lat: '—' },
-      { name: 'Casa di Mario Rossi', status: 'online', games: 2, lat: '22ms' },
-    ].map(l => `
+        ${localiPreview.map(l => `
           <div class="list-row">
             <div class="dot ${l.status === 'online' ? 'd-grn' : l.status === 'sync' ? 'd-amb' : 'd-red'}"></div>
             <div style="flex:1"><div class="rname">${l.name}</div><div class="rmeta">${l.games} giochi · latenza ${l.lat}</div></div>
             <span class="badge ${l.status === 'online' ? 'b-grn' : l.status === 'sync' ? 'b-amb' : 'b-red'}">${l.status}</span>
-          </div>`).join('')}
+          </div>
+        `).join('')}
       </div>
       <div class="card">
         <div class="card-hd">Microservizi</div>
@@ -74,14 +68,15 @@ export function platformOverview() {
       { name: 'stats-service', port: 8082, status: 'up' },
       { name: 'tournament-service', port: 8083, status: 'up' },
       { name: 'mqtt-broker', port: 1883, status: 'up' },
-      { name: 'edge-sync-service', port: 8086, status: 'degraded' },
+      { name: 'edge-sync-service', port: 8086, status: 'degraded' }
     ].map(s => `
           <div class="list-row">
             <div class="dot ${s.status === 'up' ? 'd-grn' : 'd-amb'}"></div>
             <div style="flex:1;font-family:monospace;font-size:11px;color:var(--acc2)">${s.name}</div>
             <div style="font-size:10px;color:var(--txt3)">:${s.port}</div>
             <span class="badge ${s.status === 'up' ? 'b-grn' : 'b-amb'}">${s.status}</span>
-          </div>`).join('')}
+          </div>
+        `).join('')}
       </div>
     </div>`;
 }
@@ -771,31 +766,35 @@ export async function platformTournaments() {
 
 // ─── MONITOR ─────────────────────────────────────────────────────────────────
 export async function platformMonitor() {
-  const summary = await Api.getMonitorSummary();
-  const lat = await Api.getMonitorLatencies();
-  const logs = await Api.getMonitorLogs();
+  const summary = await Api.getMonitorSummary().catch(() => null);
+  const lat = await Api.getMonitorLatencies().catch(() => []);
+  const logs = await Api.getMonitorLogs().catch(() => []);
 
-  const cpu = summary ? `${summary.cpuPercent}%` : '—';
-  const ramUsed = summary && summary.ramUsedBytes ? (Math.round(summary.ramUsedBytes / (1024 * 1024) * 10) / 10) + 'MB' : '—';
-  const ramTotal = summary && summary.ramTotalBytes ? (Math.round(summary.ramTotalBytes / (1024 * 1024) * 10) / 10) + 'MB' : '—';
+  const apis = summary ? summary.apisCount || 0 : 0;
+  const services = summary ? summary.servicesCount || 0 : 0;
+  const gamesInstalled = summary ? summary.gamesInstalled || 0 : 0;
+  const livePartite = summary ? summary.livePartite || 0 : 0;
   const reqpm = summary ? summary.reqPerMin || 0 : 0;
-  const mqttpm = summary ? summary.mqttPerMin || 0 : 0;
 
   return `
     <div class="pg-title">Monitor Sistema</div>
-    <div class="pg-sub">Performance e salute dei microservizi</div>
+    <div class="pg-sub">Statistiche API e stato del sistema</div>
     <div class="stats-row">
-      <div class="scard"><div class="scard-lbl">CPU media</div><div class="scard-val">${cpu}</div><div class="scard-delta up">normale</div></div>
-      <div class="scard"><div class="scard-lbl">RAM usata</div><div class="scard-val">${ramUsed}</div><div class="scard-delta neutral">su ${ramTotal}</div></div>
-      <div class="scard"><div class="scard-lbl">Req/min API</div><div class="scard-val">${reqpm}</div><div class="scard-delta up">picco 18:00</div></div>
-      <div class="scard"><div class="scard-lbl">Msg MQTT/min</div><div class="scard-val">${mqttpm}</div><div class="scard-delta neutral">stabile</div></div>
+      <div class="scard"><div class="scard-lbl">API endpoints</div><div class="scard-val">${apis}</div><div class="scard-delta up">monitor</div></div>
+      <div class="scard"><div class="scard-lbl">Servizi</div><div class="scard-val">${services}</div><div class="scard-delta neutral">registrati</div></div>
+      <div class="scard"><div class="scard-lbl">Giochi installati</div><div class="scard-val">${gamesInstalled}</div><div class="scard-delta up">installati</div></div>
+      <div class="scard"><div class="scard-lbl">Partite live</div><div class="scard-val">${livePartite}</div><div class="scard-delta neutral">in corso</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">Req/min (stima)</div>
+      <div style="padding:14px;font-family:monospace;color:var(--acc2)">${reqpm} req/min</div>
     </div>
     <div class="card">
       <div class="card-hd">Latenza API per endpoint</div>
       ${lat.map(e => `
         <div class="skill-row">
           <div class="skill-name" style="width:200px;font-family:monospace;font-size:10px;color:var(--acc2)">${e.ep}</div>
-          <div class="skill-bar"><div class="skill-fill" style="width:${Math.min(e.ms / 300 * 100, 100)}%;background:${e.ok ? 'var(--grn)' : 'var(--red)'}"></div></div>
+          <div class="skill-bar"><div class="skill-fill" style="width:${Math.min((e.ms || 0) / 300 * 100, 100)}%;background:${e.ok ? 'var(--grn)' : 'var(--red)'}"></div></div>
           <div class="skill-pct" style="width:40px">${e.ms}ms</div>
         </div>
       `).join('')}
