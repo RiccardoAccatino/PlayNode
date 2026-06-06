@@ -5,7 +5,7 @@ const PlayNodeUI = (function () {
     // CONFIGURAZIONE
     // ==========================================
     const BASE_URL = 'http://localhost:8080';
-    const POLLING_INTERVAL_MS = 2000;
+    const POLLING_INTERVAL_MS = 2000; //Ogni 2 secondi chiede al backend gli eventi IoT della partita in corso
 
     // Valori costanti per i goal prodotti dall'Edge/Bridge IoT
     const GOAL_TEAM_1 = 'Goal: Squadra 1';
@@ -17,7 +17,7 @@ const PlayNodeUI = (function () {
     const urlParams = new URLSearchParams(window.location.search);
     const idGiocoInstallato = parseInt(urlParams.get('idGioco'), 10) || 1;
     const maxScore = parseInt(urlParams.get('maxScore'), 10) || 9;
-    const showTimer = urlParams.get('showTimer') === 'true'; // default false
+    const showTimer = urlParams.get('showTimer') === 'true';
 
     // Soglia per il flash "low-time" rosso (solo quando showTimer è true)
     const LOW_TIME_THRESHOLD = 30;
@@ -400,7 +400,7 @@ const PlayNodeUI = (function () {
     }
 
     // ==========================================
-    // GOAL MANUALE (debug)
+    // GOAL MANUALE (debug - SIMULA IL SENSORE IoT)
     // ==========================================
     async function manualGoal(team) {
         const id = state.idPartitaCorrente;
@@ -413,11 +413,23 @@ const PlayNodeUI = (function () {
             return;
         }
         try {
-            await apiPut(`/api/partite/${id}/punteggio?idSquadra=${team}`);
-            // Il polling rileverà il nuovo evento e aggiornerà la UI
+            const stringaGoal = team === 1 ? 'Goal: Squadra 1' : 'Goal: Squadra 2';
+            const valoreSicuro = encodeURIComponent(stringaGoal);
+
+            const res = await fetch(`${BASE_URL}/api/iot/evento?idPartita=${id}&valore=${valoreSicuro}&idSensore=${team}`, {
+                method: 'POST'
+            });
+
+            if (!res.ok) {
+                throw new Error(`Errore Server: ${res.status}`);
+            }
+
+            logEvent(`Inviato evento finto sensore: ${stringaGoal}`);
+            await pollEvents();
+
         } catch (err) {
             console.error('[manualGoal] errore:', err);
-            logEvent('Errore registrazione goal.');
+            logEvent('Errore invio evento sensore.');
         }
     }
 
