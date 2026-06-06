@@ -332,3 +332,76 @@ export async function avviaPartita(idGiocoInstallato) {
     }
 }
 
+/**
+ * Termina/forza la chiusura di una partita in corso.
+ * Endpoint backend: PUT /api/partite/{idPartita}/termina
+ *
+ * @param {string|number} idPartita - ID della partita da terminare
+ * @returns {Promise<Object|null>} PartitaDTO aggiornata (ora TERMINATA) o null
+ */
+export async function terminaPartita(idPartita) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/partite/${idPartita}/termina`, {
+            method: 'PUT'
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Errore terminazione partita:", error);
+        throw error;
+    }
+}
+
+/**
+ * Recupera gli eventi IoT (e quindi il punteggio live) di una partita.
+ * Usato dalla UI per leggere i goal/punti generati dai sensori Edge.
+ * Endpoint backend: GET /api/iot/partita/{idPartita}
+ *
+ * @param {string|number} idPartita - ID della partita
+ * @returns {Promise<Array>} Lista di EventoIot [{id, idPartita, idSensore, valore, timestamp, ...}]
+ */
+export async function getEventiPartita(idPartita) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/iot/partita/${idPartita}`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.error("Errore fetch eventi partita:", error);
+        return [];
+    }
+}
+
+/**
+ * Ottiene l'elenco di tutti i giochi fisici (tavoli) installati sulla piattaforma.
+ * Per ottenere questo dato facciamo il fan-out su tutti i locali e aggreghiamo i giochi.
+ * Se il backend non espone direttamente un endpoint per tutti i giochi,
+ * possiamo comunque usarlo come fallback a livello di singolo locale.
+ *
+ * @returns {Promise<Array>} Array di GiocoInstallatoDTO aggregati da tutti i locali
+ */
+export async function getAllGiochiInstallati() {
+    try {
+        const locali = await getAllLocali();
+        if (!locali || locali.length === 0) return [];
+
+        // Chiamata parallela per ogni locale (fan-out)
+        const promises = locali.map(l => getGiochiByLocale(l.id));
+        const results = await Promise.all(promises);
+
+        // Flatten + annotazione del locale di appartenenza
+        const flat = [];
+        results.forEach((giochi, idx) => {
+            const locale = locali[idx];
+            if (Array.isArray(giochi)) {
+                giochi.forEach(g => flat.push({ ...g, localeNome: locale.nome, localeId: locale.id }));
+            }
+        });
+        return flat;
+    } catch (error) {
+        console.error("Errore fetch giochi installati globali:", error);
+        return [];
+    }
+}
+

@@ -1,10 +1,10 @@
 /**
- * Importiamo le funzioni che disegnano l'interfaccia di login e registrazione.
- * Presumo che i tuoi file login.js e register.js esportino le funzioni con questi nomi.
+ * Importiamo le funzioni che disegnano l'interfaccia di login, registrazione e dashboard.
  */
 import { renderLogin } from '../views/login.js';
 import { renderRegister } from '../views/register.js';
 import { renderDashboard } from '../views/dashboard.js';
+import { adminGameDashboard, disposeAdminGame } from '../views/admin-game.js';
 
 /**
  * L'ID del contenitore principale all'interno di index.html dove verrà iniettato
@@ -12,54 +12,57 @@ import { renderDashboard } from '../views/dashboard.js';
  * @type {string}
  */
 const APP_CONTAINER_ID = 'app-root';
+let currentView = null;
 
 /**
  * Funzione di navigazione principale dell'applicazione.
  * In base al nome della vista richiesta, chiama la funzione corretta per disegnare quella schermata.
  *
- * @param {string} viewName - Il nome della pagina da caricare (es. 'login', 'register', 'dashboard').
- * @returns {void}
+ * @param {string} viewName - Il nome della pagina da caricare (es. 'login', 'register', 'dashboard', 'admin-game').
  */
 export function navigateTo(viewName) {
-    // 1. Troviamo il contenitore principale nel nostro HTML
     const container = document.getElementById(APP_CONTAINER_ID);
 
-    // 2. Controllo di sicurezza: se il contenitore non c'è, c'è un errore grave!
     if (!container) {
         console.error(`ERRORE: Contenitore con id "${APP_CONTAINER_ID}" non trovato nel DOM.`);
         return;
     }
 
-    // 3. Svuotiamo il contenitore prima di caricarci dentro la nuova pagina
+    if (currentView === 'admin-game' && viewName !== 'admin-game') {
+        if (typeof disposeAdminGame === 'function') disposeAdminGame();
+    }
+
+    currentView = viewName;
     container.innerHTML = '';
 
-    // 4. Carichiamo la vista richiesta
+    // Carichiamo la vista richiesta
     if (viewName === 'login') {
-        // Chiamiamo renderLogin.
-        // Notare che passiamo 'handleAuthSuccess' come argomento (callback).
-        // renderLogin la chiamerà quando il login ha successo.
         renderLogin(handleAuthSuccess);
     }
     else if (viewName === 'register') {
-        // Stessa cosa per la registrazione.
         renderRegister(handleAuthSuccess);
     }
-    // Nota: Il dashboard viene gestito tramite handleAuthSuccess dopo il login/registrazione
+    else if (viewName === 'admin-game') {
+        container.innerHTML = adminGameDashboard();
+
+        const sidebar = document.querySelector('.sidebar');
+        const topbar = document.querySelector('.topbar');
+        if (sidebar) sidebar.style.display = 'none';
+        if (topbar) topbar.style.display = 'none';
+    }
 }
 
 function decodeToken(token) {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 
     const payload = JSON.parse(jsonPayload);
-
-    // Ritorna l'oggetto coerente che la tua dashboard si aspetta
     return {
         id: payload.userId,
-        name: payload.username, // Prende il nome dal token generato nel LoginService
+        name: payload.username,
         initials: payload.username.substring(0, 2).toUpperCase(),
         role: payload.role
     };
@@ -71,9 +74,7 @@ function decodeToken(token) {
  * Quei moduli la invocheranno (con i dati dell'utente) SOLO QUANDO
  * il login o la registrazione vanno a buon fine.
  *
- * @param {Object} user - L'oggetto utente restituito dal login/registrazione.
- *                        Deve contenere almeno le proprietà: id, name, initials, role.
- * @returns {void}
+ * @param {Object} userData - L'oggetto utente restituito dal login/registrazione.
  */
 function handleAuthSuccess(userData) {
     // 1. Salva il token nel localStorage
@@ -82,7 +83,7 @@ function handleAuthSuccess(userData) {
     // 2. Decodifica il token appena ricevuto per ottenere i dati "ufficiali"
     const user = decodeToken(userData.token);
 
-    // 3. Renderizza la dashboard
+    // 3. Tutti gli utenti vanno direttamente alla dashboard principale
     renderDashboard(user);
 }
 
@@ -98,7 +99,7 @@ function parseJwt(token) {
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         return JSON.parse(jsonPayload);
@@ -113,30 +114,24 @@ function parseJwt(token) {
  * @returns {void}
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cerchiamo se esiste già un token salvato
     const token = localStorage.getItem('token');
 
     if (token) {
-        // 2. Decodifichiamo il token
         const payload = parseJwt(token);
 
-        // 3. Controlliamo se il token è valido e non è scaduto
-        // payload.exp è in secondi, Date.now() è in millisecondi
         if (payload && (payload.exp * 1000) > Date.now()) {
             console.log("Bentornato! Sessione recuperata con successo.");
 
-            // 4. Ricostruiamo l'oggetto utente usando i dati scritti dentro il JWT!
             const user = {
                 id: payload.userId,
-                // Se il nome dal token è nullo, prova a estrarlo dall'email o usa un default
                 name: payload.username || 'Giocatore',
                 initials: (payload.username || 'GU').substring(0, 2).toUpperCase(),
                 role: payload.role || 'player'
             };
 
-            // 5. Lo mandiamo dritto alla dashboard saltando il login
+            // Tutti gli utenti con sessione valida vanno alla dashboard principale
             renderDashboard(user);
-            return; // Termina qui la funzione
+            return;
         } else {
             console.warn("Il token è scaduto. Pulizia in corso...");
             localStorage.clear();
