@@ -15,12 +15,35 @@ public class GiocoFisico {
     @Column(name = "locale_id")
     private Long localeId;
 
+    // riferimento alla tipologia di gioco (colonna tipologia_gioco_id nel DB)
+    @Column(name = "tipologia_gioco_id")
+    private Long tipologiaGiocoId;
+
     // Costruttori, Getter e Setter
-    public GiocoFisico() {}
+    public GiocoFisico() {
+    }
 
-    public Long getIdGiocoFisico() { return idGiocoFisico; }
-    public void setIdGiocoFisico(Long idGiocoFisico) { this.idGiocoFisico = idGiocoFisico; }
+    public Long getIdGiocoFisico() {
+        return idGiocoFisico;
+    }
 
-    public Long getLocaleId() { return localeId; }
-    public void setLocaleId(Long localeId) { this.localeId = localeId; }
+    public void setIdGiocoFisico(Long idGiocoFisico) {
+        this.idGiocoFisico = idGiocoFisico;
+    }
+
+    public Long getLocaleId() {
+        return localeId;
+    }
+
+    public void setLocaleId(Long localeId) {
+        this.localeId = localeId;
+    }
+
+    public Long getTipologiaGiocoId() {
+        return tipologiaGiocoId;
+    }
+
+    public void setTipologiaGiocoId(Long tipologiaGiocoId) {
+        this.tipologiaGiocoId = tipologiaGiocoId;
+    }
 }

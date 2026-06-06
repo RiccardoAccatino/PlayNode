@@ -299,18 +299,25 @@ export async function getAllTipologieGioco() {
     }
 }
 
+
 export async function createTipologiaGioco(datiGioco) {
     try {
         const response = await fetchWithAuth(`${GAME_API_URL}/tipologie-gioco`, {
             method: 'POST',
             body: JSON.stringify(datiGioco)
         });
-        return response.ok;
+        if (!response.ok) {
+            const errBody = await response.text().catch(() => '');
+            console.error('createTipologiaGioco error:', response.status, errBody);
+            return false;
+        }
+        return true;
     } catch (error) {
-        //console.error("Errore salvataggio:", error);
+        console.error('Errore salvataggio tipologia:', error);
         return false;
     }
 }
+
 
 /**
  * Avvia una nuova partita per un gioco installato (nel locale).
@@ -402,6 +409,106 @@ export async function getAllGiochiInstallati() {
     } catch (error) {
         console.error("Errore fetch giochi installati globali:", error);
         return [];
+    }
+}
+
+
+/**
+ * Recupera tutti i sensori configurati per una tipologia di gioco.
+ * @param {number} tipologiaId
+ * @returns {Promise<Array>}
+ */
+export async function getSensoriByTipologia(tipologiaId) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/sensori/tipologia/${tipologiaId}`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.error('Errore fetch sensori:', error);
+        return [];
+    }
+}
+
+/** Monitor endpoints */
+export async function getMonitorSummary() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/summary`);
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) { console.error('getMonitorSummary', e); return null; }
+}
+
+export async function getMonitorLatencies() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/latencies`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { console.error('getMonitorLatencies', e); return []; }
+}
+
+export async function getMonitorLogs() {
+    try {
+        const res = await fetchWithAuth(`${GAME_API_URL}/monitor/logs`);
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { console.error('getMonitorLogs', e); return []; }
+}
+
+/**
+ * Crea un nuovo sensore.
+ * @param {Object} sensoreData  - { tipologiaId, nomeSensore, tipo, descrizione, unitaMisura, valoreMin, valoreMax, attivo }
+ * @returns {Promise<Object>}
+ */
+export async function createSensore(sensoreData) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/sensori`, {
+        method: 'POST',
+        body: JSON.stringify(sensoreData)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+}
+
+/**
+ * Aggiorna un sensore esistente.
+ * @param {number} id
+ * @param {Object} sensoreData
+ * @returns {Promise<Object>}
+ */
+export async function updateSensore(id, sensoreData) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/sensori/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(sensoreData)
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+}
+
+/**
+ * Elimina un sensore.
+ * @param {number} id
+ * @returns {Promise<boolean>}
+ */
+export async function deleteSensore(id) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/sensori/${id}`, { method: 'DELETE' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Abilita / disabilita un sensore (toggle).
+ * @param {number} id
+ * @returns {Promise<Object|null>}
+ */
+export async function toggleSensore(id) {
+    try {
+        const response = await fetchWithAuth(`${GAME_API_URL}/sensori/${id}/toggle`, { method: 'PATCH' });
+        if (!response.ok) return null;
+        return await response.json();
+    } catch {
+        return null;
     }
 }
 
