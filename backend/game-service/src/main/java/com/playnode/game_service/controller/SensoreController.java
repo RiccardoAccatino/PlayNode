@@ -55,12 +55,26 @@ public class SensoreController {
         return ResponseEntity.created(location).body(dto);
     }
 
+    @GetMapping("/gioco/{giocoFisicoId}")
+    public ResponseEntity<java.util.List<SensoreDTO>> getSensoriByGioco(@PathVariable Long giocoFisicoId) {
+        if (giocoFisicoId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        java.util.List<Sensore> sens = sensoreRepository.findByGiocoFisicoIdGiocoFisico(giocoFisicoId);
+        return ResponseEntity.ok(mapSensoriToDto(sens));
+    }
+
     @GetMapping("/tipologia/{tipologiaId}")
     public ResponseEntity<java.util.List<SensoreDTO>> getSensoriByTipologia(@PathVariable Long tipologiaId) {
         if (tipologiaId == null)
             return ResponseEntity.badRequest().build();
 
         java.util.List<Sensore> sens = sensoreRepository.findByGiocoFisicoTipologiaGiocoId(tipologiaId);
+        return ResponseEntity.ok(mapSensoriToDto(sens));
+    }
+
+    private java.util.List<SensoreDTO> mapSensoriToDto(java.util.List<Sensore> sens) {
         java.util.List<SensoreDTO> out = new java.util.ArrayList<>();
         for (Sensore s : sens) {
             SensoreDTO d = new SensoreDTO();
@@ -71,9 +85,9 @@ public class SensoreController {
             }
             d.setTipo(s.getTipo());
             d.setPosizione(s.getPosizione());
-            // map DB-limited entity to frontend-friendly fields
             d.setNomeSensore(
-                    s.getTipo() != null ? s.getTipo() : (s.getPosizione() != null ? s.getPosizione() : "Sensore"));
+                    s.getPosizione() != null ? s.getPosizione()
+                            : (s.getTipo() != null ? s.getTipo() : "Sensore"));
             d.setDescrizione(null);
             d.setUnitaMisura(null);
             d.setValoreMin(null);
@@ -81,6 +95,6 @@ public class SensoreController {
             d.setAttivo(true);
             out.add(d);
         }
-        return ResponseEntity.ok(out);
+        return out;
     }
 }

@@ -8,6 +8,7 @@ import com.playnode.game_service.repository.PartitaRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,8 +22,8 @@ public class PartitaService {
 
     // 2. Aggiunto al costruttore
     public PartitaService(PartitaRepository partitaRepository,
-                          PartecipaRepository partecipaRepository,
-                          MqttPublisherService mqttPublisherService) {
+            PartecipaRepository partecipaRepository,
+            MqttPublisherService mqttPublisherService) {
         this.partitaRepository = partitaRepository;
         this.partecipaRepository = partecipaRepository;
         this.mqttPublisherService = mqttPublisherService;
@@ -32,7 +33,7 @@ public class PartitaService {
         List<Partita> partiteDalDb = partitaRepository.findAll();
         List<PartitaDTO> dtos = new ArrayList<>();
 
-        for(Partita p : partiteDalDb) {
+        for (Partita p : partiteDalDb) {
             dtos.add(convertiInDTO(p));
         }
         return dtos;
@@ -99,16 +100,36 @@ public class PartitaService {
         return null;
     }
 
+    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
     private PartitaDTO convertiInDTO(Partita partita) {
         PartitaDTO dto = new PartitaDTO();
         dto.setId(partita.getIdPartita());
         dto.setIdGiocoInstallato(partita.getGiocoFisicoId());
 
+        if (partita.getTimestampInizio() != null) {
+            dto.setTimestampInizio(partita.getTimestampInizio().format(ISO_FORMATTER));
+        }
         if (partita.getTimestampFine() != null) {
+            dto.setTimestampFine(partita.getTimestampFine().format(ISO_FORMATTER));
             dto.setStato("TERMINATA");
         } else {
             dto.setStato("IN_CORSO");
         }
+
+        List<Partecipa> partecipazioni = partecipaRepository
+                .findByPartitaIdOrderByIdPartecipaAsc(partita.getIdPartita());
+        if (!partecipazioni.isEmpty()) {
+            dto.setPunteggio1(partecipazioni.get(0).getPunteggioFinale() != null
+                    ? partecipazioni.get(0).getPunteggioFinale()
+                    : 0);
+            if (partecipazioni.size() > 1) {
+                dto.setPunteggio2(partecipazioni.get(1).getPunteggioFinale() != null
+                        ? partecipazioni.get(1).getPunteggioFinale()
+                        : 0);
+            }
+        }
+
         return dto;
     }
 }

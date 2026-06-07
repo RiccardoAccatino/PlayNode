@@ -1,63 +1,60 @@
 /**
  * file: admin-game.js
- * Pagine e componenti per gli ADMIN GIOCO.
- *
- * Questa vista è dedicata alla gestione operativa dei GIOCHI FISICI (tavoli) e
- * delle PARTITE LIVE: monitor real-time, forzatura chiusura, storico recente.
- *
- * Logica completamente dinamica:
- * 1. recupera le tipologie di gioco dal DB per configurazioni e icone
- * 2. recupera la lista dei locali
- * 3. fan-out sui locali per ottenere tutti i giochi installati
- * 4. recupera tutte le partite (live + concluse)
- * 5. per ogni partita live, calcola punteggi aggregando eventi IoT (goal/punti)
+ * Vista Admin Gioco — monitor real-time tavoli e partite live.
+ * Tutti i dati provengono dalle API del game-service
  */
 
 import * as Api from '../js/api.js';
 
-/* =====================================================
- * COSTANTI DI CONFIGURAZIONE (Parametri di runtime)
- * ===================================================== */
-const REFRESH_MS = 10_000;          // Refresh automatico dei dati
-const MAX_STORICO = 12;             // Quante partite concluse mostrare
-const MAX_EVENTI_PER_PARTITA = 200; // Cap eventi per evitare memory-bomb
+const REFRESH_MS = 10_000;
+const MAX_STORICO = 12;
+const MAX_EVENTI_PER_PARTITA = 200;
 
-/* =====================================================
- * STATO INTERNO DEL MODULO (Caricato dinamicamente dal DB)
- * ===================================================== */
 const state = {
     locali: [],
-    giochi: [],          // Tutti i giochi fisici della piattaforma
-    partite: [],         // Tutte le partite (live + concluse)
-    tipologie: [],       // Tipologie di gioco (caricate dal DB con le relative icone)
-    eventiCache: {},     // idPartita -> [eventi]
+    giochi: [],
+    partite: [],
+    tipologie: [],
+    sensoriCache: {},
+    eventiCache: {},
     refreshTimer: null,
     lastUpdate: null,
     erroriRete: 0
 };
 
 /* =====================================================
- * UTILITIES
+ * ACCESSORI DTO 
  * ===================================================== */
 
+function idPartita(p) {
+    return p?.id;
+}
+
+function idGioco(g) {
+    return g?.id;
+}
+
+function nomeTipologia(tipologiaId, fallback) {
+    const t = state.tipologie.find(x => x.id === tipologiaId);
+    return t?.nome || fallback || 'Gioco';
+}
+
 /**
- * Restituisce l'icona emoji cercando dinamicamente nelle tipologie caricate dal DB.
+ * Icona derivata dal nome tipologia caricato dal DB (nessun catalogo statico).
  */
-function iconaGioco(tipoGioco) {
-    if (!tipoGioco || !state.tipologie || state.tipologie.length === 0) return '🎮';
+function iconaGioco(tipoGioco, tipologiaId) {
+    const nome = tipologiaId
+        ? nomeTipologia(tipologiaId, tipoGioco)
+        : (tipoGioco || '');
+    const n = String(nome).toLowerCase();
 
-    const tTarget = String(tipoGioco).toLowerCase();
-
-    // Cerca la corrispondenza esatta o parziale nel catalogo tipologie del DB
-    const tipologiaTrovata = state.tipologie.find(t => {
-        const nomeTipologia = String(t.nome || t.nomeTipologiaGioco || '').toLowerCase();
-        return tTarget.includes(nomeTipologia) || nomeTipologia.includes(tTarget);
-    });
-
-    // Restituisce l'icona salvata sul database (supporta i campi icona o emoji)
-    if (tipologiaTrovata) {
-        return tipologiaTrovata.icona || tipologiaTrovata.emoji || '🎮';
-    }
+    if (n.includes('calciobalilla') || n.includes('biliardino') || n.includes('calcio')) return '⚽';
+    if (n.includes('bocce') || n.includes('boccia')) return '🎯';
+    if (n.includes('frecc')) return '🎯';
+    if (n.includes('bowling')) return '🎳';
+    if (n.includes('ping') || n.includes('tennis')) return '🏓';
+    if (n.includes('basket')) return '🏀';
+    if (n.includes('dardo')) return '🎯';
 
     return '🎮';
 }
@@ -117,12 +114,21 @@ function badgeStatoPartita(stato) {
 }
 
 /**
- * Calcola i punteggi live di una partita aggregando gli eventi IoT ricevuti.
+ * Punteggi: priorità ai campi PartitaDTO (punteggio1/punteggio2 dal DB),
+ * fallback su aggregazione eventi IoT con mapping sensore → squadra.
  */
-function calcolaPunteggi(partita, eventi) {
-    if (typeof partita.punteggio1 === 'number' && typeof partita.punteggio2 === 'number'
-        && (partita.punteggio1 > 0 || partita.punteggio2 > 0)) {
+function calcolaPunteggi(partita, eventi, sensoriGioco) {
+    const hasDbScore = Number.isFinite(partita.punteggio1) && Number.isFinite(partita.punteggio2)
+        && (partita.punteggio1 > 0 || partita.punteggio2 > 0);
+    if (hasDbScore) {
         return { p1: partita.punteggio1, p2: partita.punteggio2, daEventi: false };
+    }
+
+    const sensorMap = {};
+    if (Array.isArray(sensoriGioco)) {
+        for (const s of sensoriGioco) {
+            if (s.id != null) sensorMap[s.id] = s.posizione || s.nomeSensore || '';
+        }
     }
 
     let p1 = 0, p2 = 0;
@@ -130,9 +136,13 @@ function calcolaPunteggi(partita, eventi) {
         for (const e of eventi) {
             const v = String(e.valore || '').toLowerCase();
             if (!v.includes('goal') && !v.includes('punto') && !v.includes('+1')) continue;
-            const sensId = Number(e.idSensore);
-            if (!Number.isFinite(sensId)) continue;
-            if (sensId % 2 === 0) p1 += 1; else p2 += 1;
+
+            const pos = String(sensorMap[e.sensoreId ?? e.idSensore] || '').toLowerCase();
+            if (pos.includes('squadra 1') || pos.includes('porta 1') || v.includes('squadra 1')) {
+                p1 += 1;
+            } else if (pos.includes('squadra 2') || pos.includes('porta 2') || v.includes('squadra 2')) {
+                p2 += 1;
+            }
         }
     }
     return { p1, p2, daEventi: true };
@@ -180,60 +190,108 @@ function setConnectionError(msg) {
             banner.className = 'connection-banner';
             root.prepend(banner);
         }
-        banner.innerHTML = `<span>⚠️</span><span>${msg}</span>`;
+        banner.innerHTML = `<span>⚠️</span><span>${escapeHtml(msg)}</span>`;
     } else if (banner) {
         banner.remove();
     }
 }
 
+function messaggioErrore(error) {
+    if (!error) return 'Errore sconosciuto';
+    if (error.message === 'Session expired') return 'Sessione scaduta. Effettua nuovamente il login.';
+    return error.message || String(error);
+}
+
 /* =====================================================
- * DATA FETCHING (Integrazione DB a 360 gradi)
+ * DATA FETCHING
  * ===================================================== */
 
 /**
- * Scarica tipologie, locali, giochi, partite ed eventi. Tutto da DB.
+ * Scarica tipologie, locali, giochi, partite ed eventi.
  */
 async function fetchAllData() {
-    try {
-        // 1. Scarica il catalogo delle Tipologie Gioco dal DB per estrarre icone e regole configurate
-        state.tipologie = await Api.getAllTipologieGioco() || [];
+    const errori = [];
 
-        // 2. Locali
-        state.locali = await Api.getAllLocali() || [];
+    const [tipRes, locRes, gioRes, parRes] = await Promise.allSettled([
+        Api.getAllTipologieGioco(),
+        Api.getAllLocali(),
+        Api.getAllGiochiInstallati(),
+        Api.getAllPartite()
+    ]);
 
-        // 3. Tutti i giochi fisici (fan-out su tutti i locali)
-        state.giochi = await Api.getAllGiochiInstallati() || [];
+    if (tipRes.status === 'fulfilled') {
+        state.tipologie = tipRes.value || [];
+    } else {
+        state.tipologie = [];
+        errori.push(`Tipologie: ${messaggioErrore(tipRes.reason)}`);
+    }
 
-        // 4. Tutte le partite
-        state.partite = await Api.getAllPartite() || [];
+    if (locRes.status === 'fulfilled') {
+        state.locali = locRes.value || [];
+    } else {
+        state.locali = [];
+        errori.push(`Locali: ${messaggioErrore(locRes.reason)}`);
+    }
 
-        // 5. Per ogni partita in corso, recupera gli eventi IoT live
-        const partiteLive = state.partite.filter(p =>
-            (p.stato || '').toUpperCase() === 'IN_CORSO');
+    if (gioRes.status === 'fulfilled') {
+        state.giochi = gioRes.value || [];
+    } else {
+        state.giochi = [];
+        errori.push(`Giochi: ${messaggioErrore(gioRes.reason)}`);
+    }
 
-        const promises = partiteLive.map(async (p) => {
-            try {
-                const id = p.id || p.idPartita;
-                if (!id) return;
-                const eventi = await Api.getEventiPartita(id);
-                state.eventiCache[id] = (eventi || []).slice(-MAX_EVENTI_PER_PARTITA);
-            } catch (_) { /* isola errore singola partita */ }
-        });
-        await Promise.allSettled(promises);
+    if (parRes.status === 'fulfilled') {
+        state.partite = parRes.value || [];
+    } else {
+        state.partite = [];
+        errori.push(`Partite: ${messaggioErrore(parRes.reason)}`);
+    }
 
-        state.lastUpdate = new Date();
-        state.erroriRete = 0;
-        setConnectionError(null);
-        return true;
-    } catch (error) {
+    // Sensori per ogni tavolo (per conteggio e mapping punteggi IoT)
+    const sensorPromises = state.giochi.map(async (g) => {
+        const gid = idGioco(g);
+        if (!gid) return;
+        try {
+            const sensori = await Api.getSensoriByGioco(gid);
+            state.sensoriCache[gid] = sensori || [];
+        } catch (err) {
+            state.sensoriCache[gid] = [];
+            errori.push(`Sensori tavolo #${gid}: ${messaggioErrore(err)}`);
+        }
+    });
+    await Promise.allSettled(sensorPromises);
+
+    // Eventi IoT per partite in corso
+    const partiteLive = state.partite.filter(p => (p.stato || '').toUpperCase() === 'IN_CORSO');
+    const eventPromises = partiteLive.map(async (p) => {
+        const pid = idPartita(p);
+        if (!pid) return;
+        try {
+            const eventi = await Api.getEventiPartita(pid);
+            state.eventiCache[pid] = (eventi || []).slice(-MAX_EVENTI_PER_PARTITA);
+        } catch (err) {
+            state.eventiCache[pid] = [];
+            errori.push(`Eventi partita #${pid}: ${messaggioErrore(err)}`);
+        }
+    });
+    await Promise.allSettled(eventPromises);
+
+    state.lastUpdate = new Date();
+
+    if (errori.length > 0) {
         state.erroriRete += 1;
-        console.error('[admin-gioco] Errore sincronizzazione DB:', error);
+        console.warn('[admin-gioco] Errori parziali sincronizzazione:', errori);
         setConnectionError(
-            'Impossibile contattare il backend (game-service). ' +
-            'I dati potrebbero essere non aggiornati. Riprovo automaticamente…'
+            errori.length === 1
+                ? errori[0]
+                : `${errori.length} errori di sincronizzazione. I dati potrebbero essere incompleti.`
         );
         return false;
     }
+
+    state.erroriRete = 0;
+    setConnectionError(null);
+    return true;
 }
 
 /* =====================================================
@@ -347,9 +405,6 @@ export function adminGameDashboard() {
     `;
 }
 
-/* =====================================================
- * BOOTSTRAP / LOGICA ASINCRONA
- * ===================================================== */
 
 let refreshInterval = null;
 let pendingTerminazione = null;
@@ -386,21 +441,15 @@ async function bootstrapAdminGame() {
         });
     }
 
-    // Caricamento iniziale completo da DB
     await fetchAllData();
     renderAll();
 
-    // Loop Auto-refresh
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(async () => {
         await fetchAllData();
         renderAll();
     }, REFRESH_MS);
 }
-
-/* =====================================================
- * RENDER SPECIFICI
- * ===================================================== */
 
 function renderAll() {
     renderStats();
@@ -444,7 +493,7 @@ function renderTavoli() {
     const grid = document.getElementById('tavoli-grid');
     if (!grid) return;
 
-    if (!state.giochi || state.giochi.length === 0) {
+    if (!state.giochi.length) {
         grid.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1">
                 <div class="empty-ico">🎮</div>
@@ -453,21 +502,22 @@ function renderTavoli() {
         return;
     }
 
-    const sorted = [...state.giochi].sort((a, b) => {
-        return (a.localeNome || '').localeCompare(b.localeNome || '') || (a.id - b.id);
-    });
+    const sorted = [...state.giochi].sort((a, b) =>
+        (a.localeNome || '').localeCompare(b.localeNome || '') || (a.id - b.id)
+    );
 
     grid.innerHTML = sorted.map(g => {
-        const id = g.id || g.idGiocoInstallato;
-        const tipo = g.tipoGioco || g.nome || g.nomeTipologiaGioco || 'Gioco';
+        const gid = idGioco(g);
+        const tipo = g.tipoGioco || nomeTipologia(g.tipologiaId);
         const localeNome = g.localeNome || '—';
         const statoBadge = badgeStatoGioco(g.stato);
         const cardClass = g.stato === 'IN_USO' ? 'in-uso' : (g.stato === 'GUASTO' ? 'guasto' : '');
+        const numSensori = g.numSensori ?? (state.sensoriCache[gid] || []).length;
 
         return `
             <div class="tavolo-card ${cardClass}">
                 <div class="tavolo-head">
-                    <div class="tavolo-ico">${iconaGioco(tipo)}</div>
+                    <div class="tavolo-ico">${iconaGioco(tipo, g.tipologiaId)}</div>
                     <div style="flex:1;min-width:0">
                         <div class="tavolo-name">${escapeHtml(tipo)}</div>
                         <div class="tavolo-meta">${escapeHtml(localeNome)}</div>
@@ -477,11 +527,15 @@ function renderTavoli() {
                     <span class="badge ${statoBadge.cls}">${statoBadge.label}</span>
                 </div>
                 <div class="tavolo-footer">
-                    <span class="tavolo-id">ID #${id}</span>
-                    <span style="font-size:9px;color:var(--txt3)">${g.sensori || 0} sensori</span>
+                    <span class="tavolo-id">ID #${gid}</span>
+                    <span style="font-size:9px;color:var(--txt3)">${numSensori} sensori</span>
                 </div>
             </div>`;
     }).join('');
+}
+
+function trovaGioco(idGiocoInstallato) {
+    return state.giochi.find(g => idGioco(g) === idGiocoInstallato) || null;
 }
 
 function renderPartiteLive() {
@@ -490,7 +544,7 @@ function renderPartiteLive() {
 
     const live = state.partite.filter(p => (p.stato || '').toUpperCase() === 'IN_CORSO');
 
-    if (live.length === 0) {
+    if (!live.length) {
         grid.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1">
                 <div class="empty-ico">🟢</div>
@@ -500,20 +554,20 @@ function renderPartiteLive() {
     }
 
     grid.innerHTML = live.map(p => {
-        const id = p.id || p.idPartita;
-        const idGioco = p.idGiocoInstallato;
-        const gioco = state.giochi.find(g => (g.id || g.idGiocoInstallato) == idGioco) || {};
-        const tipoGioco = gioco.tipoGioco || 'Gioco';
-        const localeNome = gioco.localeNome || '—';
-        const eventi = state.eventiCache[id] || [];
-        const score = calcolaPunteggi(p, eventi);
+        const pid = idPartita(p);
+        const gioco = trovaGioco(p.idGiocoInstallato);
+        const tipoGioco = gioco?.tipoGioco || nomeTipologia(gioco?.tipologiaId);
+        const localeNome = gioco?.localeNome || '—';
+        const sensori = state.sensoriCache[p.idGiocoInstallato] || [];
+        const eventi = state.eventiCache[pid] || [];
+        const score = calcolaPunteggi(p, eventi, sensori);
         const sec = secondiTrascorsi(p);
 
         return `
-            <div class="live-card" data-partita-id="${id}">
+            <div class="live-card" data-partita-id="${pid}">
                 <div class="live-head">
                     <span class="live-dot"></span>
-                    <div class="live-title">${iconaGioco(tipoGioco)} ${escapeHtml(tipoGioco)}</div>
+                    <div class="live-title">${iconaGioco(tipoGioco, gioco?.tipologiaId)} ${escapeHtml(tipoGioco)}</div>
                     <span class="badge b-grn">LIVE</span>
                     <div class="live-time" data-timestamp-inizio="${escapeAttr(p.timestampInizio || '')}">
                         ${formatDurata(sec)}
@@ -522,12 +576,12 @@ function renderPartiteLive() {
 
                 <div class="scoreboard">
                     <div class="score-team">
-                        <div class="score-team-name">Team A</div>
+                        <div class="score-team-name">Squadra 1</div>
                         <div class="score-team-val">${score.p1}</div>
                     </div>
                     <div class="score-vs">VS</div>
                     <div class="score-team">
-                        <div class="score-team-name">Team B</div>
+                        <div class="score-team-name">Squadra 2</div>
                         <div class="score-team-val">${score.p2}</div>
                     </div>
                 </div>
@@ -535,29 +589,30 @@ function renderPartiteLive() {
                 <div class="live-meta">
                     <span>📍 ${escapeHtml(localeNome)}</span>
                     <span>📡 ${eventi.length} eventi IoT</span>
+                    ${score.daEventi ? '<span style="color:var(--amb)">· da sensori</span>' : '<span style="color:var(--grn)">· da DB</span>'}
                 </div>
 
                 <div class="live-actions">
-                    <button class="act-btn btn-dettagli" data-id="${id}">Dettagli</button>
-                    <button class="danger-btn btn-termina" data-id="${id}">Termina partita</button>
+                    <button class="act-btn btn-dettagli" data-id="${pid}">Dettagli</button>
+                    <button class="danger-btn btn-termina" data-id="${pid}">Termina partita</button>
                 </div>
             </div>`;
     }).join('');
 
     grid.querySelectorAll('.btn-termina').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.getAttribute('data-id');
-            apriModaleTermina(id);
+            apriModaleTermina(e.currentTarget.getAttribute('data-id'));
         });
     });
 
     grid.querySelectorAll('.btn-dettagli').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const id = e.currentTarget.getAttribute('data-id');
-            const partita = state.partite.find(p => (p.id || p.idPartita) == id);
-            const eventi = state.eventiCache[id] || [];
-            console.log(`[admin-gioco] Real-time logs partita #${id}:`, partita, eventi);
-            showToast(`Partita #${id}: Ricevuti ${eventi.length} pacchetti IoT. Log in console.`, 'info');
+            const pid = e.currentTarget.getAttribute('data-id');
+            const partita = state.partite.find(p => String(idPartita(p)) === String(pid));
+            const eventi = state.eventiCache[pid] || [];
+            const sensori = state.sensoriCache[partita?.idGiocoInstallato] || [];
+            console.log(`[admin-gioco] Dettaglio partita #${pid}:`, { partita, eventi, sensori });
+            showToast(`Partita #${pid}: ${eventi.length} eventi IoT, ${sensori.length} sensori mappati.`, 'info');
         });
     });
 
@@ -588,7 +643,7 @@ function renderStorico() {
         })
         .slice(0, MAX_STORICO);
 
-    if (concluse.length === 0) {
+    if (!concluse.length) {
         tbody.innerHTML = `
             <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--txt3)">
                 Nessuno storico presente nel DB.
@@ -597,24 +652,24 @@ function renderStorico() {
     }
 
     tbody.innerHTML = concluse.map(p => {
-        const id = p.id || p.idPartita;
-        const idGioco = p.idGiocoInstallato;
-        const gioco = state.giochi.find(g => (g.id || g.idGiocoInstallato) == idGioco) || {};
-        const tipoGioco = gioco.tipoGioco || 'Gioco';
-        const localeNome = gioco.localeNome || '—';
-        const eventi = state.eventiCache[id] || [];
-        const score = calcolaPunteggi(p, eventi);
+        const pid = idPartita(p);
+        const gioco = trovaGioco(p.idGiocoInstallato);
+        const tipoGioco = gioco?.tipoGioco || nomeTipologia(gioco?.tipologiaId);
+        const localeNome = gioco?.localeNome || '—';
+        const sensori = state.sensoriCache[p.idGiocoInstallato] || [];
+        const eventi = state.eventiCache[pid] || [];
+        const score = calcolaPunteggi(p, eventi, sensori);
         const sec = secondiTrascorsi(p);
 
         let esito = '—', esitoCls = 'b-blu';
-        if (score.p1 > score.p2) { esito = 'Team A'; esitoCls = 'b-grn'; }
-        else if (score.p2 > score.p1) { esito = 'Team B'; esitoCls = 'b-grn'; }
+        if (score.p1 > score.p2) { esito = 'Squadra 1'; esitoCls = 'b-grn'; }
+        else if (score.p2 > score.p1) { esito = 'Squadra 2'; esitoCls = 'b-grn'; }
         else { esito = 'Pareggio'; esitoCls = 'b-amb'; }
 
         return `
             <tr>
-                <td style="font-family:monospace;font-size:11px;color:var(--txt3)">#${id}</td>
-                <td>${iconaGioco(tipoGioco)} ${escapeHtml(tipoGioco)}</td>
+                <td style="font-family:monospace;font-size:11px;color:var(--txt3)">#${pid}</td>
+                <td>${iconaGioco(tipoGioco, gioco?.tipologiaId)} ${escapeHtml(tipoGioco)}</td>
                 <td style="font-size:11px">${escapeHtml(localeNome)}</td>
                 <td style="font-family:var(--ff);font-weight:700">${score.p1} – ${score.p2}</td>
                 <td style="font-family:monospace;font-size:11px">${formatDurata(sec)}</td>
@@ -625,14 +680,14 @@ function renderStorico() {
 }
 
 /* =====================================================
- * AZIONE: TERMINA PARTITA
+ * AZIONE: TERMINA PARTITA  →  PUT /api/partite/{id}/termina
  * ===================================================== */
 
-function apriModaleTermina(idPartita) {
-    pendingTerminazione = idPartita;
+function apriModaleTermina(idPartitaVal) {
+    pendingTerminazione = idPartitaVal;
     const modal = document.getElementById('modal-termina');
     const label = document.getElementById('modal-partita-id');
-    if (label) label.textContent = '#' + idPartita;
+    if (label) label.textContent = '#' + idPartitaVal;
     if (modal) modal.classList.add('open');
 }
 
@@ -650,15 +705,15 @@ async function confermaTerminazione() {
     try {
         const result = await Api.terminaPartita(id);
         if (result === null) {
-            showToast('Partita già conclusa lato backend.', 'warning');
+            showToast(`Partita #${id} non trovata (404).`, 'warning', 5000);
         } else {
-            showToast(`Partita #${id} forzata in stato TERMINATA.`, 'success');
+            showToast(`Partita #${id} terminata. Punteggio: ${result.punteggio1}–${result.punteggio2}.`, 'success');
         }
         await fetchAllData();
         renderAll();
     } catch (error) {
         console.error('[admin-gioco] Errore terminazione:', error);
-        showToast(`Chiamata fallita per la partita #${id}: ${error.message}`, 'error', 5000);
+        showToast(messaggioErrore(error), 'error', 5000);
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -681,6 +736,7 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
 function escapeAttr(s) {
     return escapeHtml(s);
 }
@@ -695,6 +751,7 @@ export function disposeAdminGame() {
         refreshInterval = null;
     }
     state.eventiCache = {};
+    state.sensoriCache = {};
     state.lastUpdate = null;
 }
 

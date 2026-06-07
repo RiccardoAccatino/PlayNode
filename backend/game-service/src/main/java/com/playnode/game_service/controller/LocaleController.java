@@ -3,15 +3,15 @@ package com.playnode.game_service.controller;
 import com.playnode.game_service.dto.GiocoInstallatoDTO;
 import com.playnode.game_service.dto.LocaleDTO;
 import com.playnode.game_service.service.LocaleService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/locali")
+@CrossOrigin(origins = "*")
 public class LocaleController {
 
     private final LocaleService localeService;
@@ -32,5 +32,34 @@ public class LocaleController {
     @GetMapping("/{idLocale}/giochi")
     public List<GiocoInstallatoDTO> getGiochiByLocale(@PathVariable Long idLocale) {
         return localeService.ottieniGiochiPerLocale(idLocale);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> creaLocale(@RequestBody LocaleDTO dto) {
+        try {
+            LocaleDTO creato = localeService.creaLocale(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(creato);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/{idLocale}")
+    public ResponseEntity<?> aggiornaLocale(@PathVariable Long idLocale, @RequestBody LocaleDTO dto) {
+        try {
+            LocaleDTO aggiornato = localeService.aggiornaLocale(idLocale, dto);
+            if (aggiornato == null)
+                return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(aggiornato);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{idLocale}")
+    public ResponseEntity<Void> eliminaLocale(@PathVariable Long idLocale) {
+        return localeService.eliminaLocale(idLocale)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }
