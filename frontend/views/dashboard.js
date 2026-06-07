@@ -8,7 +8,6 @@ import * as playerModule from './player.js';
 import * as localeModule from './locale.js';
 import * as platformModule from './admin-platform.js';
 import * as adminGameModule from './admin-game.js';
-import { getUserStats } from '../js/api.js';
 
 /**
  * Renderizza la dashboard principale dell'applicazione dopo il login.
@@ -49,13 +48,14 @@ export function renderDashboard(userData) {
     // 3. CONFIGURAZIONE MENU
     const ROLES = {
         player: {
-            nav: ['Dashboard', 'Giochi', 'Tornei', 'Profilo'],
-            sidebar: null,
+            nav: [],
+            sidebar: ['Overview', 'Storico Partite', 'I miei Tornei', 'Profilo'],
+            sideIcons: ['📊', '📜', '🏆', '👤'],
             pages: {
-                'Dashboard': () => hasAccess('player') ? playerModule.playerDashboard() : unauthorizedPage(),
-                'Giochi': () => hasAccess('player') ? playerModule.playerGames() : unauthorizedPage(),
-                'Tornei': () => hasAccess('player') ? playerModule.playerTournaments() : unauthorizedPage(),
-                'Profilo': () => hasAccess('player') ? showProfileWithStats() : unauthorizedPage(),
+                'Overview': () => hasAccess('player') ? playerModule.playerOverview() : unauthorizedPage(),
+                'Storico Partite': () => hasAccess('player') ? playerModule.playerHistory() : unauthorizedPage(),
+                'I miei Tornei': () => hasAccess('player') ? playerModule.playerTournaments() : unauthorizedPage(),
+                'Profilo': () => hasAccess('player') ? playerModule.playerProfile() : unauthorizedPage(),
             }
         },
         locale: {
@@ -99,6 +99,10 @@ export function renderDashboard(userData) {
     };
 
     const cfg = ROLES[mappedRole];
+
+    if (mappedRole === 'player') {
+        playerModule.setPlayerContext(userData);
+    }
 
     // Se il ruolo non esiste, mostra errore
     if (!cfg) {
@@ -289,31 +293,6 @@ export function renderDashboard(userData) {
         localStorage.removeItem('userId');
         localStorage.removeItem('userRole');
         document.dispatchEvent(new CustomEvent('cgp:goto', { detail: 'login' }));
-    }
-
-    /**
-     * Recupera le statistiche al volo e mostra il profilo.
-     * Questa funzione serve a "iniettare" i dati reali nel componente profilo.
-     */
-    async function showProfileWithStats() {
-        const userId = localStorage.getItem('userId');
-
-        // Aggiungi un piccolo stato di caricamento mentre la funzione scarica i dati
-        const main = document.getElementById('main-content');
-        if(main) main.innerHTML = "Caricamento profilo...";
-
-        const stats = await getUserStats(userId);
-
-        const dataPerProfilo = {
-            name: userData.name,
-            initials: userData.initials,
-            role: userData.role,
-            partiteGiocate: stats ? stats.partiteGiocate : 0,
-            vittorie: stats ? stats.vittorie : 0,
-            rank: stats && stats.punteggioTotale ? Math.max(1, 150 - stats.punteggioTotale) : 'N/D'
-        };
-
-        return playerModule.playerProfile(dataPerProfilo);
     }
 
     const logoutBtn = document.getElementById('logout-btn') || document.getElementById('logout-btn-error');

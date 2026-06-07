@@ -4,6 +4,7 @@
  */
 
 import * as Api from '../js/api.js';
+import { iconaGioco } from '../js/game-icons.js';
 
 // ─── Tipi sensore disponibili ───────────────────────────────────────────────
 const TIPI_SENSORE = ['OTTICO', 'MAGNETICO', 'PRESSIONE', 'ULTRASONICO', 'INFRAROSSO', 'ACCELEROMETRO', 'CUSTOM'];
@@ -679,7 +680,7 @@ async function initPlatformGames() {
       }).length;
       return `
         <tr>
-          <td><span style="font-size:14px">🎮</span> <span style="font-weight:500;font-size:12px">${nome}</span></td>
+          <td><span style="font-size:14px">${iconaGioco(nome)}</span> <span style="font-weight:500;font-size:12px">${nome}</span></td>
           <td id="sensor-count-${id}"><span style="color:var(--txt3);font-size:11px">—</span></td>
           <td>${numInst}</td>
           <td>${numPartite}</td>

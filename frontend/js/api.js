@@ -172,18 +172,21 @@ export async function registerUser(userData) {
  * @returns {Promise<Object|null>} Oggetto contenente le statistiche dell'utente, oppure null se non trovate
  * @throws {Error} Se si verifica un errore durante la chiamata API (eccetto 404 che restituisce null)
  */
+/**
+ * Statistiche: vista SQL statistica_utente.
+ * GET /api/statistiche/{utenteId} — restituisce sempre 200 (zeri se utente nuovo).
+ */
 export async function getUserStats(utenteId) {
-    try {
-        const response = await fetchWithAuth(`${STATS_API_URL}/statistiche/${utenteId}`);
-        if (!response.ok) {
-            if (response.status === 404) return null;
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Errore fetch stats:", error);
-        return null;
+    const response = await fetchWithAuth(`${STATS_API_URL}/statistiche/${utenteId}`);
+    if (response.status === 404) {
+        return {
+            utenteId: Number(utenteId),
+            partiteGiocate: 0, vittorie: 0, punteggioTotale: 0,
+            nomeGioco: null, idLocale: null
+        };
     }
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
 }
 
 /**
@@ -194,15 +197,15 @@ export async function getUserStats(utenteId) {
  * @returns {Promise<Array>} Array contenente lo storico delle partite dell'utente
  * @throws {Error} Se si verifica un errore durante la chiamata API
  */
+/**
+ * Storico partite da vista SQL storico_partita.
+ * GET /api/storico/utente/{utenteId}
+ */
 export async function getUserHistory(utenteId) {
-    try {
-        const response = await fetchWithAuth(`${STATS_API_URL}/storico/utente/${utenteId}`);
-        if (!response.ok) return [];
-        return await response.json();
-    } catch (error) {
-        console.error("Errore fetch storico:", error);
-        return [];
-    }
+    const response = await fetchWithAuth(`${STATS_API_URL}/storico/utente/${utenteId}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
 }
 
 /**

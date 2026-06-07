@@ -5,6 +5,7 @@
  */
 
 import * as Api from '../js/api.js';
+import { iconaGioco as iconaGiocoByNome } from '../js/game-icons.js';
 
 const REFRESH_MS = 10_000;
 const MAX_STORICO = 12;
@@ -46,17 +47,7 @@ function iconaGioco(tipoGioco, tipologiaId) {
     const nome = tipologiaId
         ? nomeTipologia(tipologiaId, tipoGioco)
         : (tipoGioco || '');
-    const n = String(nome).toLowerCase();
-
-    if (n.includes('calciobalilla') || n.includes('biliardino') || n.includes('calcio')) return '⚽';
-    if (n.includes('bocce') || n.includes('boccia')) return '🎯';
-    if (n.includes('frecc')) return '🎯';
-    if (n.includes('bowling')) return '🎳';
-    if (n.includes('ping') || n.includes('tennis')) return '🏓';
-    if (n.includes('basket')) return '🏀';
-    if (n.includes('dardo')) return '🎯';
-
-    return '🎮';
+    return iconaGiocoByNome(nome);
 }
 
 /**

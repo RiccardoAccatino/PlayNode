@@ -84,6 +84,9 @@ function handleAuthSuccess(userData) {
     const user = decodeToken(userData.token);
 
     // 3. Tutti gli utenti vanno direttamente alla dashboard principale
+    localStorage.setItem('userId', String(user.id));
+    localStorage.setItem('userRole', user.role || 'Giocatore');
+
     renderDashboard(user);
 }
 
@@ -129,7 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 role: payload.role || 'player'
             };
 
-            // Tutti gli utenti con sessione valida vanno alla dashboard principale
+            localStorage.setItem('userId', String(payload.userId));
+            localStorage.setItem('userRole', payload.role || 'Giocatore');
+
             renderDashboard(user);
             return;
         } else {
