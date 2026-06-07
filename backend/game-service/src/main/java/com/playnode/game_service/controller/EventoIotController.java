@@ -16,7 +16,7 @@ public class EventoIotController {
     private final PartitaRepository partitaRepository;
 
     public EventoIotController(EventoIotService eventoIotService,
-                               PartitaRepository partitaRepository) {
+            PartitaRepository partitaRepository) {
         this.eventoIotService = eventoIotService;
         this.partitaRepository = partitaRepository;
     }

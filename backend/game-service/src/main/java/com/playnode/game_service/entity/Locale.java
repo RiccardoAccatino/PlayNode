@@ -19,7 +19,7 @@ public class Locale {
     private String indirizzo;
 
     @Column(name = "accesso", columnDefinition = "accesso_tipo")
-    @ColumnTransformer(write = "?::accesso_tipo")
+    @ColumnTransformer(read = "accesso::text", write = "?::accesso_tipo")
     private String accesso;
 
     @Column(name = "gestore_id")

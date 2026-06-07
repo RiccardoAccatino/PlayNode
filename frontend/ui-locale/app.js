@@ -4,7 +4,7 @@ const PlayNodeUI = (function () {
     // ==========================================
     // CONFIGURAZIONE
     // ==========================================
-    const BASE_URL = 'http://localhost:8080';
+    const BASE_URL = `http://${window.location.hostname || 'localhost'}:8080`;
     const POLLING_INTERVAL_MS = 2000; //Ogni 2 secondi chiede al backend gli eventi IoT della partita in corso
 
     // Valori costanti per i goal prodotti dall'Edge/Bridge IoT
@@ -138,21 +138,29 @@ const PlayNodeUI = (function () {
     // ==========================================
     // HTTP HELPERS
     // ==========================================
+    async function parseHttpError(res, method, path) {
+        let body = '';
+        try { body = await res.text(); } catch (_) { /* ignore */ }
+        const msg = `${method} ${path} → HTTP ${res.status}${body ? ': ' + body : ''}`;
+        console.error('[API]', msg);
+        throw new Error(msg);
+    }
+
     async function apiGet(path) {
         const res = await fetch(`${BASE_URL}${path}`, { method: 'GET' });
-        if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+        if (!res.ok) await parseHttpError(res, 'GET', path);
         return await res.json();
     }
 
     async function apiPost(path) {
         const res = await fetch(`${BASE_URL}${path}`, { method: 'POST' });
-        if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+        if (!res.ok) await parseHttpError(res, 'POST', path);
         return await res.json();
     }
 
     async function apiPut(path) {
         const res = await fetch(`${BASE_URL}${path}`, { method: 'PUT' });
-        if (!res.ok) throw new Error(`PUT ${path} failed: ${res.status}`);
+        if (!res.ok) await parseHttpError(res, 'PUT', path);
         return await res.json();
     }
 
@@ -416,7 +424,9 @@ const PlayNodeUI = (function () {
             });
 
             if (!res.ok) {
-                throw new Error(`Errore Server: ${res.status}`);
+                const body = await res.text().catch(() => '');
+                console.error('[manualGoal] POST evento fallita:', res.status, body);
+                throw new Error(`Errore Server: ${res.status}${body ? ' — ' + body : ''}`);
             }
 
             logEvent(`Inviato evento finto sensore: ${stringaGoal}`);

@@ -23,7 +23,7 @@ public class Partita {
     private LocalDateTime timestampFine;
 
     @Column(name = "stato_sync", columnDefinition = "stato_sync_tipo")
-    @ColumnTransformer(write = "?::stato_sync_tipo")
+    @ColumnTransformer(read = "stato_sync::text", write = "?::stato_sync_tipo")
     private String statoSync = "Realtime"; // Valore di default
 
     // Costruttori, Getter e Setter

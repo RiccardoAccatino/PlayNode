@@ -38,15 +38,11 @@ public class MonitorController {
         long totalPartite = partitaRepo.count();
         long totalLocali = localeRepo.count();
 
-        // live partite (in-memory scan)
+        // Partite live: timestamp_fine assente = IN_CORSO (allineato a
+        // PartitaService.convertiInDTO)
         long live = partitaRepo.findAll().stream()
-                .filter(p -> {
-                    try {
-                        return "IN_CORSO".equalsIgnoreCase((String) p.getClass().getMethod("getStato").invoke(p));
-                    } catch (Exception ex) {
-                        return false;
-                    }
-                }).count();
+                .filter(p -> p.getTimestampFine() == null)
+                .count();
 
         // mqtt events in last minute
         LocalDateTime since = LocalDateTime.now().minusMinutes(1);

@@ -1,8 +1,13 @@
-const GAME_API_URL = 'http://192.168.1.25:8080/api';
-const AUTH_API_URL = 'http://192.168.1.25:8081/api/auth';
-const AUTH_SERVICE_URL = 'http://192.168.1.25:8081/api';
-const STATS_API_URL = 'http://192.168.1.25:8082/api';
-const TORNEI_API_URL = 'http://192.168.1.25:8083/api';
+/** Host API: stesso host del frontend (localhost, IP LAN, ecc.) */
+const API_HOST = (typeof window !== 'undefined' && window.location?.hostname)
+    ? window.location.hostname
+    : 'localhost';
+
+const GAME_API_URL = `http://${API_HOST}:8080/api`;
+const AUTH_API_URL = `http://${API_HOST}:8081/api/auth`;
+const AUTH_SERVICE_URL = `http://${API_HOST}:8081/api`;
+const STATS_API_URL = `http://${API_HOST}:8082/api`;
+const TORNEI_API_URL = `http://${API_HOST}:8083/api`;
 
 /**
  * Converte una Response HTTP non-ok in un Error con messaggio leggibile.
@@ -425,10 +430,17 @@ export async function terminaPartita(idPartita) {
  * @returns {Promise<Array>} Lista di EventoIot [{id, idPartita, idSensore, valore, timestamp, ...}]
  */
 export async function getEventiPartita(idPartita) {
-    const response = await fetchWithAuth(`${GAME_API_URL}/iot/partita/${idPartita}`);
+    const url = `${GAME_API_URL}/iot/partita/${idPartita}`;
+    const response = await fetchWithAuth(url);
     if (response.status === 404) return [];
-    if (!response.ok) throw await parseApiError(response);
-    return await response.json();
+    if (!response.ok) {
+        const err = await parseApiError(response);
+        console.error(`[API] getEventiPartita #${idPartita} fallita:`, err.message);
+        throw err;
+    }
+    const data = await response.json();
+    console.debug(`[API] getEventiPartita #${idPartita}: ${Array.isArray(data) ? data.length : 0} eventi`);
+    return data;
 }
 
 /**
