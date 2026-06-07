@@ -165,7 +165,7 @@ export function renderDashboard(userData) {
           <div class="footer-left">
             <span class="ft">PlayNode</span>
             <span class="ft-sep">·</span>
-            <span class="ft">Dappia · Ricky · Angie</span>
+            <span class="ft">Dappia · Ricky · Angie · Matte</span>
           </div>
           <div>
             <span class="ft">v1.0.0</span>

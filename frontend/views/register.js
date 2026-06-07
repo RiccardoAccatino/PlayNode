@@ -203,7 +203,7 @@ export function renderRegister(onSuccess) {
 
           <!-- footer -->
           </div> <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--txt3); z-index: 5;">
-            Dappia · Ricky · Angie - 2026
+            Dappia · Ricky · Angie · Matte
           </div>
       </div>`;
 
