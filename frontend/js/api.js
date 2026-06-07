@@ -1,8 +1,8 @@
-const GAME_API_URL = 'http://localhost:8080/api';
-const AUTH_API_URL = 'http://localhost:8081/api/auth';
-const AUTH_SERVICE_URL = 'http://localhost:8081/api';
-const STATS_API_URL = 'http://localhost:8082/api';
-const TORNEI_API_URL = 'http://localhost:8083/api';
+const GAME_API_URL = 'http://192.168.1.25:8080/api';
+const AUTH_API_URL = 'http://192.168.1.25:8081/api/auth';
+const AUTH_SERVICE_URL = 'http://192.168.1.25:8081/api';
+const STATS_API_URL = 'http://192.168.1.25:8082/api';
+const TORNEI_API_URL = 'http://192.168.1.25:8083/api';
 
 /**
  * Converte una Response HTTP non-ok in un Error con messaggio leggibile.

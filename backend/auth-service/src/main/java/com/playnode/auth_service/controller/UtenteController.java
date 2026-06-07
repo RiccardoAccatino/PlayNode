@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/utenti")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:63342", "http://192.168.1.25:63342"})
 public class UtenteController {
 
     private final UtenteService utenteService;
