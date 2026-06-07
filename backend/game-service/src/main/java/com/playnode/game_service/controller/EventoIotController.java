@@ -1,7 +1,9 @@
 package com.playnode.game_service.controller;
 
 import com.playnode.game_service.entity.EventoIot;
+import com.playnode.game_service.repository.PartitaRepository;
 import com.playnode.game_service.service.EventoIotService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,24 +13,32 @@ import java.util.List;
 public class EventoIotController {
 
     private final EventoIotService eventoIotService;
+    private final PartitaRepository partitaRepository;
 
-    public EventoIotController(EventoIotService eventoIotService) {
+    public EventoIotController(EventoIotService eventoIotService,
+                               PartitaRepository partitaRepository) {
         this.eventoIotService = eventoIotService;
+        this.partitaRepository = partitaRepository;
     }
 
     // API: POST /api/iot/evento
-    // Il dispositivo Edge userà questa API per inviare i dati.
     @PostMapping("/evento")
-    public EventoIot riceviEvento(
+    public ResponseEntity<?> riceviEvento(
             @RequestParam Long idPartita,
             @RequestParam Long idSensore,
             @RequestParam String valore) {
 
-        return eventoIotService.registraEvento(idPartita, idSensore, valore);
+        // Valida che la partita esista prima di inserire l'evento
+        if (!partitaRepository.existsById(idPartita)) {
+            return ResponseEntity.badRequest()
+                    .body("Partita " + idPartita + " non trovata. Avvia prima una nuova partita.");
+        }
+
+        EventoIot evento = eventoIotService.registraEvento(idPartita, idSensore, valore);
+        return ResponseEntity.ok(evento);
     }
 
     // API: GET /api/iot/partita/{idPartita}
-    // Utile per vedere tutti gli eventi registrati in una partita
     @GetMapping("/partita/{idPartita}")
     public List<EventoIot> getEventiDiPartita(@PathVariable Long idPartita) {
         return eventoIotService.ottieniEventiPartita(idPartita);

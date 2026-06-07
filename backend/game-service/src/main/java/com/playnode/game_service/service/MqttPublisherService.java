@@ -14,6 +14,14 @@ public class MqttPublisherService {
     @Value("${mqtt.client.id}")
     private String clientId;
 
+    @Value("${mqtt.username}")
+    private String mqttUsername;
+
+    @Value("${mqtt.password}")
+    private String mqttPassword;
+
+
+
     private MqttClient mqttClient;
 
     @PostConstruct
@@ -23,6 +31,11 @@ public class MqttPublisherService {
             MqttConnectOptions options = new MqttConnectOptions();
             options.setCleanSession(true);
             options.setAutomaticReconnect(true); // Fondamentale per i server
+
+            options.setUserName(mqttUsername);
+            options.setPassword(mqttPassword.toCharArray());
+
+
             mqttClient.connect(options);
             System.out.println("✅ Game Service connesso a MQTT come Publisher");
         } catch (MqttException e) {

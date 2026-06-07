@@ -30,19 +30,7 @@ services:
       - ./postgres/populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
       - playnode_db_data:/var/lib/postgresql/data
 
-  mosquitto:
-    image: eclipse-mosquitto:latest
-    container_name: playnode-mosquitto
-    restart: always
-    env_file:
-      - ../.env
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
+
   web-server:
     image: nginx:alpine
     ports:
@@ -75,8 +63,10 @@ services:
         - ../.env
       environment:
         - SERVER_PORT=8080
-      depends_on:
-        - mosquitto
+        - MQTT_USER=${MQTT_USER}
+        - MQTT_PASSWORD=${MQTT_PASSWORD}
+
+
 
   stats-service:
       build:

@@ -156,19 +156,33 @@ async function initLocaleGames(tbodyId) {
     // eventi click per avviare partita
     tbody.querySelectorAll('.btn-avvia').forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            const id = e.currentTarget.getAttribute('data-id');
+            // 1. Salva il riferimento al bottone in una costante sincrona
+            const currentBtn = e.currentTarget;
+            const id = currentBtn.getAttribute('data-id');
+
             if (!id) return;
 
-            e.currentTarget.disabled = true;
-            const partita = await Api.avviaPartita(id);
-            e.currentTarget.disabled = false;
+            // 2. Usa la costante per disabilitare il bottone
+            currentBtn.disabled = true;
 
-            if (!partita) {
-                alert("Errore: impossibile avviare la partita.");
-                return;
+            try {
+                // Esegui la chiamata API
+                const partita = await Api.avviaPartita(id);
+
+                if (!partita) {
+                    alert("Errore: impossibile avviare la partita.");
+                    return;
+                }
+
+                alert(`Partita avviata! ID: ${partita.id || partita.idPartita || '(id non presente nel DTO)'}`);
+            } catch (error) {
+                console.error("Errore di connessione o del server:", error);
+                alert("Si è verificato un errore critico durante l'avvio della partita.");
+            } finally {
+                // 3. Usa la costante per riabilitare il bottone.
+                // Il blocco 'finally' assicura che venga riabilitato sia in caso di successo che di errore.
+                currentBtn.disabled = false;
             }
-
-            alert(`Partita avviata! ID: ${partita.id || partita.idPartita || '(id non presente nel DTO)'}`);
         });
     });
 }
