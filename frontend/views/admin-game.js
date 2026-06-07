@@ -125,14 +125,29 @@ function calcolaPunteggi(partita, eventi, sensoriGioco) {
     let p1 = 0, p2 = 0;
     if (Array.isArray(eventi)) {
         for (const e of eventi) {
-            const v = String(e.valore || '').toLowerCase();
+            const rawValore = String(e.valore || '');
+            const v = rawValore.toLowerCase();
+
+            // Match esatto come ui-locale (eventi debug / edge formattati)
+            if (rawValore === 'Goal: Squadra 1') { p1 += 1; continue; }
+            if (rawValore === 'Goal: Squadra 2') { p2 += 1; continue; }
+
             if (!v.includes('goal') && !v.includes('punto') && !v.includes('+1')) continue;
 
-            const pos = String(sensorMap[e.sensoreId ?? e.idSensore] || '').toLowerCase();
-            if (pos.includes('squadra 1') || pos.includes('porta 1') || v.includes('squadra 1')) {
+            const sensId = e.idSensore ?? e.sensoreId;
+            const pos = String(sensorMap[sensId] || '').toLowerCase();
+
+            if (pos.includes('squadra 1') || pos.includes('porta 1') || pos.includes('team 1') || v.includes('squadra 1')) {
                 p1 += 1;
-            } else if (pos.includes('squadra 2') || pos.includes('porta 2') || v.includes('squadra 2')) {
+            } else if (pos.includes('squadra 2') || pos.includes('porta 2') || pos.includes('team 2') || v.includes('squadra 2')) {
                 p2 += 1;
+            } else if (sensId != null) {
+                // Euristica fallback: sensore pari → Squadra 2, dispari → Squadra 1
+                const n = Number(sensId);
+                if (Number.isFinite(n)) {
+                    if (n % 2 === 0) p2 += 1;
+                    else p1 += 1;
+                }
             }
         }
     }

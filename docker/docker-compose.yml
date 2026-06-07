@@ -63,8 +63,12 @@ services:
         - ../.env
       environment:
         - SERVER_PORT=8080
+        - DB_HOST=playnode_postgres
+        - DB_INTERNAL_PORT=5432
         - MQTT_USER=${MQTT_USER}
         - MQTT_PASSWORD=${MQTT_PASSWORD}
+      depends_on:
+        - postgres
 
 
 
