@@ -1,5 +1,6 @@
 package com.playnode.game_service.controller;
 
+import com.playnode.game_service.dto.EventoIotDTO;
 import com.playnode.game_service.entity.EventoIot;
 import com.playnode.game_service.repository.PartitaRepository;
 import com.playnode.game_service.service.EventoIotService;
@@ -34,13 +35,13 @@ public class EventoIotController {
                     .body("Partita " + idPartita + " non trovata. Avvia prima una nuova partita.");
         }
 
-        EventoIot evento = eventoIotService.registraEvento(idPartita, idSensore, valore);
+        EventoIotDTO evento = eventoIotService.registraEvento(idPartita, idSensore, valore);
         return ResponseEntity.ok(evento);
     }
 
     // API: GET /api/iot/partita/{idPartita}
     @GetMapping("/partita/{idPartita}")
-    public List<EventoIot> getEventiDiPartita(@PathVariable Long idPartita) {
+    public List<EventoIotDTO> getEventiDiPartita(@PathVariable Long idPartita) {
         return eventoIotService.ottieniEventiPartita(idPartita);
     }
 }
