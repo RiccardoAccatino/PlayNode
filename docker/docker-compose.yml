@@ -1,0 +1,99 @@
+# =========================================================================
+# GUIDA RAPIDA DOCKER PLAYNODE
+# Assicurati di eseguire questi comandi dalla cartella radice 'PlayNode'
+#
+# 1. Per fare tabula rasa (cancella DB e volumi):
+#    docker-compose --env-file .env -f docker/docker-compose.yml down -v
+#
+# 2. Per avviare tutta l'infrastruttura pulita:
+#    docker-compose --env-file .env -f docker/docker-compose.yml up -d
+# =========================================================================
+
+
+# version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: playnode_postgres
+    restart: always
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5435:5432"
+    volumes:
+      # Mappa gli script SQL: verranno eseguiti in ordine alfabetico SOLO al primo avvio
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./postgres/populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
+      - playnode_db_data:/var/lib/postgresql/data
+
+
+  web-server:
+    image: nginx:alpine
+    ports:
+      - "63342:80"  # Il sito sarà accessibile sulla porta
+    volumes:
+      - ../frontend:/usr/share/nginx/html:ro
+
+  auth-service:
+    build:
+      context: ../backend/auth-service
+      dockerfile: Dockerfile
+    container_name: auth_service
+    ports:
+      - "8081:8081"
+    env_file:
+      - ../.env
+    environment:
+      - SERVER_PORT=8081
+    depends_on:
+      - postgres
+
+  game-service:
+      build:
+        context: ../backend/game-service
+        dockerfile: Dockerfile
+      container_name: game_service
+      ports:
+        - "8080:8080"
+      env_file:
+        - ../.env
+      environment:
+        - SERVER_PORT=8080
+        - DB_HOST=playnode_postgres
+        - DB_INTERNAL_PORT=5432
+        - MQTT_USER=${MQTT_USER}
+        - MQTT_PASSWORD=${MQTT_PASSWORD}
+      depends_on:
+        - postgres
+
+
+
+  stats-service:
+      build:
+        context: ../backend/stats-service
+        dockerfile: Dockerfile
+      container_name: stats_service
+      ports:
+        - "8082:8082"
+      env_file:
+        - ../.env
+      environment:
+        - SERVER_PORT=8082
+
+  tournament-service:
+      build:
+        context: ../backend/tournament-service # ◄ MODIFICATO
+        dockerfile: Dockerfile
+      container_name: tournament_service
+      ports:
+        - "8083:8083"
+      env_file:
+        - ../.env                         # ◄ MODIFICATO
+      environment:
+        - SERVER_PORT=8083
+volumes:
+  playnode_db_data:
