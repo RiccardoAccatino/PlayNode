@@ -14,12 +14,12 @@ MQTT_PASSWORD = "arduino"
 # ID Fisico di questo calcetto nel Database Server
 ID_GIOCO_FISICO = 1
 # ID del tavolo configurato nello sketch Arduino
-ID_TAVOLO_ARDUINO = "tavolo1"
+ID_TAVOLO_ARDUINO = "1"
 
 # Topic in ascolto coerenti con firmware Arduino
-MQTT_TOPIC_GOAL = f"calcetto/{ID_TAVOLO_ARDUINO}/goal"
-MQTT_TOPIC_DIST_A = f"calcetto/{ID_TAVOLO_ARDUINO}/distA"
-MQTT_TOPIC_DIST_B = f"calcetto/{ID_TAVOLO_ARDUINO}/distB"
+MQTT_TOPIC_GOAL = f"playnode/calcetto/{ID_TAVOLO_ARDUINO}/goal"
+MQTT_TOPIC_DIST_A = f"playnode/calcetto/{ID_TAVOLO_ARDUINO}/distA"
+MQTT_TOPIC_DIST_B = f"playnode/calcetto/{ID_TAVOLO_ARDUINO}/distB"
 
 # Topic comandi dal Backend
 MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
@@ -27,7 +27,7 @@ MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
 # ==========================================
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
 # ==========================================
-API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+API_BASE_URL = "http://192.168.1.25:8080"
 
 # Stato della partita
 PARTITA_ATTIVA = None

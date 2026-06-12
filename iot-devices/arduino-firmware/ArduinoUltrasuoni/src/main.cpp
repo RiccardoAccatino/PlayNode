@@ -35,7 +35,7 @@ const char*  mqttUser   = "arduino_calcetto";
 const char*  mqttPass   = "arduino";
 
 // ── Identificativo tavolo ─────────────────────────────────────────
-const char* ID_TAVOLO = "tavolo1";
+const char* ID_TAVOLO = "1";
 const char* clientId  = "client_tavolo1";
 
 // Topic generati dinamicamente nel setup()
@@ -326,13 +326,13 @@ void setup() {
   delay(1500);
 
   // ── Costruzione topic MQTT ──────────────────────────────────────
-  sprintf(topicScoreA, "calcetto/%s/scoreA",  ID_TAVOLO);
-  sprintf(topicScoreB, "calcetto/%s/scoreB",  ID_TAVOLO);
-  sprintf(topicGoal,   "calcetto/%s/goal",    ID_TAVOLO);
-  sprintf(topicReset,  "calcetto/%s/reset",   ID_TAVOLO);
-  sprintf(topicDistA,  "calcetto/%s/distA",   ID_TAVOLO);
-  sprintf(topicDistB,  "calcetto/%s/distB",   ID_TAVOLO);
-  sprintf(topicStatus, "calcetto/%s/status",  ID_TAVOLO);
+  sprintf(topicScoreA, "playnode/calcetto/%s/scoreA",  ID_TAVOLO);
+  sprintf(topicScoreB, "playnode/calcetto/%s/scoreB",  ID_TAVOLO);
+  sprintf(topicGoal,   "playnode/calcetto/%s/goal",    ID_TAVOLO);
+  sprintf(topicReset,  "playnode/calcetto/%s/reset",   ID_TAVOLO);
+  sprintf(topicDistA,  "playnode/calcetto/%s/distA",   ID_TAVOLO);
+  sprintf(topicDistB,  "playnode/calcetto/%s/distB",   ID_TAVOLO);
+  sprintf(topicStatus, "playnode/calcetto/%s/status",  ID_TAVOLO);
 
   Serial.println(F("=== Calciobalilla Smart (Uno R4 WiFi) ==="));
   Serial.print(F("Tavolo: ")); Serial.println(ID_TAVOLO);
