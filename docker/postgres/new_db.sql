@@ -38,9 +38,6 @@ CREATE TABLE Tipologia_gioco (
 );
 
 -- 3. Squadra
--- FIX: rimossa la doppia dichiarazione PRIMARY KEY (era un errore sintattico).
--- La PK è ora composta (id_squadra, id_utente) per supportare squadre
--- con più membri: filtrando per id_squadra si ottengono tutti i componenti.
 CREATE TABLE Squadra (
                          id_squadra          SERIAL      NOT NULL,
                          nome_squadra        VARCHAR(100) NOT NULL UNIQUE,
@@ -61,6 +58,7 @@ CREATE TABLE Locale (
                         nome       VARCHAR(100) NOT NULL,
                         indirizzo  VARCHAR(255) NOT NULL,
                         accesso    accesso_tipo NOT NULL,
+                        host_broker varchar default 'tcp://broker:1883',
                         gestore_id INT          NOT NULL,
                         FOREIGN KEY (gestore_id) REFERENCES Utente (id_utente)
                             ON UPDATE CASCADE

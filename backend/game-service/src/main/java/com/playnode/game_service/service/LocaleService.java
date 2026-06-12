@@ -40,6 +40,9 @@ public class LocaleService {
         this.partitaRepository = partitaRepository;
     }
 
+    public String ottieniHostLocale(Long id) {
+        return ottieniLocalePerId(id).getHost_broker();
+    }
     public List<LocaleDTO> ottieniTuttiILocali() {
         List<LocaleDTO> localiDTO = new ArrayList<>();
         for (Locale locale : localeRepository.findAll()) {

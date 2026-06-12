@@ -25,6 +25,9 @@ public class Locale {
     @Column(name = "gestore_id")
     private Long gestoreId;
 
+    @Column(name = "host_broker")
+    private String host_broker;
+
     public Locale() {
     }
 
@@ -66,5 +69,13 @@ public class Locale {
 
     public void setGestoreId(Long gestoreId) {
         this.gestoreId = gestoreId;
+    }
+
+    public String getHost_broker() {
+        return host_broker;
+    }
+
+    public void setHost_broker(String dns_broker) {
+        this.host_broker = host_broker;
     }
 }

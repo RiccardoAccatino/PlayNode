@@ -8,7 +8,7 @@ import jakarta.annotation.PostConstruct;
 @Service
 public class MqttPublisherService {
 
-    @Value("${mqtt.broker.url}")
+    @Value()
     private String brokerUrl;
 
     @Value("${mqtt.client.id}")
@@ -43,14 +43,15 @@ public class MqttPublisherService {
         }
     }
 
-    public void inviaComandoAvvioPartita(Long idGiocoInstallato, Long idPartita) {
+    public void inviaComandoAvvioPartita(Long ID_GIOCO_FISICO, Long idPartita) {
         try {
             if (mqttClient != null && mqttClient.isConnected()) {
                 // Creiamo un topic dinamico basato sull'ID del gioco fisico (es: edge/gioco/1/comandi)
-                String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
+                String topic = "playnode/server/comandi";
 
                 // Creiamo un piccolo JSON a mano
-                String payload = "{\"nuova_partita_id\": " + idPartita + "}";
+                String payload = "{\"idGiocoFisico\":" + ID_GIOCO_FISICO +",\"idPartita\":" + idPartita + "}";
+
 
                 MqttMessage message = new MqttMessage(payload.getBytes());
                 message.setQos(1);
@@ -67,7 +68,7 @@ public class MqttPublisherService {
         try {
             if (mqttClient != null && mqttClient.isConnected()) {
                 // Stesso topic usato per l'avvio
-                String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
+                String topic = "playnode/server/comandi";
 
                 // JSON che corrisponde a quello atteso dallo script Python
                 String payload = "{\"termina_partita\": true}";

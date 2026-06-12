@@ -44,6 +44,11 @@ public class LocaleController {
         }
     }
 
+    @GetMapping("/{idLocale}/host_broker")
+    public String getHostBrokerByLocale(@PathVariable Long idLocale) {
+        return localeService.ottieniHostBrokerPerLocale(idLocale);
+    }
+
     @PutMapping("/{idLocale}")
     public ResponseEntity<?> aggiornaLocale(@PathVariable Long idLocale, @RequestBody LocaleDTO dto) {
         try {
@@ -62,4 +67,6 @@ public class LocaleController {
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
     }
+
+
 }

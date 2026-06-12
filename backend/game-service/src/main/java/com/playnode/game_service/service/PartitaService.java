@@ -39,7 +39,7 @@ public class PartitaService {
         return dtos;
     }
 
-    public PartitaDTO avviaNuovaPartita(Long idGiocoInstallato) {
+    public PartitaDTO avviaNuovaPartita(Long idGiocoInstallato ) {
         Partita nuovaPartita = new Partita();
         nuovaPartita.setGiocoFisicoId(idGiocoInstallato);
         nuovaPartita.setTimestampInizio(LocalDateTime.now());
