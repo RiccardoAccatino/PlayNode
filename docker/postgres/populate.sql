@@ -1,4 +1,22 @@
 -- ==========================================
+-- PULIZIA TABELLE E RESET DELLE SEQUENZE
+-- ==========================================
+TRUNCATE TABLE
+    Evento_iot,
+    Partecipa,
+    Partita,
+    Torneo_locale,
+    Torneo,
+    Sensore,
+    Gioco_fisico,
+    Componente_edge,
+    Locale,
+    Membro_squadra,
+    Squadra,
+    Tipologia_gioco,
+    Utente
+    RESTART IDENTITY CASCADE;
+-- ==========================================
 -- INSERIMENTO DATI DI PROVA MASSIVI (DML)
 -- ==========================================
 
@@ -47,10 +65,10 @@ INSERT INTO Membro_squadra (id_utente, id_squadra) VALUES
 
 -- 5. LOCALI
 INSERT INTO Locale (nome, indirizzo, accesso, gestore_id) VALUES
-('Taverna del Cinghiale', 'Via Roma 10, Torino', 'Luogo pubblico', , 3), -- 1
-('Circolo Sportivo Nord', 'Piazza Milano 5, Torino', 'Luogo privato', , 4), -- 2
-('Bar dello Sport', 'Corso Francia 45, Milano', 'Luogo pubblico', ,15), -- 3
-('Bocciofila La Rampa', 'Via Napoli 12, Roma', 'Luogo pubblico', ,3); -- 4
+('Taverna del Cinghiale', 'Via Roma 10, Torino', 'Luogo pubblico',  3), -- 1
+('Circolo Sportivo Nord', 'Piazza Milano 5, Torino', 'Luogo privato', 4), -- 2
+('Bar dello Sport', 'Corso Francia 45, Milano', 'Luogo pubblico', 15), -- 3
+('Bocciofila La Rampa', 'Via Napoli 12, Roma', 'Luogo pubblico',3); -- 4
 
 
 -- 6. COMPONENTI EDGE

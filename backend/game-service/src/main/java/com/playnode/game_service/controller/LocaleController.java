@@ -46,7 +46,7 @@ public class LocaleController {
 
     @GetMapping("/{idLocale}/host_broker")
     public String getHostBrokerByLocale(@PathVariable Long idLocale) {
-        return localeService.ottieniHostBrokerPerLocale(idLocale);
+        return localeService.ottieniHostLocale(idLocale);
     }
 
     @PutMapping("/{idLocale}")
