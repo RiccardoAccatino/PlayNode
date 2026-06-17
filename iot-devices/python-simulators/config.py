@@ -2,10 +2,10 @@ import paho.mqtt.client as mqtt
 # --- CONFIGURAZIONE MQTT ---
 BROKER   = "192.168.1.11"   
 PORT     = 1883
-MQTT_USER = "edge_service"
-MQTT_PASSWORD = "service"
+MQTT_USER = "cv_bocce"
+MQTT_PASSWORD = "bocce"
 
-TOPIC    = "bocce/punteggio"
+TOPIC    = "playnode/bocce/punteggio"
 #CONNESSIONE AL BROKER 
 def get_mqtt_client():
     client = mqtt.Client()

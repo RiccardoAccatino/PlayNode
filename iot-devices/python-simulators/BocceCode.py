@@ -144,8 +144,8 @@ while True:
                     round_pubblicato = True # Blocca futuri invii finché le bocce non vengono rimosse
                 
                 elif round_pubblicato:
-                    cv2.putText(frame, "ROUND CONCLUSO - Raccogliere le bocce", 
-                                (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(frame, "ROUND CONCLUSO - Raccogliere le bocce", (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    print("Rimuovere le bocce!")
 
     else:
         # Se qualcuno passa davanti, o la palla rotola (quindi i count cambiano), resetta il timer!
