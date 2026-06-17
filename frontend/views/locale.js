@@ -118,10 +118,7 @@ export function localeGames() {
 async function initLocaleGames(tbodyId) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
-
-    // Come recuperi l’id del locale?
-    // Opzione A: se il token contiene localeId, salvalo in localStorage al login e leggilo qui.
-    // Per ora metto un fallback:
+    
     const idLocale = localStorage.getItem('localeId') || 1;
 
     const giochi = await Api.getGiochiByLocale(idLocale);

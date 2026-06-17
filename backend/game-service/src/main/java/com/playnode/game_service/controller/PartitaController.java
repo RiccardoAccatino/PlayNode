@@ -20,6 +20,11 @@ public class PartitaController {
         return partitaService.ottieniTutteLePartite();
     }
 
+    @GetMapping
+    public List<PartitaDTO> ottieniPartiteLivePerLocale(Long idLocale){
+        return partitaService.ottieniPartiteLivePerLocale(idLocale);
+    }
+
     @PostMapping("/avvia/{idGiocoInstallato}")
     public PartitaDTO avviaPartita(@PathVariable Long idGiocoInstallato) {
         return partitaService.avviaNuovaPartita(idGiocoInstallato);

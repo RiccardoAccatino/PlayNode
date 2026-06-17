@@ -566,3 +566,9 @@ export async function getMonitorLogs() {
     return await res.json();
 }
 
+
+/// da finire ci serve a ottenere le partite in live c'è anche nel controller
+export async function ottieniPartiteLivePerLocale(){
+
+}
+
