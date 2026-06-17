@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.sql.Timestamp;
 
 @Service
 public class PartitaService {
@@ -52,7 +53,6 @@ public class PartitaService {
         return convertiInDTO(partitaSalvata);
     }
 
-    // Ecco la nuova logica per i punteggi!
     public PartitaDTO aggiornaPunteggio(Long idPartita, Long idSquadra) {
         Optional<Partita> partitaOp = partitaRepository.findById(idPartita);
 
@@ -81,6 +81,8 @@ public class PartitaService {
         return null; // Ritorna null se l'ID della partita è sbagliato
     }
 
+
+
     public PartitaDTO terminaPartita(Long idPartita) {
         Optional<Partita> partitaOp = partitaRepository.findById(idPartita);
 
@@ -102,6 +104,35 @@ public class PartitaService {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
+
+    public List<PartitaDTO> ottieniPartiteLivePerLocale(Long idLocale) {
+        List<Object[]> risultati = partitaRepository.trovaPartiteLiveGrezzePerLocale(idLocale);
+        List<PartitaDTO> dtos = new ArrayList<>();
+
+        for (Object[] riga : risultati) {
+            PartitaDTO dto = new PartitaDTO();
+
+            // Mappiamo i campi basandoci sull'ordine della SELECT nella query:
+            // 0: id_partita, 1: gioco_fisico_id, 2: timestamp_inizio, 3: punteggio1, 4: punteggio2
+            dto.setId(((Number) riga[0]).longValue());
+            dto.setIdGiocoInstallato(((Number) riga[1]).longValue());
+            dto.setStato("IN_CORSO"); // Essendo live, sono sicuramente in corso
+
+            if (riga[2] != null) {
+                // Postgres restituisce un java.sql.Timestamp, lo convertiamo in LocalDateTime
+                LocalDateTime inizio = ((Timestamp) riga[2]).toLocalDateTime();
+                dto.setTimestampInizio(inizio.format(ISO_FORMATTER));
+            }
+            dto.setTimestampFine(null);
+
+            // Prendiamo i punteggi calcolati in tempo reale con il pivoting della query
+            dto.setPunteggio1(((Number) riga[3]).intValue());
+            dto.setPunteggio2(((Number) riga[4]).intValue());
+
+            dtos.add(dto);
+        }
+        return dtos;
+    }
     private PartitaDTO convertiInDTO(Partita partita) {
         PartitaDTO dto = new PartitaDTO();
         dto.setId(partita.getIdPartita());
