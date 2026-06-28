@@ -15,13 +15,15 @@ public class PartitaController {
         this.partitaService = partitaService;
     }
 
+    // API: GET /api/partite
     @GetMapping
     public List<PartitaDTO> getAllPartite() {
         return partitaService.ottieniTutteLePartite();
     }
 
-    @GetMapping
-    public List<PartitaDTO> ottieniPartiteLivePerLocale(Long idLocale){
+    // API: GET /api/partite/locale/{idLocale}
+    @GetMapping("/locale/{idLocale}")
+    public List<PartitaDTO> ottieniPartiteLivePerLocale(@PathVariable Long idLocale) {
         return partitaService.ottieniPartiteLivePerLocale(idLocale);
     }
 
@@ -31,7 +33,6 @@ public class PartitaController {
     }
 
     // API: PUT /api/partite/{idPartita}/punteggio?idSquadra=5
-    // Abbiamo cambiato "squadra" con "idSquadra" per allinearci al Database!
     @PutMapping("/{idPartita}/punteggio")
     public PartitaDTO registraPunto(
             @PathVariable Long idPartita,
