@@ -5,105 +5,143 @@
 
 import * as Api from '../js/api.js';
 
-function showToast(message, type = 'blu') {
-  const existing = document.getElementById('playnode-toast');
-  if (existing) existing.remove();
-  
-  const toast = document.createElement('div');
-  toast.id = 'playnode-toast';
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surf);
-    border: 1px solid var(--border);
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    z-index: 9999;
-    font-family: var(--ff);
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    animation: slideDown 0.3s ease-out forwards;
-  `;
-  
-  let icon = 'ℹ️';
-  if (type === 'grn') icon = '✅';
-  if (type === 'amb') icon = '⚠️';
-  if (type === 'red') icon = '❌';
-
-  toast.innerHTML = `<span style="font-size: 18px;">${icon}</span> <span>${message}</span>`;
-  
-  if (!document.getElementById('toast-styles')) {
-    const style = document.createElement('style');
-    style.id = 'toast-styles';
-    style.innerHTML = `
-      @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
-      @keyframes slideUp { from { top: 20px; opacity: 1; } to { top: -50px; opacity: 0; } }
-    `;
-    document.head.appendChild(style);
-  }
-  
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.animation = 'slideUp 0.3s ease-in forwards';
-    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
-  }, 3000);
-}
-
-export function localeOverview() {
+function getEmptyLocaleHtml() {
   return `
-      <div class="pg-title">Panoramica — Locale</div>
-      <div class="pg-sub">Gestione dispositivi e attività</div>
-      <div class="stats-row">
-        <div class="scard"><div class="scard-lbl">Giochi attivi</div><div class="scard-val">4</div><div class="scard-delta neutral">su 4 totali</div></div>
-        <div class="scard"><div class="scard-lbl">Partite oggi</div><div class="scard-val">37</div><div class="scard-delta up">+12% vs ieri</div></div>
-        <div class="scard"><div class="scard-lbl">Giocatori oggi</div><div class="scard-val">23</div><div class="scard-delta up">picco 16-18</div></div>
-        <div class="scard"><div class="scard-lbl">Stato connessione</div><div class="scard-val" style="font-size:14px;color:var(--grn)">Online</div><div class="scard-delta up">edge ok · 12ms</div></div>
-      </div>
-      <div class="row2">
-        <div class="card">
-          <div class="card-hd">Giochi in tempo reale</div>
-          ${[
-      { ico: '⚽', name: 'Calciobalilla Verde', status: 'In partita', score: '3-2', time: '04:21', players: 'Luca vs Anna' },
-      { ico: '⚽', name: 'Calciobalilla Rosso', status: 'Libero', score: '—', time: '—', players: '—' },
-      { ico: '🎯', name: 'Freccette Dx', status: 'In partita', score: '180 pts', time: '02:05', players: 'Marco vs Giulia' },
-      { ico: '🎱', name: 'Biliardo', status: 'In pausa', score: '4-4', time: '08:33', players: 'Giorgio vs Piero' },
-    ].map(g => `
-            <div class="list-row">
-              <div class="gi" style="background:var(--surf2)">${g.ico}</div>
-              <div style="flex:1"><div class="rname">${g.name}</div><div class="rmeta">${g.players}</div></div>
-              <div style="text-align:right">
-                <div style="font-size:11px;font-weight:500">${g.score}</div>
-                <div style="font-size:9px;color:var(--txt3)">${g.time}</div>
-              </div>
-              <span class="badge ${g.status === 'In partita' ? 'b-grn' : g.status === 'Libero' ? 'b-blu' : 'b-amb'}">${g.status}</span>
-            </div>`).join('')}
-        </div>
-        <div class="card">
-          <div class="card-hd">Ultimi eventi</div>
-          ${[
-      { t: '14:47', msg: 'Goal segnato — Calciobalilla Verde (3-2)', type: 'grn' },
-      { t: '14:45', msg: 'Partita iniziata — Freccette Dx', type: 'blu' },
-      { t: '14:38', msg: 'Partita terminata — Calciobalilla Rosso (5-3)', type: 'grn' },
-      { t: '14:31', msg: 'Edge offline temporaneo (42 sec)', type: 'amb' },
-      { t: '14:29', msg: 'Sincronizzazione dati completata', type: 'blu' },
-      { t: '14:14:20', msg: 'Nuovo giocatore registrato', type: 'grn' },
-    ].map(e => `
-            <div class="list-row">
-              <span style="font-size:9px;color:var(--txt3);width:32px;flex-shrink:0">${e.t}</span>
-              <div class="dot ${e.type === 'grn' ? 'd-grn' : e.type === 'amb' ? 'd-amb' : 'd-grn'}" style="${e.type === 'blu' ? 'background:var(--acc)' : ''}"></div>
-              <div style="font-size:11px;flex:1">${e.msg}</div>
-            </div>`).join('')}
-        </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--txt2);text-align:center;">
+        <div style="font-size:40px;margin-bottom:10px;">🏢</div>
+        <h3 style="margin:0 0 5px 0;">Nessun locale associato</h3>
+        <p style="margin:0;font-size:14px;max-width:300px">Il tuo account non è attualmente associato ad alcun locale. Contatta l'amministratore per l'assegnazione.</p>
       </div>`;
 }
 
+export function localeOverview() {
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') {
+    return `
+      <div class="pg-title">Panoramica — Locale</div>
+      <div class="pg-sub">Gestione dispositivi e attività</div>
+      ${getEmptyLocaleHtml()}`;
+  }
+
+  setTimeout(() => initLocaleOverview('locale-overview-container'), 0);
+  return `
+      <div class="pg-title">Panoramica — Locale</div>
+      <div class="pg-sub">Gestione dispositivi e attività</div>
+      <div id="locale-overview-container">
+        <div class="spinner">Caricamento panoramica...</div>
+      </div>`;
+}
+
+export async function initLocaleOverview(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') return;
+
+  try {
+    const [allPartite, giochi, latencies] = await Promise.all([
+      Api.getAllPartite(),
+      Api.getGiochiByLocale(idLocale),
+      Api.getMonitorLatencies().catch(() => null)
+    ]);
+
+    const giochiMap = {};
+    giochi.forEach(g => {
+      const id = g.idGiocoInstallato || g.id || g.id_gioco_installato;
+      if (id) giochiMap[id] = g;
+    });
+
+    const partite = allPartite.filter(p => giochiMap[p.idGiocoInstallato]);
+
+    const activeGamesCount = giochi.length;
+    const partiteOggiCount = partite.length;
+    const livePartite = partite.filter(p => p.stato?.toUpperCase() === 'IN_CORSO');
+    const terminatePartite = partite.filter(p => p.stato?.toUpperCase() === 'TERMINATA').slice(-20).reverse();
+
+    let liveHtml = '<div style="padding:14px;color:var(--txt3);font-size:12px;text-align:center">Nessuna partita attiva.</div>';
+    if (livePartite.length > 0) {
+      liveHtml = livePartite.map(p => {
+        const gioco = giochiMap[p.idGiocoInstallato];
+        const nomeGioco = gioco ? (gioco.tipoGioco || gioco.nome || gioco.nomeGioco || gioco.nomeTipologiaGioco || `Gioco #${p.idGiocoInstallato}`) : `Gioco #${p.idGiocoInstallato}`;
+        let icon = '🎮';
+        if (nomeGioco) {
+          const lower = nomeGioco.toLowerCase();
+          if (lower.includes('calcio')) icon = '⚽';
+          else if (lower.includes('freccet')) icon = '🎯';
+          else if (lower.includes('biliard')) icon = '🎱';
+          else if (lower.includes('bowl')) icon = '🎳';
+          else if (lower.includes('bocce')) icon = '🎳';
+        }
+        return `
+          <div class="list-row">
+            <div class="gi" style="background:var(--surf2)">${icon}</div>
+            <div style="flex:1"><div class="rname">${nomeGioco}</div><div class="rmeta">ID: ${p.id}</div></div>
+            <div style="text-align:right">
+              <div style="font-size:11px;font-weight:500">${p.punteggio1} - ${p.punteggio2}</div>
+            </div>
+            <span class="badge b-grn">In partita</span>
+          </div>`;
+      }).join('');
+    }
+
+    let historyHtml = '<div style="padding:14px;color:var(--txt3);font-size:12px;text-align:center">Nessuna partita terminata.</div>';
+    if (terminatePartite.length > 0) {
+      historyHtml = terminatePartite.map(p => {
+        const gioco = giochiMap[p.idGiocoInstallato];
+        const nomeGioco = gioco ? (gioco.tipoGioco || gioco.nome || gioco.nomeGioco || gioco.nomeTipologiaGioco || `Gioco #${p.idGiocoInstallato}`) : `Gioco #${p.idGiocoInstallato}`;
+        return `
+          <div class="list-row">
+            <span style="font-size:9px;color:var(--txt3);width:40px;flex-shrink:0">ID ${p.id}</span>
+            <div class="dot d-blu" style="background:var(--acc)"></div>
+            <div style="font-size:11px;flex:1">Terminata — ${nomeGioco} (${p.punteggio1}-${p.punteggio2})</div>
+          </div>`;
+      }).join('');
+    }
+
+    let edgeStatus = 'Offline';
+    let edgeColor = 'var(--red)';
+    let edgeDelta = 'irraggiungibile';
+
+    if (latencies && latencies.length > 0) {
+      edgeStatus = 'Online';
+      edgeColor = 'var(--grn)';
+      const ms = latencies[0].ms || 12;
+      edgeDelta = `edge ok &middot; ${ms}ms`;
+    }
+
+    container.innerHTML = `
+      <div class="stats-row">
+        <div class="scard"><div class="scard-lbl">Giochi installati</div><div class="scard-val">${activeGamesCount}</div><div class="scard-delta neutral">totali</div></div>
+        <div class="scard"><div class="scard-lbl">Totale partite</div><div class="scard-val">${partiteOggiCount}</div><div class="scard-delta up">storico</div></div>
+        <div class="scard"><div class="scard-lbl">Partite live</div><div class="scard-val">${livePartite.length}</div><div class="scard-delta up">in corso</div></div>
+        <div class="scard"><div class="scard-lbl">Stato connessione</div><div class="scard-val" style="font-size:14px;color:${edgeColor}">${edgeStatus}</div><div class="scard-delta up">${edgeDelta}</div></div>
+      </div>
+      <div class="row2">
+        <div class="card" style="max-height: 400px; overflow-y: auto; padding-top: 0;">
+          <div class="card-hd" style="position: sticky; top: 0; background: var(--surf); z-index: 2; padding-top: 14px; padding-bottom: 12px; margin-bottom: 0; border-bottom: 1px solid var(--bdr);">Giochi in tempo reale</div>
+          <div>${liveHtml}</div>
+        </div>
+        <div class="card" style="max-height: 400px; overflow-y: auto; padding-top: 0;">
+          <div class="card-hd" style="position: sticky; top: 0; background: var(--surf); z-index: 2; padding-top: 14px; padding-bottom: 12px; margin-bottom: 0; border-bottom: 1px solid var(--bdr);">Ultime partite terminate</div>
+          <div>${historyHtml}</div>
+        </div>
+      </div>`;
+
+  } catch (error) {
+    console.error('Errore nel caricamento della panoramica:', error);
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);font-size:12px">Errore di connessione al server.</div>`;
+  }
+}
+
 export function localeLive() {
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') {
+    return `
+      <div class="pg-title">Partite Live</div>
+      <div class="pg-sub">Monitoraggio in tempo reale dei giochi nel locale</div>
+      ${getEmptyLocaleHtml()}`;
+  }
+
   setTimeout(() => initLiveMatches('live-matches-container'), 0);
   return `
       <div class="pg-title">Partite Live</div>
@@ -117,7 +155,8 @@ export function initLiveMatches(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const idLocale = localStorage.getItem('localeId') || 1;
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') return;
 
   async function loadAndRender() {
     try {
@@ -196,21 +235,24 @@ export function initLiveMatches(containerId) {
   const clickHandler = async (e) => {
     if (e.target.classList.contains('btn-termina')) {
       const idPartita = e.target.getAttribute('data-id');
-      if (confirm('Vuoi davvero forzare la chiusura di questa partita?')) {
+      if (await window.showConfirm('Vuoi davvero forzare la chiusura di questa partita?')) {
+        const loadingToast = window.showToast("Caricamento in corso...", "load", 0);
         try {
           e.target.disabled = true;
           e.target.textContent = '...';
           const result = await Api.terminaPartita(idPartita);
+          loadingToast.close();
           if (result) {
-            showToast(`Partita ${idPartita} terminata con successo.`, 'grn');
+            window.showToast(`Partita ${idPartita} terminata con successo.`, 'grn');
             loadAndRender();
           } else {
-            showToast(`Impossibile terminare la partita.`, 'red');
+            window.showToast(`Impossibile terminare la partita.`, 'red');
             e.target.disabled = false;
             e.target.textContent = 'Termina';
           }
         } catch (err) {
-          showToast(`Errore durante la terminazione.`, 'red');
+          loadingToast.close();
+          window.showToast(`Errore durante la terminazione.`, 'red');
           e.target.disabled = false;
           e.target.textContent = 'Termina';
         }
@@ -229,8 +271,15 @@ export function initLiveMatches(containerId) {
 }
 
 export function localeGames() {
-  const tbodyId = 'locale-games-tbody';
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') {
+    return `
+      <div class="pg-title">Giochi del Locale</div>
+      <div class="pg-sub">Configurazione e gestione giochi installati</div>
+      ${getEmptyLocaleHtml()}`;
+  }
 
+  const tbodyId = 'locale-games-tbody';
   setTimeout(() => initLocaleGames(tbodyId), 0);
 
   return `
@@ -258,7 +307,8 @@ async function initLocaleGames(tbodyId) {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
 
-  const idLocale = localStorage.getItem('localeId') || 1;
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') return;
 
   const giochi = await Api.getGiochiByLocale(idLocale);
 
@@ -301,19 +351,22 @@ async function initLocaleGames(tbodyId) {
       if (!id) return;
 
       currentBtn.disabled = true;
+      const loadingToast = window.showToast("Caricamento in corso...", "load", 0);
 
       try {
         const partita = await Api.avviaPartita(id);
+        loadingToast.close();
 
         if (!partita) {
-          showToast("Errore: impossibile avviare la partita.", "red");
+          window.showToast("Errore: impossibile avviare la partita.", "red");
           return;
         }
 
-        showToast(`Partita avviata! (ID: ${partita.id || partita.idPartita || '-'})`, "grn");
+        window.showToast(`Partita avviata! (ID: ${partita.id || partita.idPartita || '-'})`, "grn");
       } catch (error) {
+        loadingToast.close();
         console.error("Errore di connessione o del server:", error);
-        showToast("Si è verificato un errore critico durante l'avvio della partita.", "red");
+        window.showToast("Si è verificato un errore critico durante l'avvio della partita.", "red");
       } finally {
         currentBtn.disabled = false;
       }
@@ -322,6 +375,14 @@ async function initLocaleGames(tbodyId) {
 }
 
 export function localeDevices() {
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') {
+    return `
+      <div class="pg-title">Dispositivi Edge</div>
+      <div class="pg-sub">Stato hardware e connessione MQTT</div>
+      ${getEmptyLocaleHtml()}`;
+  }
+
   return `
       <div class="pg-title">Dispositivi Edge</div>
       <div class="pg-sub">Stato hardware e connessione MQTT</div>
@@ -354,6 +415,14 @@ export function localeDevices() {
 }
 
 export function localeStats() {
+  const idLocale = localStorage.getItem('localeId');
+  if (!idLocale || idLocale === 'undefined' || idLocale === 'null') {
+    return `
+      <div class="pg-title">Statistiche Locale</div>
+      <div class="pg-sub">Analisi utilizzo — Locale</div>
+      ${getEmptyLocaleHtml()}`;
+  }
+
   return `
       <div class="pg-title">Statistiche Locale</div>
       <div class="pg-sub">Analisi utilizzo — Locale</div>

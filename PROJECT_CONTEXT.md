@@ -870,4 +870,12 @@ sequenceDiagram
 - **Visualizzazione Partite Live (Gestore):** Completata la dashboard "Partite Live" nel Frontend (`locale.js`) che esegue il polling ogni 5s recuperando i punteggi tramite REST API `GET /api/partite/locale/{id}` e aggiorna l'interfaccia.
 - **Supporto "Termina Partita" manuale:** Implementato un bottone per forzare la fine di una partita in corso, con popup di conferma Toast nativo e trigger dell'API REST `PUT /api/partite/{id}/termina` che chiude lo stato della partita e manda il comando MQTT all'Edge.
 - **Inserimento Gioco Bocce:** Inserito a database il gioco fisico "Bocce Elettroniche" mappandolo sul Locale ID 1.
+- **Supporto Multi-Locale e Fallback Gestore:** Completata l'implementazione del flusso di login. Se un gestore possiede più locali, una finestra modale nativa (`window.showLocaleSelectorModal` tramite `.btn-locale-select`) ne forza la scelta prima di proseguire. Implementato lo switch rapido (menu a tendina) nella Topbar (`dashboard.js`). Rimosso l'hardcoding al "Locale ID 1"; qualora un gestore non abbia locali associati, tutte le tab della dashboard visualizzeranno correttamente un *Empty State* pulito ("Nessun locale associato").
 - **Refactoring Script di Test:** I vecchi script isolati di test (`test_script.py`, `simulate_live_match.py`, mock vari) sono stati consolidati all'interno della directory `test-scripts/` nella root di progetto.
+
+
+TODO:  
+Gestore
+- Impostazioni: aggiungere i locali associati,  implementare i tasti cambia password edge, rigenera token APi, scollega locale (vedere se tenerli o eliminarli)
+- Tabs: dispositivi, statistiche locale
+- Usare i toast custom anche nelle altre view, esempio conferma elimina utente

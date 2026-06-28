@@ -5,7 +5,7 @@
  * 3. Comunicare con il backend tramite il modulo `api.js` per l'autenticazione.
  */
 
-import { loginUser } from '../js/api.js';
+import { loginUser, getAllLocali } from '../js/api.js';
 
 
 /**
@@ -282,6 +282,28 @@ export function renderLogin(onSuccess) {
         localStorage.setItem('token', userData.token);
         localStorage.setItem('userId', String(userData.userId));
         localStorage.setItem('userRole', userData.ruolo || userData.role);
+
+        // Multi-Locale: fetch and save manager's locales
+        const roleStr = String(userData.ruolo || userData.role || '').toLowerCase();
+        if (roleStr === 'gestore') {
+          try {
+            const locali = await getAllLocali();
+            const myLocali = locali.filter(l => l.gestoreId == userData.userId);
+            if (myLocali.length > 1) {
+              localStorage.setItem('myLocali', JSON.stringify(myLocali));
+              const scelto = await window.showLocaleSelectorModal(myLocali);
+              localStorage.setItem('localeId', String(scelto));
+            } else if (myLocali.length === 1) {
+              localStorage.setItem('myLocali', JSON.stringify(myLocali));
+              localStorage.setItem('localeId', String(myLocali[0].id));
+            } else {
+              localStorage.removeItem('myLocali');
+              localStorage.removeItem('localeId');
+            }
+          } catch (e) {
+            console.error("Errore recupero locali gestore al login:", e);
+          }
+        }
       }
 
       // 5. Normalizzazione dei dati: ci assicuriamo che le variabili abbiano un valore

@@ -128,6 +128,33 @@ export function renderDashboard(userData) {
     }
 
     // 5. LO SCHELETRO PRINCIPALE DELL'APP
+    let localeSelectorHtml = '';
+    if (mappedRole === 'locale') {
+        const myLocaliStr = localStorage.getItem('myLocali');
+        if (myLocaliStr) {
+            try {
+                const myLocali = JSON.parse(myLocaliStr);
+                const currentId = localStorage.getItem('localeId');
+
+                if (myLocali.length > 1) {
+                    localeSelectorHtml = `
+                    <div style="margin-left: 20px; display:flex; align-items:center;">
+                        <select id="locale-selector" style="background:var(--surf2); color:var(--txt); border:1px solid var(--bdr); border-radius:6px; padding:6px 18px 6px 10px; font-family:var(--fb); font-size:13px; outline:none; cursor:pointer;">
+                            ${myLocali.map(l => `<option value="${l.id}" ${l.id == currentId ? 'selected' : ''}>📍 ${l.nome}</option>`).join('')}
+                        </select>
+                    </div>`;
+                } else if (myLocali.length === 1) {
+                    localeSelectorHtml = `
+                    <div style="margin-left: 20px; display:flex; align-items:center;">
+                        <span style="font-size:13px; color:var(--txt2); font-weight:500; background:var(--surf2); padding:6px 12px; border-radius:6px; border:1px solid var(--bdr);">
+                            📍 ${myLocali[0].nome}
+                        </span>
+                    </div>`;
+                }
+            } catch (e) { }
+        }
+    }
+
     /**
      * Template HTML principale dell'applicazione.
      * Contiene lo scheletro con topbar, body (sidebar + main content) e footer.
@@ -144,6 +171,8 @@ export function renderDashboard(userData) {
             <img src="./assets/img/Logo.png" alt="PlayNode Logo" />
             <span>PlayNode</span>
           </div>
+          
+          ${localeSelectorHtml}
 
           <div class="nav" id="topnav"></div>
 
@@ -178,6 +207,15 @@ export function renderDashboard(userData) {
 
     document.getElementById('app-root').innerHTML = appHtml;
     document.getElementById('ft-date').textContent = new Date().toLocaleDateString('it-IT');
+
+    // Listener per il selettore del locale
+    const localeSelect = document.getElementById('locale-selector');
+    if (localeSelect) {
+        localeSelect.addEventListener('change', (e) => {
+            localStorage.setItem('localeId', e.target.value);
+            window.location.reload();
+        });
+    }
 
     // 6. COSTRUZIONE NAVIGAZIONE
     /**
@@ -228,7 +266,7 @@ export function renderDashboard(userData) {
                     document.querySelectorAll('.sb-btn').forEach(x => x.classList.remove('active'));
                     b.classList.add('active');
                     showPage(label);
-                    if(window.innerWidth <= 850) sb.classList.remove('open');
+                    if (window.innerWidth <= 850) sb.classList.remove('open');
                 };
                 sb.appendChild(b);
             });
@@ -273,7 +311,7 @@ export function renderDashboard(userData) {
     async function handleLogout() {
         const token = localStorage.getItem('token');
         const btn = document.getElementById('logout-btn');
-        if(btn) {
+        if (btn) {
             btn.textContent = '...';
             btn.disabled = true;
         }

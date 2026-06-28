@@ -312,14 +312,14 @@ async function initPlatformUsers() {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       const name = btn.getAttribute('data-name');
-      if (!confirm(`Eliminare l'utente "${name}" (#${id})?`)) return;
+      if (!(await window.showConfirm(`Eliminare l'utente "${name}" (#${id})?`))) return;
       try {
         const ok = await Api.deleteUtente(id);
         showToast(ok ? `Utente #${id} eliminato.` : `Utente #${id} non trovato.`, ok ? 'success' : 'warning');
         initPlatformUsers();
       } catch (err) {
         showToast(err.message, 'error', 5000);
-      }
+      } id = "locale-selector"
     });
   });
 }
@@ -494,7 +494,7 @@ async function initPlatformLocali() {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       const name = btn.getAttribute('data-name');
-      if (!confirm(`Eliminare il locale "${name}" (#${id})?`)) return;
+      if (!(await window.showConfirm(`Eliminare il locale "${name}" (#${id})?`))) return;
       try {
         const ok = await Api.deleteLocale(id);
         showToast(ok ? `Locale #${id} eliminato.` : `Locale #${id} non trovato.`, ok ? 'success' : 'warning');
@@ -1128,7 +1128,7 @@ export async function platformTournaments() {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
         const name = btn.getAttribute('data-name');
-        if (!confirm(`Eliminare il torneo "${name}" (#${id})?`)) return;
+        if (!(await window.showConfirm(`Eliminare il torneo "${name}" (#${id})?`))) return;
         try {
           const ok = await Api.deleteTournament(id);
           showToast(ok ? `Torneo #${id} eliminato.` : `Torneo #${id} non trovato.`, ok ? 'success' : 'warning');
