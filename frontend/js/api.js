@@ -288,6 +288,21 @@ export async function getAllPartite() {
 }
 
 /**
+ * Ottiene le partite di un locale specifico.
+ * Endpoint backend: GET /api/partite/locale/{idLocale}
+ *
+ * @param {string|number} idLocale - L'ID univoco del locale
+ * @returns {Promise<Array>} Array contenente gli oggetti partita del locale
+ * @throws {Error} Se si verifica un errore durante la chiamata API
+ */
+export async function getPartiteByLocale(idLocale) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/partite/locale/${idLocale}`);
+    if (response.status === 404) return [];
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+/**
  * Ottiene gli eventi IoT associati a una partita specifica.
  * Richiede autenticazione tramite JWT token.
  *
@@ -565,10 +580,3 @@ export async function getMonitorLogs() {
     if (!res.ok) throw await parseApiError(res);
     return await res.json();
 }
-
-
-/// da finire ci serve a ottenere le partite in live c'è anche nel controller
-export async function ottieniPartiteLivePerLocale(){
-
-}
-

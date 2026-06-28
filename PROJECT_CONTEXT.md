@@ -56,6 +56,7 @@ PlayNode è strutturato come un sistema a microservizi Java Spring Boot, con un 
 - `tournament-service`: gestisce tornei e la loro configurazione.
 - `docker/`: contiene Docker Compose, Postgres e Mosquitto.
 - `edge-component/` + `iot-devices/`: script Python di Edge / simulatori per generare e inviare eventi MQTT/REST.
+- `test-scripts/`: script Python di test End-to-End e utilità di simulazione partite, consolidati e raggruppati qui per mantenere pulita la root.
 
 ### Pattern architetturali utilizzati
 
@@ -860,7 +861,13 @@ sequenceDiagram
 - Tratta i messaggi MQTT come eventi idempotenti quando possibile.
 - Verifica side effect su DB prima di inviare comandi Edge.
 - Usa `spring-boot-starter-test` per creare test di business logic, non solo context load.
-- Aggiornare sempre il file PRFOJECT_CONTEXT.md.
-
+- Aggiornare sempre il file PROJECT_CONTEXT.md.
 
 ---
+
+## 3. Cronologia Aggiornamenti Recenti
+
+- **Visualizzazione Partite Live (Gestore):** Completata la dashboard "Partite Live" nel Frontend (`locale.js`) che esegue il polling ogni 5s recuperando i punteggi tramite REST API `GET /api/partite/locale/{id}` e aggiorna l'interfaccia.
+- **Supporto "Termina Partita" manuale:** Implementato un bottone per forzare la fine di una partita in corso, con popup di conferma Toast nativo e trigger dell'API REST `PUT /api/partite/{id}/termina` che chiude lo stato della partita e manda il comando MQTT all'Edge.
+- **Inserimento Gioco Bocce:** Inserito a database il gioco fisico "Bocce Elettroniche" mappandolo sul Locale ID 1.
+- **Refactoring Script di Test:** I vecchi script isolati di test (`test_script.py`, `simulate_live_match.py`, mock vari) sono stati consolidati all'interno della directory `test-scripts/` nella root di progetto.
