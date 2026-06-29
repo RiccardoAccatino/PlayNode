@@ -75,7 +75,7 @@ public class Locale {
         return host_broker;
     }
 
-    public void setHost_broker(String dns_broker) {
+    public void setHost_broker(String host_broker) {
         this.host_broker = host_broker;
     }
 }

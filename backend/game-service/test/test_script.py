@@ -94,7 +94,7 @@ print("Partite prima del goal:", json.dumps(res.json(), indent=2))
 
 # 6. Simulate a goal event via API
 print(f"Sending goal event to partita {partita_id}...")
-res = requests.post(f"{GAME_URL}/iot/partita/{partita_id}?idSensore=1&valore=GOAL", headers=headers)
+res = requests.post(f"{GAME_URL}/iot/evento?idPartita={partita_id}&idSensore=1&valore=GOAL", headers=headers)
 print("Goal event response:", res.status_code, res.text)
 time.sleep(2)
 

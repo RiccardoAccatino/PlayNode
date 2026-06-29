@@ -12,7 +12,7 @@ MQTT_USER = "cv_bocce"
 MQTT_PASSWORD = "bocce"
 
 # ID Fisico di questa pista da bocce nel Database (adattalo al tuo DB)
-ID_GIOCO_FISICO = 2 
+ID_GIOCO_FISICO = 3
 
 # Topic in ascolto
 MQTT_TOPIC_PUNTEGGIO = "bocce/punteggio"
@@ -21,7 +21,9 @@ MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
 
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
 
-API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+# API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+API_BASE_URL = "http://localhost:8080"
+
 # La variabile ora parte da None (Nessuna partita in corso) e verrà popolata dal backend
 PARTITA_ATTIVA = None
 

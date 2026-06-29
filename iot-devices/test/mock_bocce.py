@@ -1,5 +1,8 @@
 import time
 import json
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../python-simulators'))
 import config
 
 print("Avvio MOCK Bocce Elettroniche...")

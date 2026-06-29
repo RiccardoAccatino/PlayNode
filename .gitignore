@@ -46,3 +46,10 @@ docker/.env
 *-tcplocalhost-1883/
 *.lck
 *.msg
+
+# =========================
+# Python Cache
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class

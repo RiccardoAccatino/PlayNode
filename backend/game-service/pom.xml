@@ -15,6 +15,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <argLine>-Dnet.bytebuddy.experimental=true</argLine>
     </properties>
 
     <dependencies>

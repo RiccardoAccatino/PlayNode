@@ -86,11 +86,12 @@ INSERT INTO Componente_edge (address, locale_id, stato) VALUES
 INSERT INTO Gioco_fisico (tipologia_gioco_id, locale_id, edge_id) VALUES
 (1, 1, 1), -- 1. Calciobalilla Taverna 
 (1, 1, 2), -- 2. Calciobalilla Taverna 
-(1, 2, 3), -- 3. Calciobalilla Circolo 
-(1, 2, 4), -- 4. Calciobalilla Circolo 
-(2, 3, 5), -- 5. Bocce Bar Sport 
-(2, 3, 6), -- 6. Bocce Bar Sport 
-(2, 4, 7); -- 7. Bocce Bocciofila 
+(2, 1, 2), -- 3. Bocce Taverna 
+(1, 2, 3), -- 4. Calciobalilla Circolo 
+(1, 2, 4), -- 5. Calciobalilla Circolo 
+(2, 3, 5), -- 6. Bocce Bar Sport 
+(2, 3, 6), -- 7. Bocce Bar Sport 
+(2, 4, 7); -- 8. Bocce Bocciofila 
 
 -- 8. SENSORI (Hardware per IoT) --
 INSERT INTO Sensore (gioco_fisico_id, tipo, posizione) VALUES
@@ -189,3 +190,14 @@ INSERT INTO Evento_iot (partita_id, sensore_id, timestamp_evento, valore) VALUES
 (19, 2, CURRENT_TIMESTAMP - INTERVAL '15 minutes', 'Goal: Squadra 2'),
 (19, 1, CURRENT_TIMESTAMP - INTERVAL '10 minutes', 'Goal: Squadra 1'),
 (19, NULL, CURRENT_TIMESTAMP - INTERVAL '5 minutes', 'Palla in centro');
+
+-- =========================================================================
+-- 13. PARTITE LIVE IN CORSO (TAVERNA DEL CINGHIALE)
+-- =========================================================================
+INSERT INTO Partita (gioco_fisico_id, torneo_id, timestamp_inizio, timestamp_fine, stato_sync) VALUES
+(1, NULL, CURRENT_TIMESTAMP - INTERVAL '20 minutes', NULL, 'Realtime'), -- Partita 22 Live Calciobalilla Taverna
+(2, NULL, CURRENT_TIMESTAMP - INTERVAL '5 minutes', NULL, 'Realtime'); -- Partita 23 Live Bocce Taverna
+
+INSERT INTO Partecipa (partita_id, squadra_id, punteggio_finale, vittoria) VALUES
+(22, 1, 4, false), (22, 2, 3, false),
+(23, 4, 8, false), (23, 5, 5, false);

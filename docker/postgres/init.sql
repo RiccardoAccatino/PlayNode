@@ -60,7 +60,8 @@ create table Locale(
     nome varchar(100) not null,
     indirizzo varchar(255) not null,
     accesso accesso_tipo not null,
-    host_broker varchar default 'tcp://broker:1883',
+    -- host_broker varchar default 'tcp://broker:1883',
+    host_broker varchar default 'tcp://playnode-mosquitto:1883',
     gestore_id int not null,
     foreign key(gestore_id) references Utente(id_utente)
         on update cascade

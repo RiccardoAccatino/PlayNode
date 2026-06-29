@@ -35,7 +35,6 @@ public class MqttPublisherServiceTest {
     @Mock
     private LocaleRepository localeRepository;
 
-    @Spy
     private MqttPublisherService mqttPublisherService;
 
     @Mock
@@ -63,9 +62,6 @@ public class MqttPublisherServiceTest {
 
         // Return the mockClient instead of creating a real MqttClient
         doReturn(mockClient).when(mqttPublisherService).createMqttClient(anyString(), anyString());
-        when(mockClient.isConnected()).thenReturn(false);
-        doNothing().when(mockClient).connect(any());
-        doNothing().when(mockClient).publish(anyString(), any(MqttMessage.class));
     }
 
     @Test

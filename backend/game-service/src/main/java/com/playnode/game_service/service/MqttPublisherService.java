@@ -85,8 +85,8 @@ public class MqttPublisherService {
 
         try {
             IMqttClient client = getMqttClient(brokerUrl);
-            String topic = "playnode/server/comandi";
-            String payload = "{\"idGiocoFisico\":" + ID_GIOCO_FISICO +",\"idPartita\":" + idPartita + "}";
+            String topic = "edge/gioco/" + ID_GIOCO_FISICO + "/comandi";
+            String payload = "{\"nuova_partita_id\":" + idPartita + "}";
 
             MqttMessage message = new MqttMessage(payload.getBytes());
             message.setQos(1);
@@ -107,7 +107,7 @@ public class MqttPublisherService {
 
         try {
             IMqttClient client = getMqttClient(brokerUrl);
-            String topic = "playnode/server/comandi";
+            String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
             String payload = "{\"termina_partita\": true}";
 
             MqttMessage message = new MqttMessage(payload.getBytes());

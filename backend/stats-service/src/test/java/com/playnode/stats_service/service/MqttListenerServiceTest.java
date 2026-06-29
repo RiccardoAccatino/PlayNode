@@ -28,7 +28,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class MqttListenerServiceTest {
 
-    @Spy
     private MqttListenerService mqttListenerService;
 
     @Mock

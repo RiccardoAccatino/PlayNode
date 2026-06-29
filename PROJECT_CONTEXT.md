@@ -473,8 +473,7 @@ POST /api/sensori
 
 | Topic | Publisher | Subscriber | Payload |
 |---|---|---|---|
-| `playnode/server/comandi` | `game-service` | Edge locali | `{"idGiocoFisico":...,"idPartita":...}` o `{"termina_partita": true}` |
-| `edge/gioco/{id}/comandi` | Edge locale / backend? | Edge bridge Python | comandi di avvio/fine partita in JSON |
+| `edge/gioco/{id}/comandi` | `game-service` | Edge bridge Python | `{"nuova_partita_id":...}` o `{"termina_partita": true}` in JSON |
 | `calcetto/tavolo1/goal` | Arduino / Edge bridge | Edge bridge calcetto | `A` / `B` (squadra) |
 | `calcetto/tavolo1/distA|distB` | Arduino / Edge bridge | Edge bridge calcetto | distanza numerica come stringa |
 | `bocce/punteggio` | telecamera / simulatore bocce | Edge bridge bocce | JSON contenente `squadra_vincitrice`, `punti` |
@@ -786,7 +785,9 @@ docker-compose up -d
 
 **A. Testare le chiamate API del Game Service**
 Il servizio `game-service` ha degli script E2E in `backend/game-service/test/`.
-1. **`simulate_live_match.py`**: Simula una partita live assegnando punti periodicamente. 
+Questi script testano le API REST direttamente, **bypassando** il livello IoT/MQTT. Sono utili per validare il core del backend o la UI del Frontend in isolamento.
+
+1. **`simulate_live_match.py`**: Simula una partita live assegnando punti periodicamente tramite chiamate REST. *(Attenzione: non usa l'Edge Bridge o MQTT!)*
    ```bash
    python backend/game-service/test/simulate_live_match.py
    ```
@@ -808,6 +809,21 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
    ```bash
    python iot-devices/test/mock_bocce.py
    ```
+
+3. **Flusso Completo IoT (Frontend + Edge + Mock)**:
+   Per testare interamente il sistema hardware (Calcetto o Bocce) e vedere i punteggi salire a schermo sul Frontend in tempo reale:
+   - **Step 1 (Infrastruttura):** Assicurati che backend (game-service) e broker MQTT siano attivi.
+   - **Step 2 (Ponte Edge):** Avvia l'Edge Bridge corrispondente in un terminale separato e lascialo in esecuzione:
+     ```bash
+     python edge-component/mqtt-client/edge-workers/edgebridge_bocce.py
+     # Oppure per il calcetto: python edge-component/mqtt-client/edge-workers/edgebridge_calcetto.py
+     ```
+   - **Step 3 (Avvio Partita da UI):** Apri il Frontend nel browser, effettua il Login come Gestore, entra nel Locale -> "Partite Live", e clicca "Avvia Partita" sul gioco scelto. Osserva il terminale dell'Edge Bridge: confermerà la ricezione dell'ID della partita appena creata.
+   - **Step 4 (Simulazione Punti):** Apri un secondo terminale ed esegui il mock hardware per simulare la rilevazione dei punti:
+     ```bash
+     python iot-devices/test/mock_bocce.py
+     ```
+   - L'Edge Bridge catturerà l'evento dal broker locale, inoltrerà la chiamata REST al server, e il Frontend si aggiornerà automaticamente mostrando i punti a schermo!
 
 ### Riassunto della nuova alberatura di test
 
