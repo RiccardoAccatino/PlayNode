@@ -2,17 +2,18 @@ import json
 import time
 import requests
 import paho.mqtt.client as mqtt
+import os
 
 # ==========================================
 # 1. CONFIGURAZIONI MQTT (Rete Locale/Centrale)
 # ==========================================
-MQTT_BROKER = "127.0.0.1"
-MQTT_PORT = 1883
-MQTT_USER = "arduino_calcetto" 
-MQTT_PASSWORD = "arduino"
+MQTT_BROKER = os.getenv("MQTT_BROKER", "127.0.0.1")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_USER = os.getenv("MQTT_USER", "cv_calcetto")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "calcetto")
 
 # ID Fisico di questo calcetto nel Database Server
-ID_GIOCO_FISICO = 1
+ID_GIOCO_FISICO = int(os.getenv("ID_GIOCO_FISICO", 1))
 # ID del tavolo configurato nello sketch Arduino
 ID_TAVOLO_ARDUINO = "tavolo1"
 
@@ -27,7 +28,8 @@ MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
 # ==========================================
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
 # ==========================================
-API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+#API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
 
 # Stato della partita
 PARTITA_ATTIVA = None

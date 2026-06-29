@@ -318,7 +318,7 @@ export function renderDashboard(userData) {
 
         if (token) {
             try {
-                await fetch('http://localhost:8081/api/auth/logout', {
+                await fetch(`${Api.AUTH_API_URL}/logout`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

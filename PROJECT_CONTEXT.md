@@ -140,7 +140,6 @@ flowchart LR
   - `DELETE /api/utenti/{id}` -> elimina utente
 - Possibili criticità:
   - `SecurityConfig` autentica JWT ma non applica controlli di ruolo nei controller.
-  - le origini CORS sono impostate solo su alcuni localhost e non su tutti gli endpoint.
   - la blacklist è in-memory, quindi non funziona attraverso riavvii e non scala.
 
 ### game-service
@@ -521,9 +520,7 @@ POST /api/sensori
 
 - Mancanza di autorizzazioni basate sul ruolo oltre all'autenticazione.
 - Blacklist JWT volatile e non persistente.
-- Possibile uso di `@CrossOrigin(origins = "*")` su controller che accetta tutti gli origin.
 - Il token JWT viene salvato in `localStorage` nel frontend (esposto a XSS se il sito non è protetto).
-- `application.properties` include valori di default insicuri in variabili JWT e MQTT.
 
 ## 10. Configurazione e Deploy
 

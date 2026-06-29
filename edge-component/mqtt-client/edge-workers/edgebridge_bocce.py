@@ -2,17 +2,18 @@ import json
 import time
 import requests
 import paho.mqtt.client as mqtt
+import os
 
 
 # 1. CONFIGURAZIONI MQTT (Rete Locale/Centrale)
 
-MQTT_BROKER = "127.0.0.1" 
-MQTT_PORT = 1883
-MQTT_USER = "cv_bocce"
-MQTT_PASSWORD = "bocce"
+MQTT_BROKER = os.getenv("MQTT_BROKER", "127.0.0.1")
+MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
+MQTT_USER = os.getenv("MQTT_USER", "cv_bocce")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "bocce")
 
 # ID Fisico di questa pista da bocce nel Database (adattalo al tuo DB)
-ID_GIOCO_FISICO = 3
+ID_GIOCO_FISICO = int(os.getenv("ID_GIOCO_FISICO", 3))
 
 # Topic in ascolto
 MQTT_TOPIC_PUNTEGGIO = "bocce/punteggio"
@@ -21,8 +22,8 @@ MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
 
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
 
-# API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
-API_BASE_URL = "http://localhost:8080"
+#API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
 
 # La variabile ora parte da None (Nessuna partita in corso) e verrà popolata dal backend
 PARTITA_ATTIVA = None

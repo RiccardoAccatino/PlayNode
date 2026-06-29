@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import os
 
 # ==========================================
 # CONFIGURAZIONE MQTT PER I SIMULATORI IOT
@@ -7,8 +8,7 @@ import paho.mqtt.client as mqtt
 # Indirizzo del broker MQTT a cui i simulatori devono connettersi.
 # Usare l'IP locale (127.0.0.1) se il broker Mosquitto gira sulla stessa macchina.
 # Usare l'IP della macchina host (es. 192.168.1.11) se i simulatori girano su un dispositivo esterno.
-#BROKER   = "192.168.1.11"   # IP del host su cui gira l'edge (es. Windows in LAN)
-BROKER   = "127.0.0.1"       # IP locale del broker mosquitto
+BROKER   = os.getenv("MQTT_BROKER", "127.0.0.1")       # IP locale del broker mosquitto
 
 # Porta standard per la connessione MQTT non crittografata
 PORT     = 1883

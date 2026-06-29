@@ -1,8 +1,9 @@
 import requests
 import time
 import sys
+import os
 
-BASE_URL = 'http://localhost'
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost")
 AUTH_URL = f'{BASE_URL}:8081/api/auth'
 GAME_URL = f'{BASE_URL}:8080/api'
 
