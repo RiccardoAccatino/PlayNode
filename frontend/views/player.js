@@ -4,7 +4,7 @@
  */
 
 import * as Api from '../js/api.js';
-import { iconaGioco } from '../js/game-icons.js';
+import { iconaGioco, coloreGioco } from '../js/game-icons.js';
 
 let playerContext = { id: null, name: '', initials: '??', role: 'Giocatore' };
 let lookupCache = { locali: {}, giochi: {}, tipologie: {} };
@@ -14,14 +14,16 @@ let lookupCache = { locali: {}, giochi: {}, tipologie: {} };
  * ===================================================== */
 
 export function setPlayerContext(userData) {
-    if (!userData) return;
+    if (!userData)
+        return;
     playerContext = {
         id: userData.id,
         name: userData.name || 'Giocatore',
         initials: userData.initials || '??',
         role: userData.role || 'Giocatore'
     };
-    if (userData.id) localStorage.setItem('userId', String(userData.id));
+    if (userData.id)
+        localStorage.setItem('userId', String(userData.id));
 }
 
 function getUserId() {
@@ -29,7 +31,8 @@ function getUserId() {
 }
 
 function esc(s) {
-    if (s == null) return '';
+    if (s == null)
+        return '';
     return String(s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -73,7 +76,8 @@ function calcWinRate(partite, vittorie) {
 }
 
 function formatData(iso) {
-    if (!iso) return '—';
+    if (!iso)
+        return '—';
     try {
         const d = new Date(iso);
         if (isNaN(d.getTime())) return String(iso).slice(0, 16);
@@ -81,7 +85,9 @@ function formatData(iso) {
             day: '2-digit', month: 'short', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
-    } catch { return '—'; }
+    } catch {
+        return '—';
+    }
 }
 
 async function loadLookups() {
@@ -99,7 +105,9 @@ async function loadLookups() {
         });
         lookupCache.tipologie = {};
         tipologie.forEach(t => { lookupCache.tipologie[t.id] = t.nome; });
-    } catch (_) { /* lookup opzionale */ }
+    } catch (_) {
+
+    }
 }
 
 function nomeGiocoDaId(giocoId) {
@@ -107,7 +115,8 @@ function nomeGiocoDaId(giocoId) {
 }
 
 function nomeLocaleDaId(idLocale) {
-    if (!idLocale || idLocale === '-') return '—';
+    if (!idLocale || idLocale === '-')
+        return '—';
     const id = Number(idLocale);
     return lookupCache.locali[id] || `Locale #${idLocale}`;
 }
@@ -138,7 +147,8 @@ export function playerOverview() {
 async function initOverview() {
     const root = document.getElementById('player-overview-root');
     const userId = getUserId();
-    if (!root) return;
+    if (!root)
+        return;
 
     if (!userId) {
         root.innerHTML = emptyState('Utente non autenticato.', '🔒');
@@ -241,37 +251,8 @@ async function initOverview() {
         let pct = Math.round((cnt / totalMatches) * 100) || 0;
         pct = Math.max(0, Math.min(100, pct));
 
-        function getColorForGame(n) {
-            if (!n) return null;
-            const k = (n || '').trim().toLowerCase();
-
-            // Mappatura esplicita per nomi tipologia esatti (o molto probabili)
-            const explicit = {
-                'calciobalilla smart': 'var(--neon-blue, #3b82f6)',
-                'calciobalilla': 'var(--neon-blue, #3b82f6)',
-                'calcio balilla': 'var(--neon-blue, #3b82f6)',
-                'calcio balilla smart': 'var(--neon-blue, #3b82f6)',
-                'bocce elettroniche': 'var(--neon-red, #ef4444)',
-                'bocce': 'var(--neon-red, #ef4444)',
-                'biliardo': 'var(--neon-amber, #f59e0b)',
-                'biliardo classic': 'var(--neon-amber, #f59e0b)',
-                'ping pong': 'var(--neon-pink, #ec4899)',
-                'air hockey': 'var(--neon-green, #10b981)'
-            };
-
-            if (explicit[k]) return explicit[k];
-
-            // Fallback a regole di match parziale se non troviamo la stringa esatta
-            if (k.includes('calci') || k.includes('calcio') || k.includes('futbol') || k.includes('football')) return 'var(--neon-blue, #3b82f6)';
-            if (k.includes('bocc')) return 'var(--neon-red, #ef4444)';
-            if (k.includes('biliard') || k.includes('billiard')) return 'var(--neon-amber, #f59e0b)';
-            if (k.includes('ping') || k.includes('pong')) return 'var(--neon-pink, #ec4899)';
-            if (k.includes('air') || k.includes('arcade')) return 'var(--neon-green, #10b981)';
-            return null;
-        }
-
         const fallbackColors = ['var(--neon-blue, #3b82f6)', 'var(--neon-green, #10b981)', 'var(--neon-pink, #ec4899)', 'var(--neon-amber, #f59e0b)'];
-        const mapped = getColorForGame(nome);
+        const mapped = coloreGioco(nome);
         const color = mapped || fallbackColors[idx % fallbackColors.length];
 
         const glow = pct === 100 ? `box-shadow:0 0 12px ${color};` : '';

@@ -52,13 +52,13 @@ def on_message(client, userdata, msg):
         dati = json.loads(payload)
 
         # CASO A: Il Backend ci dice che è iniziata o finita una partita
-                if msg.topic == MQTT_TOPIC_COMANDI:
-                    if "nuova_partita_id" in dati:
-                        PARTITA_ATTIVA = dati["nuova_partita_id"]
-                        print(f"\n [COMANDO SERVER] Nuova partita avviata! ID aggiornato a: {PARTITA_ATTIVA}")
-                    elif "termina_partita" in dati:
-                        PARTITA_ATTIVA = None
-                        print("\n [COMANDO SERVER] Partita terminata. Punti bloccati.")
+        if msg.topic == MQTT_TOPIC_COMANDI:
+            if "nuova_partita_id" in dati:
+                PARTITA_ATTIVA = dati["nuova_partita_id"]
+                print(f"\n [COMANDO SERVER] Nuova partita avviata! ID aggiornato a: {PARTITA_ATTIVA}")
+            elif "termina_partita" in dati:
+                PARTITA_ATTIVA = None
+                print("\n [COMANDO SERVER] Partita terminata. Punti bloccati.")
 
         # CASO B: La telecamera OpenCV ci invia un punteggio
         elif msg.topic == MQTT_TOPIC_PUNTEGGIO:
@@ -100,10 +100,11 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-try:
-    print("Avvio Edge Bridge...")
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nChiusura Edge Bridge.")
-    client.disconnect()
+if __name__ == "__main__":
+    try:
+        print("Avvio Edge Bridge...")
+        client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("\nChiusura Edge Bridge.")
+        client.disconnect()

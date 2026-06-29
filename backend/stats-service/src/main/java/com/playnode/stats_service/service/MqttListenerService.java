@@ -33,14 +33,18 @@ public class MqttListenerService {
     @Value("${mqtt.topic}")
     private String topicName;
 
-    private MqttClient mqttClient;
+    private IMqttClient mqttClient;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    protected IMqttClient createMqttClient(String brokerUrl, String clientId) throws MqttException {
+        return new MqttClient(brokerUrl, clientId);
+    }
 
     @PostConstruct
     public void avviaAscolto() {
         try {
-            mqttClient = new MqttClient(brokerUrl, clientId);
+            mqttClient = createMqttClient(brokerUrl, clientId);
 
             mqttClient.setCallback(new MqttCallback() {
 

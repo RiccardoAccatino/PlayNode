@@ -15,9 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class MqttPublisherService {
 
-    // Non passiamo più il brokerUrl da properties
     @Value("${mqtt.client.id}")
-    private String clientIdPrefix; // È meglio usarlo come prefisso se ci connettiamo a più broker
+    private String clientIdPrefix;
 
     @Value("${mqtt.username}")
     private String mqttUsername;
@@ -28,18 +27,13 @@ public class MqttPublisherService {
     private final GiocoFisicoRepository giocoFisicoRepository;
     private final LocaleRepository localeRepository;
 
-    // Cache per mantenere attive le connessioni ai vari broker locali
-    private final Map<String, MqttClient> brokerClients = new ConcurrentHashMap<>();
+    private final Map<String, IMqttClient> brokerClients = new ConcurrentHashMap<>();
 
-    // Costruttore con Injection dei Repository
     public MqttPublisherService(GiocoFisicoRepository giocoFisicoRepository, LocaleRepository localeRepository) {
         this.giocoFisicoRepository = giocoFisicoRepository;
         this.localeRepository = localeRepository;
     }
 
-    /**
-     * Risale dal Gioco Fisico al Locale e restituisce l'IP/URL del broker
-     */
     private String getBrokerUrlByIdGioco(Long idGiocoFisico) {
         Optional<GiocoFisico> giocoOp = giocoFisicoRepository.findById(idGiocoFisico);
         if (giocoOp.isPresent()) {
@@ -48,8 +42,6 @@ public class MqttPublisherService {
 
             if (localeOp.isPresent()) {
                 String hostBroker = localeOp.get().getHost_broker();
-                // Nota: MqttClient richiede che l'url inizi con "tcp://".
-                // Se nel DB salvi solo l'IP (es: "192.168.1.100"), aggiungi il prefisso e la porta qui:
                 if (hostBroker != null && !hostBroker.startsWith("tcp://")) {
                     return "tcp://" + hostBroker + ":1883";
                 }
@@ -59,18 +51,17 @@ public class MqttPublisherService {
         return null;
     }
 
-    /**
-     * Recupera un client MQTT connesso dalla cache, o ne crea uno nuovo se non esiste
-     */
-    private MqttClient getMqttClient(String brokerUrl) throws MqttException {
-        // Se siamo già connessi a questo broker, riutilizziamo il client
+    protected IMqttClient createMqttClient(String brokerUrl, String clientId) throws MqttException {
+        return new MqttClient(brokerUrl, clientId);
+    }
+
+    private IMqttClient getMqttClient(String brokerUrl) throws MqttException {
         if (brokerClients.containsKey(brokerUrl) && brokerClients.get(brokerUrl).isConnected()) {
             return brokerClients.get(brokerUrl);
         }
 
-        // Generiamo un clientId univoco (utile in caso di riavvii o connessioni multiple)
         String uniqueClientId = clientIdPrefix + "_" + System.currentTimeMillis();
-        MqttClient newClient = new MqttClient(brokerUrl, uniqueClientId);
+        IMqttClient newClient = createMqttClient(brokerUrl, uniqueClientId);
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setCleanSession(true);
@@ -79,7 +70,7 @@ public class MqttPublisherService {
         options.setPassword(mqttPassword.toCharArray());
 
         newClient.connect(options);
-        brokerClients.put(brokerUrl, newClient); // Salviamo in cache
+        brokerClients.put(brokerUrl, newClient);
 
         System.out.println("✅ Game Service connesso a MQTT Broker: " + brokerUrl);
         return newClient;
@@ -93,7 +84,7 @@ public class MqttPublisherService {
         }
 
         try {
-            MqttClient client = getMqttClient(brokerUrl);
+            IMqttClient client = getMqttClient(brokerUrl);
             String topic = "playnode/server/comandi";
             String payload = "{\"idGiocoFisico\":" + ID_GIOCO_FISICO +",\"idPartita\":" + idPartita + "}";
 
@@ -115,7 +106,7 @@ public class MqttPublisherService {
         }
 
         try {
-            MqttClient client = getMqttClient(brokerUrl);
+            IMqttClient client = getMqttClient(brokerUrl);
             String topic = "playnode/server/comandi";
             String payload = "{\"termina_partita\": true}";
 

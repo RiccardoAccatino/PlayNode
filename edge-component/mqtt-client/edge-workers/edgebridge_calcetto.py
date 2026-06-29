@@ -144,10 +144,11 @@ client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 client.on_connect = on_connect
 client.on_message = on_message
 
-try:
-    print("Avvio Edge Bridge Calcetto...")
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("\nChiusura Edge Bridge Calcetto.")
-    client.disconnect()
+if __name__ == "__main__":
+    try:
+        print("Avvio Edge Bridge Calcetto...")
+        client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("\nChiusura Edge Bridge Calcetto.")
+        client.disconnect()

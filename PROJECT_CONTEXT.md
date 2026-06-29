@@ -731,26 +731,91 @@ sequenceDiagram
 
 ## 15. Testing
 
-### Stato dei test
+Questa guida illustra passo-passo come testare tutte le componenti del sistema PlayNode: il backend (servizi), l'integrazione MQTT (Mosquitto), le componenti Edge (simulazioni IoT) e l'end-to-end delle partite live.
 
-- Sono presenti test di base `contextLoads()` in ciascun microservizio:
-  - `backend/auth-service/src/test/java/com/playnode/auth_service/AuthServiceApplicationTests.java`
-  - `backend/game-service/src/test/java/com/playnode/game_service/GameServiceApplicationTests.java`
-  - `backend/stats-service/src/test/java/com/playnode/stats_service/StatsServiceApplicationTests.java`
-  - `backend/tournament-service/src/test/java/com/playnode/tournament_service/TournamentServiceApplicationTests.java`
+### Test Unitari del Backend (Java)
 
-### Framework utilizzati
+I microservizi backend possiedono test unitari e di integrazione scritti in Java (con JUnit e Mockito) posizionati canonicamente in `src/test/java/...`.
 
-- JUnit Jupiter via `spring-boot-starter-test`.
+**Come eseguire i test Java:**
+Per testare i singoli servizi, posizionati nella cartella root del backend ed esegui i test tramite Maven.
 
-### Aree non testate
+**Per il `game-service`** (che copre la logica delle partite live e l'invio MQTT):
+```bash
+cd backend/game-service
+./mvnw test
+```
 
-- logica di business delle API specifiche
-- sicurezza JWT e autorizzazione
-- integrazione database e MQTT
-- frontend
-- Edge e simulatori
-- sincronizzazione offline
+**Per lo `stats-service`** (che copre la ricezione degli eventi MQTT):
+```bash
+cd backend/stats-service
+./mvnw test
+```
+
+Questi test verificheranno automaticamente che il salvataggio dei punteggi, le transizioni di stato delle partite e i mock del broker MQTT funzionino come previsto senza richiedere il database o Mosquitto accesi.
+
+### Test delle Componenti Edge (Python)
+
+I componenti Edge che fanno da bridge tra l'hardware fisico e il backend MQTT hanno ora i loro test unitari dedicati in `edge-component/test`.
+
+**Come eseguire i test Edge:**
+Assicurati di avere Python installato. Puoi eseguire i test usando il framework `unittest` integrato in Python. 
+
+**Per il calcetto:**
+```bash
+python -m unittest edge-component/test/test_edgebridge_calcetto.py
+```
+
+**Per le bocce:**
+```bash
+python -m unittest edge-component/test/test_edgebridge_bocce.py
+```
+
+Questi test simulano l'invio e la ricezione di payload MQTT e intercettano le chiamate `requests.put` al backend per convalidarne l'esattezza (Mocking).
+
+### Test End-to-End (Simulatori E2E)
+
+I vecchi file presenti nella root (`test-scripts`) sono stati smistati nelle cartelle `test` dedicate per ciascun modulo, poiché fungono da veri e propri collaudi End-to-End (E2E) richiedendo il sistema avviato.
+
+**Prerequisiti per i simulatori:**
+Prima di eseguire questi test E2E, assicurati che tutta l'infrastruttura sia accesa:
+```bash
+cd docker
+docker-compose up -d
+```
+
+**A. Testare le chiamate API del Game Service**
+Il servizio `game-service` ha degli script E2E in `backend/game-service/test/`.
+1. **`simulate_live_match.py`**: Simula una partita live assegnando punti periodicamente. 
+   ```bash
+   python backend/game-service/test/simulate_live_match.py
+   ```
+2. **`test_script.py`**: Fa un run-through completo dell'API creando un utente, un locale, installando un gioco e avvisando una partita, infine inviando un gol.
+   ```bash
+   python backend/game-service/test/test_script.py
+   ```
+
+**B. Testare la Piattaforma Edge & MQTT dal vivo**
+Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge reali.
+
+1. **Test del Publisher MQTT**:
+   Per assicurarti che il broker riceva i messaggi di comando:
+   ```bash
+   python edge-component/test/test_mqtt.py
+   ```
+2. **Simulatore Bocce Elettroniche**:
+   Simula il sistema di Computer Vision (OpenCV) che comunica direttamente via MQTT al broker locale. Questo script ora si trova in `iot-devices/test/`.
+   ```bash
+   python iot-devices/test/mock_bocce.py
+   ```
+
+### Riassunto della nuova alberatura di test
+
+- `backend/game-service/src/test/java/` -> Test unitari/Mock su Partite e Publisher MQTT
+- `backend/game-service/test/` -> Script Python per l'End-to-End e la simulazione live
+- `backend/stats-service/src/test/java/` -> Test unitari su Listener MQTT e Statistiche
+- `edge-component/test/` -> Test unitari `unittest` per Python Edge Workers e test di connettività MQTT
+- `iot-devices/test/` -> Mock e simulazioni fisiche dei dispositivi hardware (es. telecamera bocce)
 
 ## 16. Technical Debt
 
@@ -865,17 +930,40 @@ sequenceDiagram
 
 ---
 
-## 3. Cronologia Aggiornamenti Recenti
+## Cronologia Aggiornamenti Recenti
 
 - **Visualizzazione Partite Live (Gestore):** Completata la dashboard "Partite Live" nel Frontend (`locale.js`) che esegue il polling ogni 5s recuperando i punteggi tramite REST API `GET /api/partite/locale/{id}` e aggiorna l'interfaccia.
 - **Supporto "Termina Partita" manuale:** Implementato un bottone per forzare la fine di una partita in corso, con popup di conferma Toast nativo e trigger dell'API REST `PUT /api/partite/{id}/termina` che chiude lo stato della partita e manda il comando MQTT all'Edge.
 - **Inserimento Gioco Bocce:** Inserito a database il gioco fisico "Bocce Elettroniche" mappandolo sul Locale ID 1.
 - **Supporto Multi-Locale e Fallback Gestore:** Completata l'implementazione del flusso di login. Se un gestore possiede più locali, una finestra modale nativa (`window.showLocaleSelectorModal` tramite `.btn-locale-select`) ne forza la scelta prima di proseguire. Implementato lo switch rapido (menu a tendina) nella Topbar (`dashboard.js`). Rimosso l'hardcoding al "Locale ID 1"; qualora un gestore non abbia locali associati, tutte le tab della dashboard visualizzeranno correttamente un *Empty State* pulito ("Nessun locale associato").
-- **Refactoring Script di Test:** I vecchi script isolati di test (`test_script.py`, `simulate_live_match.py`, mock vari) sono stati consolidati all'interno della directory `test-scripts/` nella root di progetto.
+- **Implementazione Test Backend (Java):** Completata la suite di test unitari con `JUnit 5` e `Mockito` per `game-service` (`PartitaService`, `MqttPublisherService`), `stats-service` (`MqttListenerService`), e `auth-service` (`JwtService`). Utilizzate asserzioni esplicite come `assertThrows`, `assertNull`, `assertTrue` e disabilitato temporaneamente il load del contesto Spring Boot tramite `@Disabled` per consentire l'esecuzione locale della suite Maven senza la necessità di database Dockerizzati in esecuzione.
+- **Isolamento Test Componente Edge (Python):** Tutti gli script di test preesistenti (compreso `mock_bocce.py` e simulazione calcetto) sono stati suddivisi nelle cartelle `test/` dei rispettivi moduli (`edge-component/test/`, `iot-devices/test/`). Configurato il `sys.path.append` dinamico all'interno dei test in modo che non richiedano l'esportazione del `PYTHONPATH`. 
+- **Tool Diagnostico MQTT (CLI):** Il vecchio file hardcoded `test_mqtt.py` è stato rifattorizzato in uno strumento diagnostico a riga di comando (`argparse`) flessibile, capace di ricevere come parametri IP, credenziali, e Topic, offrendo validazioni e log d'errore leggibili in caso di instabilità del broker in produzione.
 
 
-TODO:  
-Gestore
-- Impostazioni: aggiungere i locali associati,  implementare i tasti cambia password edge, rigenera token APi, scollega locale (vedere se tenerli o eliminarli)
-- Tabs: dispositivi, statistiche locale
-- Usare i toast custom anche nelle altre view, esempio conferma elimina utente
+## TODO
+
+## Sviluppo Funzionalità (Gestore & Giocatore)
+- **Impostazioni Gestore**: aggiungere i locali associati, implementare i tasti cambia password edge, rigenera token API, scollega locale (da valutare se tenerli o eliminarli).
+- **Dashboard Gestore**: completare tab dispositivi (con stato Online/Offline), e statistiche dettagliate del locale.
+- **Componenti UI**: estendere l'uso dei toast custom anche nelle altre view (es. conferma eliminazione utente, errori di rete globali).
+- **Tournament Service**: completare la logica dei tornei (creazione tabelloni, iscrizione giocatori, avanzamento automatico al termine delle partite).
+
+## Infrastruttura, DevOps & Deployment (Produzione)
+- **API Gateway / Reverse Proxy**: inserire NGINX o Spring Cloud Gateway per instradare le richieste dal frontend ai vari microservizi in modo unificato, risolvendo le dipendenze dalle porte (es. 8081, 8082, 8083) e semplificando i CORS.
+- **Containerizzazione Backend**: creare i `Dockerfile` e il `docker-compose.yml` di produzione per far girare i file `.jar` dei microservizi isolati.
+- **CI/CD Pipeline**: configurare GitHub Actions (o simili) per lanciare i test automaticamente ad ogni commit e generare le build.
+
+## Edge Component & IoT Reliability
+- **Heartbeat (Watchdog)**: implementare un "ping" MQTT periodico (es. ogni 30s) dal Raspberry al Backend per mostrare in tempo reale al Gestore se un tavolo/gioco è *Online* o *Offline*.
+- **Over-The-Air (OTA) Updates**: studiare un meccanismo (es. script bash o Ansible) per aggiornare da remoto gli script Python sui Raspberry nei locali, senza dover intervenire fisicamente su ogni macchina ad ogni rilascio.
+
+## Sicurezza Avanzata & Resilienza
+- **Refresh Token**: implementare il meccanismo di refresh token per evitare che la sessione del gestore scada all'improvviso, mantenendo al contempo i token JWT di accesso con una durata breve (alta sicurezza).
+- **Centralizzazione dei Log**: configurare un sistema per raccogliere i log dei vari microservizi e dei bridge Python in un unico posto (utile per il debugging in produzione).
+
+## Testing (Aree Mancanti)
+- **Logica di business delle API non core**: test unitari sui controller e service per le operazioni CRUD base (es. anagrafica utenti, gestione giochi fisici, locali).
+- **Sicurezza JWT e Autorizzazione**: test di integrazione per `AuthController`, flussi completi di login/registrazione e verifica dei filtri (`JwtAuthenticationFilter`).
+- **Frontend**: introduzione di un framework di testing (es. Jest o Cypress) per unit test e test end-to-end (E2E) delle interfacce grafiche.
+- **Sincronizzazione offline**: implementazione e relativo testing della logica di recovery nell'Edge Component (creazione code locali e reinvio dei pacchetti al backend al ripristino della connessione di rete).

@@ -4,6 +4,7 @@
  */
 
 import * as Api from '../js/api.js';
+import { iconaGioco, coloreGioco } from '../js/game-icons.js';
 
 function getEmptyLocaleHtml() {
   return `
@@ -63,15 +64,7 @@ export async function initLocaleOverview(containerId) {
       liveHtml = livePartite.map(p => {
         const gioco = giochiMap[p.idGiocoInstallato];
         const nomeGioco = gioco ? (gioco.tipoGioco || gioco.nome || gioco.nomeGioco || gioco.nomeTipologiaGioco || `Gioco #${p.idGiocoInstallato}`) : `Gioco #${p.idGiocoInstallato}`;
-        let icon = '🎮';
-        if (nomeGioco) {
-          const lower = nomeGioco.toLowerCase();
-          if (lower.includes('calcio')) icon = '⚽';
-          else if (lower.includes('freccet')) icon = '🎯';
-          else if (lower.includes('biliard')) icon = '🎱';
-          else if (lower.includes('bowl')) icon = '🎳';
-          else if (lower.includes('bocce')) icon = '🎳';
-        }
+        const icon = iconaGioco(nomeGioco);
         return `
           <div class="list-row">
             <div class="gi" style="background:var(--surf2)">${icon}</div>
@@ -184,15 +177,7 @@ export function initLiveMatches(containerId) {
         const gioco = giochiMap[p.idGiocoInstallato];
         const nomeGioco = gioco ? (gioco.tipoGioco || gioco.nome || gioco.nomeGioco || gioco.nomeTipologiaGioco || `Gioco #${p.idGiocoInstallato}`) : `Gioco #${p.idGiocoInstallato}`;
 
-        let icon = '🎮';
-        if (nomeGioco) {
-          const lower = nomeGioco.toLowerCase();
-          if (lower.includes('calcio')) icon = '⚽';
-          else if (lower.includes('freccet')) icon = '🎯';
-          else if (lower.includes('biliard')) icon = '🎱';
-          else if (lower.includes('bowl')) icon = '🎳';
-          else if (lower.includes('shuffle')) icon = '🎳';
-        }
+        const icon = iconaGioco(nomeGioco);
         const statoDisplay = p.stato === 'IN_CORSO' ? 'In partita' : p.stato || '';
         return `
                     <div class="card">
@@ -325,7 +310,7 @@ async function initLocaleGames(tbodyId) {
 
     return `
       <tr>
-        <td><span style="font-size:14px">🎮</span> ${nome}</td>
+        <td><span style="font-size:14px">${iconaGioco(nome)}</span> ${nome}</td>
         <td style="font-family:monospace;font-size:11px;color:var(--acc2)">${idGiocoInstallato ?? ''}</td>
         <td>${sensori} attivi</td>
         <td><span class="badge ${ok ? 'b-grn' : 'b-red'}">${ok ? 'ok' : 'errore'}</span></td>
@@ -434,7 +419,7 @@ export function localeStats() {
         </div>
         <div class="scard">
           <div class="scard-lbl">Gioco più usato</div>
-          <div class="scard-val" style="font-size:16px">⚽</div>
+          <div class="scard-val" style="font-size:16px">${iconaGioco('Calciobalilla')}</div>
           <div class="scard-delta neutral">Calciobalilla</div>
         </div>
         <div class="scard">
@@ -451,13 +436,13 @@ export function localeStats() {
       <div class="card">
         <div class="card-hd">Utilizzo per gioco</div>
         ${[
-      { ico: '⚽', name: 'Calciobalilla', pct: 58 },
-      { ico: '🎯', name: 'Freccette', pct: 24 },
-      { ico: '🎱', name: 'Biliardo', pct: 18 }
+      { ico: iconaGioco('Calciobalilla'), name: 'Calciobalilla', pct: 58 },
+      { ico: iconaGioco('Freccette'), name: 'Freccette', pct: 24 },
+      { ico: iconaGioco('Biliardo'), name: 'Biliardo', pct: 18 }
     ].map(g => `
           <div class="skill-row">
             <div class="skill-name">${g.ico} ${g.name}</div>
-            <div class="skill-bar"><div class="skill-fill" style="width:${g.pct}%;background:var(--acc)"></div></div>
+            <div class="skill-bar"><div class="skill-fill" style="width:${g.pct}%;background:${coloreGioco(g.name) || 'var(--acc)'}"></div></div>
             <div class="skill-pct">${g.pct}%</div>
           </div>
         `).join('')}
