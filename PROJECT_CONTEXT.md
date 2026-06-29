@@ -956,27 +956,133 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
 
 ## TODO
 
-## Sviluppo Funzionalità (Gestore & Giocatore)
-- **Impostazioni Gestore**: aggiungere i locali associati, implementare i tasti cambia password edge, rigenera token API, scollega locale (da valutare se tenerli o eliminarli).
-- **Dashboard Gestore**: completare tab dispositivi (con stato Online/Offline), e statistiche dettagliate del locale.
-- **Componenti UI**: estendere l'uso dei toast custom anche nelle altre view (es. conferma eliminazione utente, errori di rete globali).
-- **Tournament Service**: completare la logica dei tornei (creazione tabelloni, iscrizione giocatori, avanzamento automatico al termine delle partite).
+## 🔴 Critico (blocca demo/esame)
 
-## Infrastruttura, DevOps & Deployment (Produzione)
-- **API Gateway / Reverse Proxy**: inserire NGINX o Spring Cloud Gateway per instradare le richieste dal frontend ai vari microservizi in modo unificato, risolvendo le dipendenze dalle porte (es. 8081, 8082, 8083) e semplificando i CORS.
-- **Containerizzazione Backend**: creare i `Dockerfile` e il `docker-compose.yml` di produzione per far girare i file `.jar` dei microservizi isolati.
-- **CI/CD Pipeline**: configurare GitHub Actions (o simili) per lanciare i test automaticamente ad ogni commit e generare le build.
+- [ ] Sostituire dati mockati nella pagina "Dispositivi Edge" con endpoint reale
+  - File coinvolti: `frontend/views/locale.js` (variabile `localeDevices()`, `['locale/bar-belvedere/calciobalilla...']`)
+  - Motivazione: La tab mostra dati 100% hardcoded ("Online", "12ms latency", topic attivi statici).
+  - Complessità: Media (richiede creazione endpoint).
+  - Dipendenze: Creare `GET /api/iot/stato/{localeId}` in `game-service` basato su heartbeat MQTT.
 
-## Edge Component & IoT Reliability
-- **Heartbeat (Watchdog)**: implementare un "ping" MQTT periodico (es. ogni 30s) dal Raspberry al Backend per mostrare in tempo reale al Gestore se un tavolo/gioco è *Online* o *Offline*.
-- **Over-The-Air (OTA) Updates**: studiare un meccanismo (es. script bash o Ansible) per aggiornare da remoto gli script Python sui Raspberry nei locali, senza dover intervenire fisicamente su ogni macchina ad ogni rilascio.
+- [ ] Sostituire dati mockati nella pagina "Statistiche Locale" con endpoint reale
+  - File coinvolti: `frontend/views/locale.js` (variabile `localeStats()`, valori fissi come 412 partite)
+  - Motivazione: Statistiche uso per gioco 100% mockate (58% Calciobalilla, 24% Freccette). Non veritiere.
+  - Complessità: Media.
+  - Dipendenze: Creare `GET /api/statistiche/locale/{localeId}` e usare viste SQL correnti `statistica_utente`.
 
-## Sicurezza Avanzata & Resilienza
-- **Refresh Token**: implementare il meccanismo di refresh token per evitare che la sessione del gestore scada all'improvviso, mantenendo al contempo i token JWT di accesso con una durata breve (alta sicurezza).
-- **Centralizzazione dei Log**: configurare un sistema per raccogliere i log dei vari microservizi e dei bridge Python in un unico posto (utile per il debugging in produzione).
+- [ ] Rimuovere generazione mock in Latenze e Rate (Monitor di Sistema)
+  - File coinvolti: `backend/game-service/src/main/java/com/playnode/game_service/controller/MonitorController.java`
+  - Motivazione: I metodi `latencies()` e `summary()` usano `new Random()` o logica fittizia per i tassi di richiesta.
+  - Complessità: Alta (richiede Spring Boot Actuator e Micrometer).
+  - Dipendenze: Aggiungere dipendenze Micrometer per latenze reali.
 
-## Testing (Aree Mancanti)
-- **Logica di business delle API non core**: test unitari sui controller e service per le operazioni CRUD base (es. anagrafica utenti, gestione giochi fisici, locali).
-- **Sicurezza JWT e Autorizzazione**: test di integrazione per `AuthController`, flussi completi di login/registrazione e verifica dei filtri (`JwtAuthenticationFilter`).
-- **Frontend**: introduzione di un framework di testing (es. Jest o Cypress) per unit test e test end-to-end (E2E) delle interfacce grafiche.
-- **Sincronizzazione offline**: implementazione e relativo testing della logica di recovery nell'Edge Component (creazione code locali e reinvio dei pacchetti al backend al ripristino della connessione di rete).
+- [ ] Rimuovere fallback statici nei Logs (Monitor di Sistema)
+  - File coinvolti: `backend/game-service/src/main/java/com/playnode/game_service/controller/MonitorController.java` (metodo `logs()`)
+  - Motivazione: Ritorna array con stringhe come "Edge LOC-004 in ritardo" non derivate da alcun sistema di logging reale.
+  - Complessità: Bassa.
+  - Dipendenze: Inoltrare log da `Slf4j` o restituire JSON vuoto se l'integrazione ELK manca.
+
+- [ ] Implementare Endpoint REST mancanti chiamati dalla UI
+  - File coinvolti: `frontend/js/api.js`, `SensoreController.java`, `TipologiaGiocoController.java`
+  - Motivazione: Il FE invoca regolarmente `DELETE /api/sensori/{id}`, `PATCH /api/sensori/{id}/toggle`, `PUT /api/tipologie-gioco/{id}`, `DELETE /api/tipologie-gioco/{id}`. Il BE restituisce 404/405 causando fallimenti silenziosi.
+  - Complessità: Media.
+  - Dipendenze: Completare controller con autorizzazione.
+
+- [ ] Implementare Handler "Impostazioni Locale" morti
+  - File coinvolti: `frontend/views/locale.js` (metodo `localeSettings()`)
+  - Motivazione: I pulsanti "Cambia password edge", "Rigenera token API" e "Disconnetti locale" hanno onClick vuoti. La UI promette funzionalità non esistenti.
+  - Complessità: Media.
+  - Dipendenze: Endpoint su `game-service` e UI Modals.
+
+- [ ] Aggiungere Autorizzazione (Ruoli) alle API
+  - File coinvolti: `backend/auth-service/.../SecurityConfig.java` e Controllers
+  - Motivazione: Qualsiasi token valido consente l'accesso a endpoint di altre entità (es. un Giocatore può cancellare un Locale).
+  - Complessità: Alta.
+  - Dipendenze: Imporre `@PreAuthorize("hasRole(...)")`.
+
+- [ ] Atomicità e transazionalità nel flusso End-to-End "Avvio Partita"
+  - File coinvolti: `backend/game-service/.../PartitaService.java`
+  - Motivazione: Il servizio salva su DB e invia MQTT. Se MQTT fallisce, DB ha `IN_CORSO` ma Edge tace (flusso spezzato).
+  - Complessità: Media.
+  - Dipendenze: Implementare Transactional Outbox pattern.
+
+- [ ] Persistere Sincronizzazione MQTT -> DB (Flusso Statistiche Rotti)
+  - File coinvolti: `backend/stats-service/.../MqttListenerService.java`
+  - Motivazione: Il subscriber logga i payload ma NON salva su DB. Gli eventi real-time Edge non aggiornano storico né viste.
+  - Complessità: Alta.
+  - Dipendenze: Repository EventoIot.
+
+## 🟠 Alta Priorità
+
+- [ ] Completamento End-to-End della gestione Tornei
+  - File coinvolti: `frontend/views/admin-platform.js`, `TournamentController.java`
+  - Motivazione: Manca la pagina di dettaglio generata da "Gestisci", manca logica del tabellone, iscrizione giocatori (es. bottone `tournamentIscriviti`), avanzamento al termine partita.
+  - Complessità: Alta.
+
+- [ ] Errore Referencing `AUTH_API_URL` nel Logout Frontend
+  - File coinvolti: `frontend/views/dashboard.js`
+  - Motivazione: Manca scope import per `Api.AUTH_API_URL` nel logout handler, provocando log errato. Inoltre la blacklist BE in `TokenBlacklistService.java` è RAM-based e si azzera al riavvio, non invalidando realmente i token.
+  - Complessità: Media.
+
+- [ ] Allineare `TipologiaGiocoDTO` con il form del Frontend
+  - File coinvolti: `backend/game-service/.../TipologiaGiocoDTO.java`
+  - Motivazione: Frontend invia "descrizione" e "regole", ma il DTO ignora questi campi, causando perdita di dati (dead code).
+  - Complessità: Bassa.
+
+- [ ] Endpoint di Partecipazione Partita Inesistente
+  - File coinvolti: `PartitaController.java`
+  - Motivazione: Impossibile aggiungere o rimuovere partecipanti a una partita appena creata.
+  - Complessità: Media.
+
+- [ ] Form Modifica Profilo Anagrafico Utente
+  - File coinvolti: `frontend/views/player.js`
+  - Motivazione: Nessuna UI implementata per modificare il proprio profilo, solo view statica.
+  - Complessità: Bassa.
+
+- [ ] Heartbeat Watchdog MQTT
+  - File coinvolti: `game-service`, Scripts Edge Python
+  - Motivazione: Implementare "Ping" ogni 30s dall'Edge e LastWill per conoscere stato online/offline.
+  - Complessità: Media.
+
+- [ ] Brute-Force in-memory volatile
+  - File coinvolti: `backend/auth-service/.../BruteForceProtection.java`
+  - Motivazione: Mappa resettata al reboot del container. Migrare in Redis o Postgres.
+  - Complessità: Bassa.
+
+- [ ] Test `@Disabled` e Mancanza UI Testing
+  - File coinvolti: Backend Tests
+  - Motivazione: I test richiedono container per girare, quindi bypassati. Frontend completamente assente di suite E2E.
+  - Complessità: Alta.
+
+## 🟡 Media Priorità
+
+- [ ] Cleanup Leak Connessioni MQTT
+  - File coinvolti: `backend/game-service/.../MqttPublisherService.java`
+  - Motivazione: Connessioni MQTT istanziate e inserite in `ConcurrentHashMap` senza `client.disconnect()`. Causa leak alla lunga.
+  - Complessità: Bassa.
+
+- [ ] Fix Filtro Locale Buggato
+  - File coinvolti: `frontend/views/admin-platform.js` (`platformTournaments()`)
+  - Motivazione: Handler invia ignorando selezione UI l'intero array locali IDs.
+  - Complessità: Bassa.
+
+- [ ] Naming Consistency Database
+  - File coinvolti: Migrations, Entities
+  - Motivazione: Variabili `host_broker` mixed con `gioco_fisico_id`. 
+  - Complessità: Media (rifattorizzazione di diverse dipendenze JPA).
+
+- [ ] Implementazione Modali di Conferma
+  - File coinvolti: Tutte le view UI
+  - Motivazione: Eliminazioni usano `window.confirm()` del browser, poco estetico rispetto a custom UI Toast.
+  - Complessità: Bassa.
+
+## 🟢 Miglioramenti
+
+- [ ] Sostituire localStorage per JWT con httpOnly cookie e pattern CSRF.
+- [ ] Implementare Reverse Proxy unico tramite NGINX / API Gateway per eludere porte specifiche.
+- [ ] Soft delete per Entities critiche (Partita, Utente, Locale).
+- [ ] Caching su backend via Redis per Statistiche User-side (lentissime all'aumentare storico).
+- [ ] Aggiunta CI/CD Action e Dockerfile Stage multiplo per .jar di produzione.
+- [ ] Refresh token flow con scadenza breve per access token.
+- [ ] PWA, notifiche app o WebSocket (per evitare l'attuale polling 5s in "Partite Live").
+

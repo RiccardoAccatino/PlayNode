@@ -313,7 +313,7 @@ export function adminGameDashboard() {
                 <div>
                     <div class="pg-title">Admin Gioco — Live Control</div>
                     <div class="pg-sub">
-                        <span class="live-dot"></span>Monitor real-time tavoli e partite · IoT Edge attivo
+                        <span class="live-dot"></span>Monitor real-time tavoli e partite
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">

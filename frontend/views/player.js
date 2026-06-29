@@ -285,7 +285,7 @@ export function playerHistory() {
     setTimeout(() => initHistory(), 0);
     return `
         <div class="pg-title">Storico Partite</div>
-        <div class="pg-sub">Tutte le partite registrate — vista <code style="font-size:10px">storico_partita</code></div>
+        <div class="pg-sub">Tutte le partite registrate</div>
         <div class="card">
             <table class="tbl">
                 <thead>
@@ -354,7 +354,7 @@ export function playerTournaments() {
     setTimeout(() => initTournaments(), 0);
     return `
         <div class="pg-title">I miei Tornei</div>
-        <div class="pg-sub">Tornei attivi e classifiche — tournament-service /api/tornei</div>
+        <div class="pg-sub">Tornei attivi e classifiche</div>
         <div id="player-tornei-root">
             <div class="empty-state"><div class="empty-ico">⏳</div>Caricamento tornei…</div>
         </div>`;

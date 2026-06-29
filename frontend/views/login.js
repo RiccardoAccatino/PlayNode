@@ -17,39 +17,7 @@ import { loginUser, getAllLocali } from '../js/api.js';
  * L'oggetto utente deve contenere: id, name, initials, role.
  */
 export function renderLogin(onSuccess) {
-  /* ── Dati demo per facilitare i test durante lo sviluppo ── */
-  /* NOTE: Queste credenziali sono solo per ambienti di sviluppo.
-   * In produzione, rimuovere questa sezione e fare affidamento esclusivamente sull'API reale. */
-  const DEMO_CREDENTIALS = [
-    {
-      email: 'angie.albitres@gmail.com',
-      password: 'PlayNode2026!',
-      name: 'Angie (Giocatore)',
-      initials: 'AN',
-      role: 'player'
-    },
-    {
-      email: 'mario.rossi@gmail.com',
-      password: 'PlayNode2026!',
-      name: 'Mario (Gestore)',
-      initials: 'MR',
-      role: 'locale'
-    },
-    {
-      email: 'francesco.dappiano@gmail.com',
-      password: 'PlayNode2026!',
-      name: 'Francesco (Admin)',
-      initials: 'FR',
-      role: 'platform'
-    },
-    {
-      email: 'riccardo.accatino@gmail.com',
-      password: 'PlayNode2026!',
-      name: 'Riccardo (GameAdmin)',
-      initials: 'RC',
-      role: 'game'
-    },
-  ];
+  /* ── Dati demo rimossi per sicurezza ── */
 
   /*
    * ── template HTML ──
@@ -145,34 +113,7 @@ export function renderLogin(onSuccess) {
             ">Non hai un account? <span style="color:var(--acc2);font-weight:500">Registrati</span></button>
           </div>
 
-          <!-- hint credenziali demo -->
-          <div style="
-            margin-top:14px;background:var(--surf2);border:1px solid var(--bdr);
-            border-radius:9px;padding:12px 14px;
-          ">
-            <div style="font-size:10px;color:var(--txt3);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px">
-              Credenziali demo (solo per sviluppo - password: PlayNode2026!)
-            </div>
-            ${DEMO_CREDENTIALS.map(u => `
-              <div class="demo-fill" data-email="${u.email}" data-password="${u.password}" data-name="${u.name}" data-role="${u.role}" data-initials="${u.initials}" style="
-                display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:6px;
-                cursor:pointer;transition:background .15s;
-              ">
-                <div style="
-                  width:22px;height:22px;border-radius:50%;background:var(--acc3);
-                  display:flex;align-items:center;justify-content:center;
-                  font-size:8px;font-weight:700;color:var(--acc2);flex-shrink:0;
-                ">${u.initials}</div>
-                <div style="flex:1">
-                  <div style="font-size:11px;font-weight:500">${u.name}</div>
-                  <div style="font-size:10px;color:var(--txt3)">${u.email}</div>
-                </div>
-                <span style="
-                  font-size:9px;padding:2px 6px;border-radius:10px;
-                  background:var(--acc3);color:var(--acc2);
-                ">${u.role}</span>
-              </div>`).join('')}
-          </div>
+          <!-- hint credenziali rimosso -->
 
           <!-- footer -->
           </div> <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 10px; color: var(--txt3); z-index: 5;">
@@ -235,17 +176,7 @@ export function renderLogin(onSuccess) {
     errorBox.style.display = 'none';
   }
 
-  /* autofill credenziali demo */
-  document.querySelectorAll('.demo-fill').forEach(el => {
-    el.addEventListener('mouseenter', () => el.style.background = 'var(--surf3)');
-    el.addEventListener('mouseleave', () => el.style.background = '');
-    el.addEventListener('click', () => {
-      // Inserisce l'email e la password associate al pulsante
-      emailInput.value = el.dataset.email;
-      passwordInput.value = el.dataset.password;
-      hideError();
-    });
-  });
+  /* logica autofill rimossa */
 
   /**
    * Funzione principale asincrona che gestisce la comunicazione con il server per il Login.
