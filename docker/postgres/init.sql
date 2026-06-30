@@ -61,7 +61,7 @@ create table Locale(
     indirizzo varchar(255) not null,
     accesso accesso_tipo not null,
     -- host_broker varchar default 'tcp://broker:1883',
-    host_broker varchar default 'tcp://playnode-mosquitto:1883',
+    host_broker varchar default 'tcp://broker:1883',
     edge_api_token varchar(64),
     edge_password varchar(255),
     gestore_id int not null,

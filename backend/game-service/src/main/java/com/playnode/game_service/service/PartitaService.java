@@ -75,8 +75,8 @@ public class PartitaService {
             tournamentCallbackService.collegaPartitaAIncontro(incontroId, partitaSalvata.getIdPartita());
         }
 
-        String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
-        String payload = "{\"nuova_partita_id\":" + partitaSalvata.getIdPartita() + "}";
+        String topic = "playnode/server/comandi";
+        String payload = "{\"idGiocoFisico\":" + partitaSalvata.getGiocoFisicoId() +",\"idPartita\":" + partitaSalvata.getIdPartita() + "}";
         mqttOutboxService.accoda("AVVIO_PARTITA", topic, payload, brokerUrl, partitaSalvata.getIdPartita());
 
         return convertiInDTO(partitaSalvata);
@@ -84,6 +84,7 @@ public class PartitaService {
 
     public PartitaDTO aggiornaPunteggio(Long idPartita, Long idSquadra) {
         Optional<Partita> partitaOp = partitaRepository.findById(idPartita);
+
 
         if (partitaOp.isPresent()) {
             Optional<Partecipa> partecipaOp = partecipaRepository.findByPartitaIdAndSquadraId(idPartita, idSquadra);
@@ -118,7 +119,8 @@ public class PartitaService {
 
             String brokerUrl = mqttPublisherService.risolviBrokerUrl(partita.getGiocoFisicoId());
             if (brokerUrl != null && !brokerUrl.isBlank()) {
-                String topic = "edge/gioco/" + partita.getGiocoFisicoId() + "/comandi";
+
+                String topic = "playnode/server/comandi";
                 String payload = "{\"termina_partita\": true}";
                 mqttOutboxService.accoda("TERMINA_PARTITA", topic, payload, brokerUrl, partita.getIdPartita());
             }
