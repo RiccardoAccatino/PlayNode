@@ -4,6 +4,7 @@ import com.playnode.stats_service.dto.StoricoPartitaDTO;
 import com.playnode.stats_service.service.StoricoPartitaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ public class StoricoPartitaController {
      * Quando qualcuno va sull'indirizzo /api/storico/utente/{utenteId}, si attiva questo metodo.
      */
     @GetMapping("/utente/{utenteId}")
+    @PreAuthorize("hasAnyRole('ADMINPIATTAFORMA','ADMINGIOCO') or #utenteId.toString().equals(authentication.principal.toString())")
     public ResponseEntity<List<StoricoPartitaDTO>> ottieniStoricoUtente(@PathVariable Long utenteId) {
 
         // Chiediamo al Service di tradurre i dati

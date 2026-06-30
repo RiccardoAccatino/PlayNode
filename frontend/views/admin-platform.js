@@ -35,19 +35,6 @@ function esc(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function showToast(msg, type = 'info', durata = 3500) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => {
-    t.style.opacity = '0';
-    t.style.transition = 'opacity .3s';
-    setTimeout(() => t.remove(), 320);
-  }, durata);
-}
-
 function badgeRuolo(ruolo) {
   const r = ruolo || '';
   if (r === 'Giocatore') return 'b-blu';
@@ -220,7 +207,7 @@ async function initPlatformUsers() {
     utenti = await Api.getAllUtenti();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
-    showToast(err.message, 'error', 5000);
+    window.showToast(err.message, 'error', 5000);
     return;
   }
 
@@ -267,10 +254,10 @@ async function initPlatformUsers() {
       sesso: document.getElementById('mu-sesso').value
     };
     if (!payload.username || !payload.email) {
-      showToast('Username e email sono obbligatori.', 'warning'); return;
+      window.showToast('Username e email sono obbligatori.', 'warning'); return;
     }
     if (!id && !payload.password) {
-      showToast('La password è obbligatoria per i nuovi utenti.', 'warning'); return;
+      window.showToast('La password è obbligatoria per i nuovi utenti.', 'warning'); return;
     }
     const btn = document.getElementById('mu-salva');
     btn.disabled = true; btn.textContent = 'Salvataggio…';
@@ -278,15 +265,15 @@ async function initPlatformUsers() {
       if (id) {
         if (!payload.password) delete payload.password;
         await Api.updateUtente(id, payload);
-        showToast(`Utente #${id} aggiornato.`, 'success');
+        window.showToast(`Utente #${id} aggiornato.`, 'success');
       } else {
         await Api.createUtente(payload);
-        showToast('Utente creato con successo.', 'success');
+        window.showToast('Utente creato con successo.', 'success');
       }
       modal.classList.remove('open');
       initPlatformUsers();
     } catch (err) {
-      showToast(err.message, 'error', 5000);
+      window.showToast(err.message, 'error', 5000);
     } finally {
       btn.disabled = false; btn.textContent = 'Salva';
     }
@@ -315,10 +302,10 @@ async function initPlatformUsers() {
       if (!(await window.showConfirm(`Eliminare l'utente "${name}" (#${id})?`))) return;
       try {
         const ok = await Api.deleteUtente(id);
-        showToast(ok ? `Utente #${id} eliminato.` : `Utente #${id} non trovato.`, ok ? 'success' : 'warning');
+        window.showToast(ok ? `Utente #${id} eliminato.` : `Utente #${id} non trovato.`, ok ? 'success' : 'warning');
         initPlatformUsers();
       } catch (err) {
-        showToast(err.message, 'error', 5000);
+        window.showToast(err.message, 'error', 5000);
       } id = "locale-selector"
     });
   });
@@ -391,7 +378,7 @@ async function initPlatformLocali() {
     ]);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
-    showToast(err.message, 'error', 5000);
+    window.showToast(err.message, 'error', 5000);
     return;
   }
 
@@ -455,22 +442,22 @@ async function initPlatformLocali() {
       gestoreId: Number(document.getElementById('ml-gestore').value)
     };
     if (!payload.nome || !payload.indirizzo || !payload.gestoreId) {
-      showToast('Compila tutti i campi obbligatori.', 'warning'); return;
+      window.showToast('Compila tutti i campi obbligatori.', 'warning'); return;
     }
     const btn = document.getElementById('ml-salva');
     btn.disabled = true; btn.textContent = 'Salvataggio…';
     try {
       if (id) {
         await Api.updateLocale(id, payload);
-        showToast(`Locale #${id} aggiornato.`, 'success');
+        window.showToast(`Locale #${id} aggiornato.`, 'success');
       } else {
         await Api.createLocale(payload);
-        showToast('Locale creato con successo.', 'success');
+        window.showToast('Locale creato con successo.', 'success');
       }
       modal.classList.remove('open');
       initPlatformLocali();
     } catch (err) {
-      showToast(err.message, 'error', 5000);
+      window.showToast(err.message, 'error', 5000);
     } finally {
       btn.disabled = false; btn.textContent = 'Salva';
     }
@@ -497,10 +484,10 @@ async function initPlatformLocali() {
       if (!(await window.showConfirm(`Eliminare il locale "${name}" (#${id})?`))) return;
       try {
         const ok = await Api.deleteLocale(id);
-        showToast(ok ? `Locale #${id} eliminato.` : `Locale #${id} non trovato.`, ok ? 'success' : 'warning');
+        window.showToast(ok ? `Locale #${id} eliminato.` : `Locale #${id} non trovato.`, ok ? 'success' : 'warning');
         initPlatformLocali();
       } catch (err) {
-        showToast(err.message, 'error', 5000);
+        window.showToast(err.message, 'error', 5000);
       }
     });
   });
@@ -709,7 +696,7 @@ async function initPlatformGames() {
     const desc = document.getElementById('mg-desc').value.trim();
     const rules = document.getElementById('mg-rules').value.trim();
 
-    if (!name || !desc || !rules) { showToast('Compila tutti i campi prima di salvare.', 'warning'); return; }
+    if (!name || !desc || !rules) { window.showToast('Compila tutti i campi prima di salvare.', 'warning'); return; }
 
     const btn = document.getElementById('btn-save-game');
     btn.textContent = 'Salvataggio…'; btn.disabled = true;
@@ -717,10 +704,10 @@ async function initPlatformGames() {
     try {
       await Api.createTipologiaGioco({ nomeTipologiaGioco: name, descrizione: desc, regole: rules });
       modalNew.style.display = 'none';
-      showToast('Tipologia gioco creata.', 'success');
+      window.showToast('Tipologia gioco creata.', 'success');
       initPlatformGames();
     } catch (err) {
-      showToast(err.message, 'error', 5000);
+      window.showToast(err.message, 'error', 5000);
     } finally {
       btn.textContent = 'Salva Gioco'; btn.disabled = false;
     }
@@ -777,7 +764,7 @@ async function _renderSensoriList(tipologiaId) {
     sensori = await Api.getSensoriByTipologia(tipologiaId);
   } catch (err) {
     container.innerHTML = `<div style="text-align:center;color:var(--red);padding:14px;font-size:12px">${esc(err.message)}</div>`;
-    showToast(err.message, 'error', 5000);
+    window.showToast(err.message, 'error', 5000);
     return;
   }
 
@@ -808,13 +795,40 @@ async function _renderSensoriList(tipologiaId) {
           ${s.descrizione ? `<span title="${s.descrizione}" style="color:var(--acc2);cursor:default"> ℹ</span>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;color:var(--txt3);font-size:11px;">
-        ${s.attivo ? '<span style="color:var(--grn)">● ON</span>' : '<span>○ OFF</span>'}
+      <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+        <button class="act-btn btn-sens-toggle" data-id="${s.id}" style="padding:2px 8px;font-size:10px">${s.attivo ? 'OFF' : 'ON'}</button>
+        <button class="danger-btn btn-sens-delete" data-id="${s.id}" style="padding:2px 8px;font-size:10px">✕</button>
       </div>
     </div>
   `).join('');
 
-  // view-only: no edit/toggle/delete listeners
+  container.querySelectorAll('.btn-sens-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      try {
+        await Api.toggleSensore(id);
+        await _renderSensoriList(tipologiaId);
+        await _aggiornaCounting(tipologiaId);
+      } catch (err) {
+        window.showToast(err.message || 'Errore toggle sensore.', 'error');
+      }
+    });
+  });
+
+  container.querySelectorAll('.btn-sens-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      if (!await showConfirm('Eliminare questo sensore?')) return;
+      try {
+        await Api.deleteSensore(id);
+        await _renderSensoriList(tipologiaId);
+        await _aggiornaCounting(tipologiaId);
+        window.showToast('Sensore eliminato.', 'success');
+      } catch (err) {
+        window.showToast(err.message || 'Errore eliminazione sensore.', 'error');
+      }
+    });
+  });
 }
 
 // ─── Reset form (modalità "aggiungi") ─────────────────────────────────────────
@@ -864,9 +878,9 @@ async function _salvaOAggiornaSensore(tipologiaId) {
   const nome = document.getElementById('ms-nome').value.trim();
   const tipo = document.getElementById('ms-tipo').value;
 
-  if (!nome) { showToast('Il nome/posizione del sensore è obbligatorio (es. "Porta Squadra 1").', 'warning'); return; }
+  if (!nome) { window.showToast('Il nome/posizione del sensore è obbligatorio (es. "Porta Squadra 1").', 'warning'); return; }
   if (editId) {
-    showToast('La modifica sensori (PUT) non è esposta dal backend.', 'warning');
+    window.showToast('La modifica sensori (PUT) non è esposta dal backend.', 'warning');
     return;
   }
 
@@ -891,7 +905,7 @@ async function _salvaOAggiornaSensore(tipologiaId) {
       subtitle.textContent = `Sensore #${created.id} salvato su tavolo #${gioco.id} (${gioco.localeNome || 'locale'})`;
     }
   } catch (err) {
-    showToast(err.message || 'Errore durante il salvataggio del sensore.', 'error', 5000);
+    window.showToast(err.message || 'Errore durante il salvataggio del sensore.', 'error', 5000);
     console.error(err);
   } finally {
     btn.textContent = 'Salva sensore';
@@ -1037,12 +1051,28 @@ export async function platformTournaments() {
           <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Regole del Torneo</label>
           <textarea id="modal-t-rules" rows="3" placeholder="Es. Eliminazione diretta…" style="${INPUT_STYLE}resize:vertical;"></textarea>
         </div>
+        <div style="margin-bottom:20px">
+          <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Locali partecipanti</label>
+          <select id="modal-t-locali" multiple style="${INPUT_STYLE}min-height:80px"></select>
+        </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
           <button id="btn-annulla-torneo" style="
             padding:8px 16px;background:none;border:1px solid var(--bdr);
             border-radius:6px;color:var(--txt2);cursor:pointer;
           ">Annulla</button>
           <button id="btn-salva-torneo" class="act-btn">Salva</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-torneo-dettaglio" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1001;align-items:center;justify-content:center;">
+      <div class="card" style="width:640px;max-width:95%;max-height:90vh;overflow:auto;background:var(--surf);border:1px solid var(--bdr);">
+        <div class="card-hd" id="modal-det-title">Dettaglio torneo</div>
+        <div id="modal-det-body" style="font-size:12px;color:var(--txt2)">Caricamento…</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+          <button id="btn-det-genera-tabellone" class="act-btn">Genera tabellone</button>
+          <button id="btn-det-modifica" class="act-btn">Modifica</button>
+          <button id="btn-det-chiudi" style="padding:8px 16px;background:none;border:1px solid var(--bdr);border-radius:6px;color:var(--txt2);cursor:pointer">Chiudi</button>
         </div>
       </div>
     </div>
@@ -1062,7 +1092,73 @@ export async function platformTournaments() {
     const endInput = document.getElementById('modal-t-end');
     const statusInput = document.getElementById('modal-t-status');
     const rulesInput = document.getElementById('modal-t-rules');
+    const localiSelect = document.getElementById('modal-t-locali');
     const today = new Date().toISOString().split('T')[0];
+
+    if (localiSelect) {
+      localiSelect.innerHTML = allLocali.map(l =>
+        `<option value="${l.id}">${esc(l.nome)}</option>`).join('');
+    }
+
+    const modalDet = document.getElementById('modal-torneo-dettaglio');
+    const modalDetBody = document.getElementById('modal-det-body');
+    const modalDetTitle = document.getElementById('modal-det-title');
+    let torneoDettaglioCorrente = null;
+
+    async function apriDettaglioTorneo(torneoId) {
+      modalDet.style.display = 'flex';
+      modalDetBody.innerHTML = '<div class="spinner">Caricamento dettaglio…</div>';
+      try {
+        const det = await Api.getTournamentDettaglio(torneoId);
+        torneoDettaglioCorrente = det;
+        modalDetTitle.textContent = det.nome || `Torneo #${torneoId}`;
+        const incontriHtml = (det.incontri || []).length
+          ? det.incontri.map(i => `
+              <div class="list-row" style="font-size:11px">
+                <span>R${i.round} · Slot ${i.slot}</span>
+                <span>#${i.giocatore1Id || '-'} vs #${i.giocatore2Id || 'BYE'}</span>
+                <span>${i.vincitoreId ? `Vinc: #${i.vincitoreId}` : (i.partitaId ? `Partita #${i.partitaId}` : 'In attesa')}</span>
+              </div>`).join('')
+          : '<div style="padding:10px;color:var(--txt3)">Tabellone non ancora generato.</div>';
+        modalDetBody.innerHTML = `
+          <div style="margin-bottom:12px"><strong>Stato:</strong> ${esc(det.classifica || '-')}</div>
+          <div style="margin-bottom:12px"><strong>Iscritti (${(det.iscrittiIds || []).length}):</strong> ${(det.iscrittiIds || []).map(id => `#${id}`).join(', ') || 'Nessuno'}</div>
+          <div class="card-hd" style="margin-top:8px">Tabellone</div>
+          ${incontriHtml}`;
+      } catch (err) {
+        modalDetBody.innerHTML = `<div style="color:var(--red)">${esc(err.message)}</div>`;
+      }
+    }
+
+    document.getElementById('btn-det-chiudi')?.addEventListener('click', () => { modalDet.style.display = 'none'; });
+    document.getElementById('btn-det-genera-tabellone')?.addEventListener('click', async () => {
+      if (!torneoDettaglioCorrente?.id) return;
+      try {
+        await Api.generaTabelloneTorneo(torneoDettaglioCorrente.id);
+        window.showToast('Tabellone generato.', 'success');
+        apriDettaglioTorneo(torneoDettaglioCorrente.id);
+      } catch (err) {
+        window.showToast(err.message || 'Errore generazione tabellone.', 'error', 5000);
+      }
+    });
+    document.getElementById('btn-det-modifica')?.addEventListener('click', () => {
+      if (!torneoDettaglioCorrente) return;
+      modalDet.style.display = 'none';
+      const t = torneoDettaglioCorrente;
+      modalTitle.textContent = `Modifica Torneo #${t.id}`;
+      idInput.value = t.id;
+      nameInput.value = t.nome || '';
+      gameInput.value = t.idTipologiaGioco || Object.keys(NOMI_GIOCHI)[0] || '1';
+      modInput.value = t.modalita || 'Squadre';
+      startInput.value = t.dataInizio || today;
+      endInput.value = t.dataFine || '';
+      statusInput.value = t.classifica || 'Da definire';
+      rulesInput.value = t.regole || '';
+      if (localiSelect && t.localiIds?.length) {
+        [...localiSelect.options].forEach(o => { o.selected = t.localiIds.includes(Number(o.value)); });
+      }
+      modal.style.display = 'flex';
+    });
 
     document.getElementById('btn-nuovo-torneo')?.addEventListener('click', () => {
       modalTitle.textContent = 'Crea Nuovo Torneo';
@@ -1076,18 +1172,7 @@ export async function platformTournaments() {
 
     document.querySelectorAll('.btn-gestisci').forEach(btn => {
       btn.addEventListener('click', e => {
-        const torneo = tornei.find(t => t.id == e.target.getAttribute('data-id'));
-        if (!torneo) return;
-        modalTitle.textContent = `Modifica Torneo #${torneo.id}`;
-        idInput.value = torneo.id;
-        nameInput.value = torneo.nome || '';
-        gameInput.value = torneo.idTipologiaGioco || Object.keys(NOMI_GIOCHI)[0] || '1';
-        modInput.value = torneo.modalita || 'Squadre';
-        startInput.value = torneo.dataInizio || today;
-        endInput.value = torneo.dataFine || '';
-        statusInput.value = torneo.classifica || 'Da definire';
-        rulesInput.value = torneo.regole || '';
-        modal.style.display = 'flex';
+        apriDettaglioTorneo(e.target.getAttribute('data-id'));
       });
     });
 
@@ -1095,10 +1180,14 @@ export async function platformTournaments() {
 
     document.getElementById('btn-salva-torneo')?.addEventListener('click', async () => {
       if (!nameInput.value.trim() || !startInput.value) {
-        showToast("I campi 'Nome' e 'Data Inizio' sono obbligatori.", 'warning'); return;
+        window.showToast("I campi 'Nome' e 'Data Inizio' sono obbligatori.", 'warning'); return;
       }
       const btn = document.getElementById('btn-salva-torneo');
       btn.textContent = 'Salvataggio…'; btn.disabled = true;
+
+      const localiIds = localiSelect
+        ? [...localiSelect.selectedOptions].map(o => parseInt(o.value, 10)).filter(n => !isNaN(n))
+        : [];
 
       const payload = {
         nome: nameInput.value.trim(),
@@ -1108,17 +1197,17 @@ export async function platformTournaments() {
         classifica: statusInput.value,
         dataInizio: startInput.value,
         dataFine: endInput.value || null,
-        localiIds: allLocali.map(l => l.id)
+        localiIds
       };
 
       try {
         if (idInput.value) await Api.updateTournament(idInput.value, payload);
         else await Api.createTournament(payload);
         modal.style.display = 'none';
-        showToast('Torneo salvato.', 'success');
+        window.showToast('Torneo salvato.', 'success');
         document.querySelector('.sb-btn.active')?.click();
       } catch (err) {
-        showToast(err.message || 'Errore nel salvataggio torneo.', 'error', 5000);
+        window.showToast(err.message || 'Errore nel salvataggio torneo.', 'error', 5000);
       } finally {
         btn.textContent = 'Salva'; btn.disabled = false;
       }
@@ -1131,10 +1220,10 @@ export async function platformTournaments() {
         if (!(await window.showConfirm(`Eliminare il torneo "${name}" (#${id})?`))) return;
         try {
           const ok = await Api.deleteTournament(id);
-          showToast(ok ? `Torneo #${id} eliminato.` : `Torneo #${id} non trovato.`, ok ? 'success' : 'warning');
+          window.showToast(ok ? `Torneo #${id} eliminato.` : `Torneo #${id} non trovato.`, ok ? 'success' : 'warning');
           document.querySelector('.sb-btn.active')?.click();
         } catch (err) {
-          showToast(err.message, 'error', 5000);
+          window.showToast(err.message, 'error', 5000);
         }
       });
     });

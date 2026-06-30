@@ -58,8 +58,11 @@ services:
       - "8080:8080"
     env_file:
       - ../.env
+    environment:
+      TOURNAMENT_HOST: tournament_service
     depends_on:
       - postgres
+      - tournament-service
     restart: on-failure
 
   stats-service:

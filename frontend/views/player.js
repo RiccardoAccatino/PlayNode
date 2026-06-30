@@ -38,18 +38,7 @@ function esc(s) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function showToast(msg, type = 'info', durata = 3500) {
-    document.querySelectorAll('.toast').forEach(t => t.remove());
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transition = 'opacity .3s';
-        setTimeout(() => t.remove(), 320);
-    }, durata);
-}
+
 
 /**
  * Normalizza StatisticaUtenteDTO
@@ -163,7 +152,7 @@ async function initOverview() {
             Api.getUserHistory(userId)
         ]);
     } catch (err) {
-        showToast(err.message || 'Errore caricamento dati.', 'error', 5000);
+        window.showToast(err.message || 'Errore caricamento dati.', 'error', 5000);
     }
 
     const s = normalizeStats(stats);
@@ -319,7 +308,7 @@ async function initHistory() {
         history = await Api.getUserHistory(userId);
     } catch (err) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--red)">${esc(err.message)}</td></tr>`;
-        showToast(err.message, 'error', 5000);
+        window.showToast(err.message, 'error', 5000);
         return;
     }
 
@@ -380,7 +369,7 @@ async function initTournaments() {
         ]);
     } catch (err) {
         root.innerHTML = `<div style="padding:24px;color:var(--red);text-align:center">${esc(err.message)}</div>`;
-        showToast(err.message, 'error', 5000);
+        window.showToast(err.message, 'error', 5000);
         return;
     }
 
@@ -404,8 +393,9 @@ async function initTournaments() {
         const dateStr = t.dataFine
             ? `${t.dataInizio} → ${t.dataFine}`
             : `Dal ${t.dataInizio}`;
+        const terminato = (t.classifica || '').toLowerCase().includes('terminat');
         return `
-            <div class="card" style="margin-bottom:10px">
+            <div class="card" style="margin-bottom:10px" data-torneo-id="${t.id}">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
                     <span style="font-size:22px">${iconaGioco(nomeGioco)}</span>
                     <div style="flex:1;min-width:0">
@@ -418,12 +408,27 @@ async function initTournaments() {
                     <div>📅 ${esc(dateStr)}</div>
                     <div>📋 ${esc((t.regole || '—').slice(0, 60))}${(t.regole || '').length > 60 ? '…' : ''}</div>
                 </div>
-                <div style="border-top:1px solid var(--bdr);padding-top:10px;font-size:11px;color:var(--txt3)">
-                    Classifica: <strong style="color:var(--txt)">${esc(t.classifica || 'Da definire')}</strong>
-                    ${t.localiIds?.length ? ` · ${t.localiIds.length} locali` : ''}
+                <div style="border-top:1px solid var(--bdr);padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <div style="font-size:11px;color:var(--txt3)">
+                        Classifica: <strong style="color:var(--txt)">${esc(t.classifica || 'Da definire')}</strong>
+                    </div>
+                    ${terminato ? '' : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" style="font-size:11px">Iscriviti</button>`}
                 </div>
             </div>`;
     }).join('');
+
+    document.querySelectorAll('.btn-iscriviti-torneo').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.target.getAttribute('data-id');
+            try {
+                await Api.iscriviTorneo(id);
+                window.showToast('Iscrizione al torneo completata.', 'success');
+                initTournaments();
+            } catch (err) {
+                window.showToast(err.message || 'Iscrizione non riuscita.', 'error', 5000);
+            }
+        });
+    });
 }
 
 /* =====================================================
@@ -454,51 +459,180 @@ async function initProfile() {
     try {
         [utente, stats] = await Promise.all([
             Api.getUtenteById(userId).catch(() => null),
-            Api.getUserStats(userId)
+            Api.getUserStats(userId).catch(() => null)
         ]);
     } catch (err) {
         root.innerHTML = `<div style="padding:24px;color:var(--red)">${esc(err.message)}</div>`;
-        showToast(err.message, 'error', 5000);
+        window.showToast(err.message, 'error', 5000);
         return;
     }
 
-    const s = normalizeStats(stats);
-    const winRate = calcWinRate(s.partiteGiocate, s.vittorie);
-    const username = utente?.username || playerContext.name || '—';
-    const email = utente?.email || '—';
-    const ruolo = utente?.ruolo || playerContext.role || 'Giocatore';
-    const sesso = utente?.sesso || '—';
-    const initials = playerContext.initials
-        || (username !== '—' ? username.substring(0, 2).toUpperCase() : '??');
+    let isEditing = false;
 
-    root.innerHTML = `
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:18px;background:var(--surf);border:1px solid var(--bdr);border-radius:12px">
-            <div style="width:64px;height:64px;border-radius:14px;background:var(--acc3);border:2px solid var(--acc);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:24px;font-weight:800;color:var(--acc2)">${esc(initials)}</div>
-            <div style="flex:1">
-                <div style="font-family:var(--ff);font-size:20px;font-weight:700">${esc(username)}</div>
-                <div style="font-size:12px;color:var(--txt3);margin-top:4px">${esc(email)}</div>
-                <div style="margin-top:8px;display:flex;gap:6px">
-                    <span class="badge b-blu">${esc(ruolo)}</span>
-                    <span class="badge b-amb">${esc(sesso)}</span>
+    function renderProfile() {
+        if (!root) return;
+        const s = normalizeStats(stats);
+        const winRate = calcWinRate(s.partiteGiocate, s.vittorie);
+        const username = utente?.username || playerContext.name || '—';
+        const email = utente?.email || '—';
+        const ruolo = utente?.ruolo || playerContext.role || 'Giocatore';
+        const sesso = utente?.sesso || '—';
+        const initials = playerContext.initials
+            || (username !== '—' ? username.substring(0, 2).toUpperCase() : '??');
+
+        const unifiedView = `
+            <form id="form-profilo" autocomplete="off" style="display:grid;gap:0;max-width:480px;padding-top:8px;" onsubmit="event.preventDefault();">
+                <div class="list-row">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;">ID utente</span>
+                    <span style="font-family:monospace;font-size:12px;color:var(--txt3);flex:1">#${userId}</span>
+                </div>
+                
+                <label class="list-row" style="cursor:pointer">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;">Username</span>
+                    ${isEditing 
+                        ? `<input id="prof-username" name="username" autocomplete="username" type="text" value="${esc(username)}" style="flex:1;padding:8px 12px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);transition:all 0.2s">`
+                        : `<span style="font-size:12px;color:var(--txt);flex:1">${esc(username)}</span>`
+                    }
+                </label>
+                
+                <div class="list-row" style="align-items:flex-start">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;padding-top:4px">Email</span>
+                    <div style="display:flex;flex-direction:column;flex:1">
+                        ${isEditing 
+                            ? `<span style="font-size:12px;color:var(--txt3);background:var(--surf);padding:8px 12px;border-radius:6px;border:1px solid var(--bdr);display:inline-block;cursor:not-allowed;">${esc(email)}</span>
+                               <span style="font-size:10px;color:var(--txt3);margin-top:4px">(L'email non è modificabile)</span>`
+                            : `<span style="font-size:12px;color:var(--txt);padding-top:3px">${esc(email)}</span>`
+                        }
+                    </div>
+                </div>
+                
+                <label class="list-row" style="cursor:pointer">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;">Sesso</span>
+                    ${isEditing 
+                        ? `<select id="prof-sesso" name="sesso" style="flex:1;padding:8px 12px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);transition:all 0.2s">
+                               <option value="Maschio" ${sesso === 'Maschio' ? 'selected' : ''}>Maschio</option>
+                               <option value="Femmina" ${sesso === 'Femmina' ? 'selected' : ''}>Femmina</option>
+                               <option value="Altro" ${sesso === 'Altro' ? 'selected' : ''}>Altro</option>
+                           </select>`
+                        : `<span style="font-size:12px;color:var(--txt);flex:1">${esc(sesso)}</span>`
+                    }
+                </label>
+                
+                ${isEditing ? `
+                <label class="list-row" style="border-bottom:none;cursor:pointer">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;">Nuova Password</span>
+                    <input id="prof-password" name="new-password" autocomplete="new-password" type="password" placeholder="Lascia vuoto per non cambiare" style="flex:1;padding:8px 12px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);transition:all 0.2s">
+                </label>
+                <label class="list-row" id="row-old-pwd" style="border-bottom:none;cursor:pointer;display:none;">
+                    <span style="color:var(--txt3);font-size:11px;width:100px;font-weight:600;">Password Attuale *</span>
+                    <input id="prof-old-password" name="old-password" type="password" placeholder="Inserisci per confermare" style="flex:1;padding:8px 12px;border:1px solid var(--bdr);border-radius:6px;background:var(--bg);color:var(--txt);transition:all 0.2s">
+                </label>
+                <div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end">
+                    <button type="button" id="btn-annulla-profilo" class="act-btn" style="background:transparent;border:1px solid var(--bdr);color:var(--txt)">Annulla</button>
+                    <button type="button" id="btn-salva-profilo" class="act-btn">Salva modifiche</button>
+                </div>
+                ` : ''}
+            </form>
+        `;
+
+        const statsView = ruolo === 'Giocatore' ? `
+            <div class="stats-row">
+                <div class="scard"><div class="scard-lbl">Partite</div><div class="scard-val">${s.partiteGiocate}</div></div>
+                <div class="scard"><div class="scard-lbl">Vittorie</div><div class="scard-val" style="color:var(--grn)">${s.vittorie}</div></div>
+                <div class="scard"><div class="scard-lbl">Win Rate</div><div class="scard-val">${winRate}%</div></div>
+                <div class="scard"><div class="scard-lbl">Punteggio</div><div class="scard-val" style="color:var(--gold)">${s.punteggioTotale}</div></div>
+            </div>
+        ` : '';
+
+        root.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:18px;background:var(--surf);border:1px solid var(--bdr);border-radius:12px">
+                <div style="width:64px;height:64px;border-radius:14px;background:var(--acc3);border:2px solid var(--acc);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-size:24px;font-weight:800;color:var(--acc2)">${esc(initials)}</div>
+                <div style="flex:1">
+                    <div style="font-family:var(--ff);font-size:20px;font-weight:700">${esc(username)}</div>
+                    <div style="font-size:12px;color:var(--txt3);margin-top:4px">${esc(email)}</div>
+                    <div style="margin-top:8px;display:flex;gap:6px">
+                        <span class="badge b-blu">${esc(ruolo)}</span>
+                        <span class="badge b-amb">${esc(sesso)}</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="stats-row">
-            <div class="scard"><div class="scard-lbl">Partite</div><div class="scard-val">${s.partiteGiocate}</div></div>
-            <div class="scard"><div class="scard-lbl">Vittorie</div><div class="scard-val" style="color:var(--grn)">${s.vittorie}</div></div>
-            <div class="scard"><div class="scard-lbl">Win Rate</div><div class="scard-val">${winRate}%</div></div>
-            <div class="scard"><div class="scard-lbl">Punteggio</div><div class="scard-val" style="color:var(--gold)">${s.punteggioTotale}</div></div>
-        </div>
+            ${statsView}
 
-        <div class="card" style="margin-top:12px">
-            <div class="card-hd">Dettagli account</div>
-            <div class="list-row"><span style="color:var(--txt3);font-size:11px;width:100px">ID utente</span><span style="font-family:monospace;font-size:12px">#${userId}</span></div>
-            <div class="list-row"><span style="color:var(--txt3);font-size:11px;width:100px">Username</span><span style="font-size:12px">${esc(username)}</span></div>
-            <div class="list-row"><span style="color:var(--txt3);font-size:11px;width:100px">Email</span><span style="font-size:12px">${esc(email)}</span></div>
-            <div class="list-row"><span style="color:var(--txt3);font-size:11px;width:100px">Ruolo</span><span class="badge b-blu">${esc(ruolo)}</span></div>
-            <div class="list-row"><span style="color:var(--txt3);font-size:11px;width:100px">Sesso</span><span style="font-size:12px">${esc(sesso)}</span></div>
-        </div>`;
+            <div class="card" style="margin-top:12px;transition:all 0.3s ease;">
+                <div class="card-hd" style="display:flex;justify-content:space-between;align-items:center">
+                    <span>Dettagli account</span>
+                    ${!isEditing ? `<button id="btn-edit-profilo" class="act-btn" title="Modifica dati" style="background:transparent;border:1px solid var(--bdr);color:var(--txt);padding:4px 8px;font-size:12px;display:flex;align-items:center;gap:6px">✎ Modifica</button>` : ''}
+                </div>
+                <div style="margin-top:12px;">
+                    ${unifiedView}
+                </div>
+            </div>
+        `;
+
+        if (!isEditing) {
+            document.getElementById('btn-edit-profilo')?.addEventListener('click', () => {
+                isEditing = true;
+                renderProfile();
+            });
+        } else {
+            // Mostra o nascondi il campo old-password dinamicamente se la nuova password è digitata
+            const pwdInput = document.getElementById('prof-password');
+            const rowOldPwd = document.getElementById('row-old-pwd');
+            if (pwdInput && rowOldPwd) {
+                pwdInput.addEventListener('input', (e) => {
+                    rowOldPwd.style.display = e.target.value.length > 0 ? 'flex' : 'none';
+                });
+            }
+
+            document.getElementById('btn-annulla-profilo')?.addEventListener('click', () => {
+                isEditing = false;
+                renderProfile();
+            });
+
+            document.getElementById('btn-salva-profilo')?.addEventListener('click', async () => {
+                const btn = document.getElementById('btn-salva-profilo');
+                const origText = btn.innerText;
+                btn.innerText = 'Salvataggio...';
+                btn.disabled = true;
+
+                const payload = {
+                    username: document.getElementById('prof-username')?.value?.trim(),
+                    sesso: document.getElementById('prof-sesso')?.value
+                };
+                const pwd = document.getElementById('prof-password')?.value;
+                const oldPwd = document.getElementById('prof-old-password')?.value;
+                if (pwd) {
+                    if (!oldPwd) {
+                        window.showToast('Devi inserire la password attuale per cambiarla.', 'warning');
+                        btn.innerText = origText;
+                        btn.disabled = false;
+                        return;
+                    }
+                    payload.password = pwd;
+                    payload.oldPassword = oldPwd;
+                }
+
+                try {
+                    const aggiornato = await Api.updateUtente(userId, payload);
+                    window.showToast('Profilo aggiornato con successo.', 'success');
+                    if (aggiornato?.username) {
+                        playerContext.name = aggiornato.username;
+                        localStorage.setItem('userName', aggiornato.username);
+                    }
+                    utente = { ...utente, ...aggiornato };
+                    isEditing = false;
+                    renderProfile();
+                } catch (err) {
+                    window.showToast(err.message || 'Errore aggiornamento profilo.', 'error', 5000);
+                    btn.innerText = origText;
+                    btn.disabled = false;
+                }
+            });
+        }
+    }
+
+    renderProfile();
 }
 
 export function disposePlayerDashboard() {

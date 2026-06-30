@@ -26,7 +26,13 @@ public class Locale {
     private Long gestoreId;
 
     @Column(name = "host_broker")
-    private String host_broker;
+    private String hostBroker;
+
+    @Column(name = "edge_api_token")
+    private String edgeApiToken;
+
+    @Column(name = "edge_password")
+    private String edgePassword;
 
     public Locale() {
     }
@@ -71,11 +77,27 @@ public class Locale {
         this.gestoreId = gestoreId;
     }
 
-    public String getHost_broker() {
-        return host_broker;
+    public String getHostBroker() {
+        return hostBroker;
     }
 
-    public void setHost_broker(String host_broker) {
-        this.host_broker = host_broker;
+    public void setHostBroker(String hostBroker) {
+        this.hostBroker = hostBroker;
+    }
+
+    public String getEdgeApiToken() {
+        return edgeApiToken;
+    }
+
+    public void setEdgeApiToken(String edgeApiToken) {
+        this.edgeApiToken = edgeApiToken;
+    }
+
+    public String getEdgePassword() {
+        return edgePassword;
+    }
+
+    public void setEdgePassword(String edgePassword) {
+        this.edgePassword = edgePassword;
     }
 }

@@ -4,6 +4,7 @@ import com.playnode.stats_service.dto.StatisticaUtenteDTO;
 import com.playnode.stats_service.service.StatisticaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ public class StatisticaController {
      * Restituisce sempre un 200 OK con il DTO popolato (o azzerato).
      */
     @GetMapping("/{utenteId}")
+    @PreAuthorize("hasAnyRole('ADMINPIATTAFORMA','ADMINGIOCO') or #utenteId.toString().equals(authentication.principal.toString())")
     public ResponseEntity<StatisticaUtenteDTO> ottieniStatisticheUtente(@PathVariable Long utenteId) {
 
         // Il Service cercherà nel DB usando il metodo corretto o genererà un fallback a zero

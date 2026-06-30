@@ -5,10 +5,13 @@ import com.playnode.game_service.repository.EventoIotRepository;
 import com.playnode.game_service.repository.GiocoFisicoRepository;
 import com.playnode.game_service.repository.PartitaRepository;
 import com.playnode.game_service.repository.LocaleRepository;
+import com.playnode.game_service.monitor.RequestMetricsRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -30,7 +33,11 @@ public class MonitorController {
     @Autowired
     private EventoIotRepository eventoRepo;
 
+    @Autowired
+    private RequestMappingHandlerMapping handlerMapping;
+
     @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public Map<String, Object> summary() {
         Map<String, Object> m = new HashMap<>();
 
@@ -38,21 +45,17 @@ public class MonitorController {
         long totalPartite = partitaRepo.count();
         long totalLocali = localeRepo.count();
 
-        // Partite live: timestamp_fine assente = IN_CORSO (allineato a
-        // PartitaService.convertiInDTO)
         long live = partitaRepo.findAll().stream()
                 .filter(p -> p.getTimestampFine() == null)
                 .count();
 
-        // mqtt events in last minute
         LocalDateTime since = LocalDateTime.now().minusMinutes(1);
         long mqttLastMin = eventoRepo.findAll().stream()
                 .filter(e -> e.getTimestampEvento() != null && e.getTimestampEvento().isAfter(since))
                 .count();
 
-        // simple synthetic API/service counts
-        int apisCount = 12;
-        int servicesCount = 6;
+        int apisCount = handlerMapping.getHandlerMethods().size();
+        int servicesCount = 4;
 
         m.put("gamesInstalled", gamesInstalled);
         m.put("totalPartite", totalPartite);
@@ -61,44 +64,25 @@ public class MonitorController {
         m.put("mqttEventsLastMinute", mqttLastMin);
         m.put("apisCount", apisCount);
         m.put("servicesCount", servicesCount);
-        m.put("reqPerMin", Math.max(0, mqttLastMin + (int) live * 2));
+        m.put("reqPerMin", mqttLastMin + RequestMetricsRegistry.getTotalSamplesLastWindow());
 
         return m;
     }
 
     @GetMapping("/latencies")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public List<Map<String, Object>> latencies() {
-        // synthesize latency values for common endpoints
-        List<String> eps = Arrays.asList("/api/partite", "/api/sensori", "/api/locali", "/api/tipologie-gioco",
-                "/api/iot/partita/{id}");
-        Random r = new Random();
-        return eps.stream().map(ep -> {
-            Map<String, Object> mm = new HashMap<>();
-            mm.put("ep", ep);
-            int ms = 10 + r.nextInt(120);
-            mm.put("ms", ms);
-            mm.put("p50", ms);
-            mm.put("ok", ms < 300);
-            return mm;
-        }).collect(Collectors.toList());
+        return RequestMetricsRegistry.getLatencies();
     }
 
     @GetMapping("/logs")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public List<Map<String, String>> logs() {
-        // build recent logs from latest EventoIot entries (fallback synthetic if none)
-        List<EventoIot> ev = eventoRepo.findAll();
-        List<EventoIot> recent = ev.stream()
+        List<EventoIot> recent = eventoRepo.findAll().stream()
                 .sorted(Comparator.comparing(EventoIot::getTimestampEvento,
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(20)
                 .collect(Collectors.toList());
-
-        if (recent.isEmpty()) {
-            return Arrays.asList(
-                    mkLog("INFO", "game-service", "Avvio servizio game-service"),
-                    mkLog("INFO", "auth-service", "Token refreshed"),
-                    mkLog("WARN", "edge-sync", "Edge LOC-004 in ritardo"));
-        }
 
         return recent.stream().map(e -> {
             Map<String, String> mm = new HashMap<>();
@@ -106,17 +90,8 @@ public class MonitorController {
             mm.put("type", "INFO");
             mm.put("msg", "IoT event: " + (e.getValore() != null ? e.getValore() : "-") + " (sensore:"
                     + e.getSensoreId() + ")");
-            mm.put("svc", "mqtt-broker");
+            mm.put("svc", "game-service");
             return mm;
         }).collect(Collectors.toList());
-    }
-
-    private Map<String, String> mkLog(String type, String svc, String msg) {
-        Map<String, String> m = new HashMap<>();
-        m.put("t", LocalDateTime.now().toString());
-        m.put("type", type);
-        m.put("msg", msg);
-        m.put("svc", svc);
-        return m;
     }
 }

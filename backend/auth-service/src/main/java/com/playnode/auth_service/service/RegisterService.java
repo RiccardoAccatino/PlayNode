@@ -31,8 +31,14 @@ public class RegisterService {
         String emailPulita = request.getEmail().trim().toLowerCase();
 
         // Verifica se l'email esiste già
-        if (repositoryUtente.findByEmail(emailPulita) != null) {
+        if (!repositoryUtente.findByEmailIgnoreCase(emailPulita).isEmpty()) {
             return new AuthResponse("Email già registrata", false);
+        }
+
+        // Verifica se lo username esiste già
+        String usernamePulito = request.getUsername() != null ? request.getUsername().trim() : null;
+        if (usernamePulito != null && !repositoryUtente.findByUsernameIgnoreCase(usernamePulito).isEmpty()) {
+            return new AuthResponse("Username già in uso", false);
         }
 
         // Hash della password

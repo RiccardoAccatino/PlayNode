@@ -20,6 +20,8 @@ public interface PartecipaRepository extends JpaRepository<Partecipa, Long> {
 
     Optional<Partecipa> findByPartitaIdAndSquadraId(Long partitaId, Long squadraId);
 
+    Optional<Partecipa> findByPartitaIdAndGiocatoreId(Long partitaId, Long giocatoreId);
+
     // 1. Conta le partite totali giocate dall'utente
     @Query("SELECT COUNT(p) FROM Partecipa p WHERE p.giocatoreId = :utenteId")
     int contaPartiteGiocate(@Param("utenteId") Long utenteId);

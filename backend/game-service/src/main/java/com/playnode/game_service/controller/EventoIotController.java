@@ -1,7 +1,6 @@
 package com.playnode.game_service.controller;
 
 import com.playnode.game_service.dto.EventoIotDTO;
-import com.playnode.game_service.entity.EventoIot;
 import com.playnode.game_service.repository.PartitaRepository;
 import com.playnode.game_service.service.EventoIotService;
 import org.springframework.http.ResponseEntity;

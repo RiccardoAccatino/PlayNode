@@ -8,6 +8,7 @@ import com.playnode.game_service.service.TipologiaGiocoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -15,34 +16,68 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tipologie-gioco")
-@CrossOrigin(origins = "*") // Importante per il frontend
 public class TipologiaGiocoController {
 
     @Autowired
     private TipologiaGiocoRepository tipologiaGiocoRepository;
 
     @Autowired
-    private TipologiaGiocoService tipologiaGiocoService; // Iniettiamo il service!
+    private TipologiaGiocoService tipologiaGiocoService;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TipologiaGiocoDTO>> ottieniTutteLeTipologie() {
         List<TipologiaGioco> tipologie = tipologiaGiocoRepository.findAll();
         List<TipologiaGiocoDTO> dtos = new ArrayList<>();
 
         for (TipologiaGioco t : tipologie) {
-            TipologiaGiocoDTO dto = new TipologiaGiocoDTO();
-            dto.setId(t.getIdTipologiaGioco());
-            dto.setNome(t.getNomeTipologiaGioco());
-            dtos.add(dto);
+            dtos.add(toDto(t));
         }
 
         return ResponseEntity.ok(dtos);
     }
 
     @PostMapping
-    public ResponseEntity<TipologiaGioco> creaNuovaTipologia(@RequestBody TipologiaGioco tipologia) {
-        // Usiamo l'istanza del service iniettata e chiamiamo il metodo 'save'
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<TipologiaGiocoDTO> creaNuovaTipologia(@RequestBody TipologiaGiocoDTO body) {
+        TipologiaGioco tipologia = new TipologiaGioco();
+        tipologia.setNomeTipologiaGioco(body.getNome() != null ? body.getNome() : "Nuovo gioco");
+        tipologia.setDescrizione(body.getDescrizione() != null ? body.getDescrizione() : "-");
+        tipologia.setRegole(body.getRegole() != null ? body.getRegole() : "-");
         TipologiaGioco salvata = tipologiaGiocoService.save(tipologia);
-        return new ResponseEntity<>(salvata, HttpStatus.CREATED);
+        return new ResponseEntity<>(toDto(salvata), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<?> aggiornaTipologia(@PathVariable Long id, @RequestBody TipologiaGiocoDTO body) {
+        return tipologiaGiocoService.aggiorna(
+                id,
+                body.getNome(),
+                body.getDescrizione(),
+                body.getRegole())
+                .<ResponseEntity<?>>map(t -> ResponseEntity.ok(toDto(t)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<?> eliminaTipologia(@PathVariable Long id) {
+        try {
+            return tipologiaGiocoService.elimina(id)
+                    ? ResponseEntity.noContent().build()
+                    : ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    private TipologiaGiocoDTO toDto(TipologiaGioco t) {
+        TipologiaGiocoDTO dto = new TipologiaGiocoDTO();
+        dto.setId(t.getIdTipologiaGioco());
+        dto.setNome(t.getNomeTipologiaGioco());
+        dto.setDescrizione(t.getDescrizione());
+        dto.setRegole(t.getRegole());
+        return dto;
     }
 }

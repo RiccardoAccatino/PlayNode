@@ -165,21 +165,6 @@ function secondiTrascorsi(partita) {
     return Math.max(0, Math.floor((fine - start) / 1000));
 }
 
-/**
- * Mostra un toast di notifica.
- */
-function showToast(msg, type = 'info', durata = 3500) {
-    document.querySelectorAll('.toast').forEach(t => t.remove());
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => {
-        t.style.opacity = '0';
-        t.style.transition = 'opacity .3s';
-        setTimeout(() => t.remove(), 320);
-    }, durata);
-}
 
 /**
  * Mostra/nasconde il banner di errore di connessione.
@@ -618,7 +603,7 @@ function renderPartiteLive() {
             const eventi = state.eventiCache[pid] || [];
             const sensori = state.sensoriCache[partita?.idGiocoInstallato] || [];
             console.log(`[admin-gioco] Dettaglio partita #${pid}:`, { partita, eventi, sensori });
-            showToast(`Partita #${pid}: ${eventi.length} eventi IoT, ${sensori.length} sensori mappati.`, 'info');
+            window.showToast(`Partita #${pid}: ${eventi.length} eventi IoT, ${sensori.length} sensori mappati.`, 'info');
         });
     });
 
@@ -711,15 +696,15 @@ async function confermaTerminazione() {
     try {
         const result = await Api.terminaPartita(id);
         if (result === null) {
-            showToast(`Partita #${id} non trovata (404).`, 'warning', 5000);
+            window.showToast(`Partita #${id} non trovata (404).`, 'warning', 5000);
         } else {
-            showToast(`Partita #${id} terminata. Punteggio: ${result.punteggio1}–${result.punteggio2}.`, 'success');
+            window.showToast(`Partita #${id} terminata. Punteggio: ${result.punteggio1}–${result.punteggio2}.`, 'success');
         }
         await fetchAllData();
         renderAll();
     } catch (error) {
         console.error('[admin-gioco] Errore terminazione:', error);
-        showToast(messaggioErrore(error), 'error', 5000);
+        window.showToast(messaggioErrore(error), 'error', 5000);
     } finally {
         if (btn) {
             btn.disabled = false;

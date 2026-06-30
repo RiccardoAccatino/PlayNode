@@ -100,4 +100,48 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Gestisce violazioni dei vincoli del database (es. unique constraint)
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolationException(
+            org.springframework.dao.DataIntegrityViolationException ex,
+            WebRequest request) {
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        
+        String msg = "Errore di integrità dei dati.";
+        String exMsg = ex.getMessage() != null ? ex.getMessage() : "";
+        
+        if (exMsg.contains("utente_username_key")) {
+            msg = "L'username è già in uso.";
+        } else if (exMsg.contains("utente_email_key")) {
+            msg = "L'email è già in uso.";
+        }
+        
+        response.put("message", msg);
+        response.put("error", ex.getMessage());
+        response.put("timestamp", System.currentTimeMillis());
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+    
+    /**
+     * Gestisce argomenti illegali (es. validazioni manuali nel service)
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            WebRequest request) {
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", ex.getMessage());
+        response.put("error", "INVALID_ARGUMENT");
+        response.put("timestamp", System.currentTimeMillis());
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 }

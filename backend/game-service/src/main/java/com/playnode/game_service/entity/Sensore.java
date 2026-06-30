@@ -17,6 +17,9 @@ public class Sensore {
     private String tipo;
     private String posizione;
 
+    @Column(name = "attivo", nullable = false)
+    private Boolean attivo = true;
+
     public Sensore() {
     }
 
@@ -50,5 +53,13 @@ public class Sensore {
 
     public void setPosizione(String posizione) {
         this.posizione = posizione;
+    }
+
+    public Boolean getAttivo() {
+        return attivo;
+    }
+
+    public void setAttivo(Boolean attivo) {
+        this.attivo = attivo;
     }
 }

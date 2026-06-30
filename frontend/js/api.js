@@ -4,8 +4,8 @@ const API_HOST = (typeof window !== 'undefined' && window.location?.hostname)
     : 'localhost';
 
 const GAME_API_URL = `http://${API_HOST}:8080/api`;
-const AUTH_API_URL = `http://${API_HOST}:8081/api/auth`;
-const AUTH_SERVICE_URL = `http://${API_HOST}:8081/api`;
+export const AUTH_API_URL = `http://${API_HOST}:8081/api/auth`;
+export const AUTH_SERVICE_URL = `http://${API_HOST}:8081/api`;
 const STATS_API_URL = `http://${API_HOST}:8082/api`;
 const TORNEI_API_URL = `http://${API_HOST}:8083/api`;
 
@@ -18,14 +18,26 @@ async function parseApiError(response) {
     const status = response.status;
     let detail = '';
     try {
-        const body = await response.text();
-        if (body) detail = body;
+        const bodyStr = await response.text();
+        if (bodyStr) {
+            try {
+                const jsonObj = JSON.parse(bodyStr);
+                if (jsonObj.message) {
+                    detail = jsonObj.message;
+                } else {
+                    detail = bodyStr;
+                }
+            } catch (e) {
+                detail = bodyStr;
+            }
+        }
     } catch (_) { /* ignore */ }
 
     const base = detail || `HTTP ${status}`;
     switch (status) {
         case 400: return new Error(`Richiesta non valida (400): ${base}`);
         case 404: return new Error(`Risorsa non trovata (404): ${base}`);
+        case 409: return new Error(base || 'Operazione non consentita: risorsa già in uso.');
         case 405: return new Error(`Metodo non consentito (405): ${base}`);
         case 500: return new Error(`Errore interno del server (500): ${base}`);
         default: return new Error(`Errore API (${status}): ${base}`);
@@ -61,7 +73,7 @@ async function fetchWithAuth(url, options = {}) {
 
     const response = await fetch(url, config);
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
         console.warn("Sessione scaduta o non autorizzata. Ritorno al login...");
         localStorage.removeItem('token');
         localStorage.removeItem('userId');
@@ -69,6 +81,10 @@ async function fetchWithAuth(url, options = {}) {
         try { document.dispatchEvent(new CustomEvent('cgp:session-expired')); } catch (e) { /* ignore */ }
         document.dispatchEvent(new CustomEvent('cgp:goto', { detail: 'login' }));
         throw new Error('Session expired');
+    }
+
+    if (response.status === 403) {
+        throw await parseApiError(response);
     }
 
     return response;
@@ -159,10 +175,18 @@ export async function registerUser(userData) {
             body: JSON.stringify(userData)
         });
 
-        if (!response.ok) {
-            throw new Error('Errore durante la registrazione.');
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            throw new Error('Errore durante la registrazione. (Errore di rete/Server down)');
         }
-        return await response.json();
+
+        if (!response.ok || data.success === false) {
+            const errorMsg = data.message || `Errore backend: ${JSON.stringify(data)}`;
+            throw new Error(errorMsg);
+        }
+        return data;
     } catch (error) {
         console.error("Errore di rete durante la registrazione:", error);
         throw error;
@@ -380,6 +404,71 @@ export async function deleteTournament(id) {
     return true;
 }
 
+export async function getTournamentDettaglio(id) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}/dettaglio`);
+    if (response.status === 404) return null;
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function iscriviTorneo(id) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}/iscrivi`, { method: 'POST' });
+    if (!response.ok) throw await parseApiError(response);
+    return true;
+}
+
+export async function disiscriviTorneo(id) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}/iscrivi`, { method: 'DELETE' });
+    if (!response.ok) throw await parseApiError(response);
+    return true;
+}
+
+export async function generaTabelloneTorneo(id) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}/genera-tabellone`, { method: 'POST' });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function getPartecipantiPartita(idPartita) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/partite/${idPartita}/partecipanti`);
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function aggiungiPartecipantePartita(idPartita, giocatoreId, squadraId) {
+    const body = {};
+    if (giocatoreId != null) body.giocatoreId = giocatoreId;
+    if (squadraId != null) body.squadraId = squadraId;
+    const response = await fetchWithAuth(`${GAME_API_URL}/partite/${idPartita}/partecipanti`, {
+        method: 'POST',
+        body: JSON.stringify(body)
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function rimuoviPartecipantePartita(idPartita, partecipaId) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/partite/${idPartita}/partecipanti/${partecipaId}`, {
+        method: 'DELETE'
+    });
+    if (response.status === 404) return false;
+    if (!response.ok) throw await parseApiError(response);
+    return true;
+}
+
+export async function avviaPartita(idGiocoInstallato, torneoId, incontroId) {
+    const params = new URLSearchParams();
+    if (torneoId != null) params.set('torneoId', torneoId);
+    if (incontroId != null) params.set('incontroId', incontroId);
+    const qs = params.toString();
+    const response = await fetchWithAuth(
+        `${GAME_API_URL}/partite/avvia/${idGiocoInstallato}${qs ? `?${qs}` : ''}`,
+        { method: 'POST' }
+    );
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
 /**
  * Ottiene l'elenco di tutte le tipologie di gioco dal database.
  */
@@ -399,26 +488,71 @@ export async function createTipologiaGioco(datiGioco) {
     return await response.json();
 }
 
+export async function updateTipologiaGioco(id, datiGioco) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/tipologie-gioco/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(datiGioco)
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function deleteTipologiaGioco(id) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/tipologie-gioco/${id}`, {
+        method: 'DELETE'
+    });
+    if (response.status === 404) return false;
+    if (!response.ok) throw await parseApiError(response);
+    return true;
+}
 
 /**
- * Avvia una nuova partita per un gioco installato (nel locale).
- * Endpoint backend: POST /api/partite/avvia/{idGiocoInstallato}
- *
- * @param {string|number} idGiocoInstallato - ID del gioco installato
- * @returns {Promise<Object|null>} PartitaDTO o null in caso di errore
+ * Stato IoT / Edge per un locale.
+ * GET /api/iot/stato/{localeId}
  */
-export async function avviaPartita(idGiocoInstallato) {
-    try {
-        const response = await fetchWithAuth(`${GAME_API_URL}/partite/avvia/${idGiocoInstallato}`, {
-            method: 'POST'
-        });
-        if (!response.ok) return null;
-        return await response.json();
-    } catch (error) {
-        console.error("Errore avvio partita:", error);
-        return null;
-    }
+export async function getIotStatoLocale(idLocale) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/iot/stato/${idLocale}`);
+    if (response.status === 404) return null;
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
 }
+
+/**
+ * Statistiche aggregate per locale.
+ * GET /api/statistiche/locale/{localeId}
+ */
+export async function getStatisticheLocale(idLocale) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/statistiche/locale/${idLocale}`);
+    if (response.status === 404) return null;
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function cambiaPasswordEdge(idLocale, password) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/locali/${idLocale}/edge/cambia-password`, {
+        method: 'POST',
+        body: JSON.stringify({ password })
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function rigeneraTokenEdge(idLocale) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/locali/${idLocale}/edge/rigenera-token`, {
+        method: 'POST'
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function disconnettiLocaleEdge(idLocale) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/locali/${idLocale}/edge/disconnetti`, {
+        method: 'POST'
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
 
 /**
  * Termina/forza la chiusura di una partita in corso.
@@ -539,12 +673,10 @@ export async function createSensore(sensoreData) {
  * @returns {Promise<boolean>}
  */
 export async function deleteSensore(id) {
-    try {
-        const response = await fetchWithAuth(`${GAME_API_URL}/sensori/${id}`, { method: 'DELETE' });
-        return response.ok;
-    } catch {
-        return false;
-    }
+    const response = await fetchWithAuth(`${GAME_API_URL}/sensori/${id}`, { method: 'DELETE' });
+    if (response.status === 404) return false;
+    if (!response.ok) throw await parseApiError(response);
+    return true;
 }
 
 /**

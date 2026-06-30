@@ -8,6 +8,7 @@ import * as playerModule from './player.js';
 import * as localeModule from './locale.js';
 import * as platformModule from './admin-platform.js';
 import * as adminGameModule from './admin-game.js';
+import * as Api from '../js/api.js';
 
 /**
  * Renderizza la dashboard principale dell'applicazione dopo il login.
@@ -60,21 +61,22 @@ export function renderDashboard(userData) {
         },
         locale: {
             nav: [],
-            sidebar: ['Panoramica', 'Giochi del Locale', 'Partite Live', 'Dispositivi', 'Statistiche Locale', 'Impostazioni'],
-            sideIcons: ['📊', '🎮', '▶️', '📡', '📈', '⚙️'],
+            sidebar: ['Panoramica', 'Giochi del Locale', 'Partite Live', 'Dispositivi', 'Statistiche Locale', 'Impostazioni', 'Profilo'],
+            sideIcons: ['📊', '🎮', '▶️', '📡', '📈', '⚙️', '👤'],
             pages: {
                 'Panoramica': () => hasAccess('locale') ? localeModule.localeOverview() : unauthorizedPage(),
                 'Giochi del Locale': () => hasAccess('locale') ? localeModule.localeGames() : unauthorizedPage(),
                 'Partite Live': () => hasAccess('locale') ? localeModule.localeLive() : unauthorizedPage(),
                 'Dispositivi': () => hasAccess('locale') ? localeModule.localeDevices() : unauthorizedPage(),
                 'Statistiche Locale': () => hasAccess('locale') ? localeModule.localeStats() : unauthorizedPage(),
-                'Impostazioni': () => hasAccess('locale') ? localeModule.localeSettings(userData) : unauthorizedPage()
+                'Impostazioni': () => hasAccess('locale') ? localeModule.localeSettings(userData) : unauthorizedPage(),
+                'Profilo': () => hasAccess('locale') ? playerModule.playerProfile() : unauthorizedPage()
             }
         },
         platform: {
             nav: [],
-            sidebar: ['Overview Globale', 'Utenti', 'Locali', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema', 'Log & Audit'],
-            sideIcons: ['🌐', '👥', '🏠', '🎲', '🏆', '🖥️', '📋'],
+            sidebar: ['Overview Globale', 'Utenti', 'Locali', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema', 'Log & Audit', 'Profilo'],
+            sideIcons: ['🌐', '👥', '🏠', '🎲', '🏆', '🖥️', '📋', '👤'],
             pages: {
                 'Overview Globale': () => hasAccess('platform') ? platformModule.platformOverview() : unauthorizedPage(),
                 'Utenti': () => hasAccess('platform') ? platformModule.platformUsers() : unauthorizedPage(),
@@ -82,18 +84,20 @@ export function renderDashboard(userData) {
                 'Tipi di Gioco': () => hasAccess('platform') ? platformModule.platformGames() : unauthorizedPage(),
                 'Tornei': () => hasAccess('platform') ? platformModule.platformTournaments() : unauthorizedPage(),
                 'Monitor Sistema': () => hasAccess('platform') ? platformModule.platformMonitor() : unauthorizedPage(),
-                'Log & Audit': () => hasAccess('platform') ? platformModule.platformLogs() : unauthorizedPage()
+                'Log & Audit': () => hasAccess('platform') ? platformModule.platformLogs() : unauthorizedPage(),
+                'Profilo': () => hasAccess('platform') ? playerModule.playerProfile() : unauthorizedPage()
             }
         },
         'admin-game': {
             nav: [],
-            sidebar: ['Dashboard', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema'],
-            sideIcons: ['📊', '🎲', '🏆', '🖥️'],
+            sidebar: ['Dashboard', 'Tipi di Gioco', 'Tornei', 'Monitor Sistema', 'Profilo'],
+            sideIcons: ['📊', '🎲', '🏆', '🖥️', '👤'],
             pages: {
                 'Dashboard': () => hasAccess('admin-game') ? adminGameModule.adminGameDashboard() : unauthorizedPage(),
                 'Tipi di Gioco': () => hasAccess('admin-game') ? platformModule.platformGames() : unauthorizedPage(),
                 'Tornei': () => hasAccess('admin-game') ? platformModule.platformTournaments() : unauthorizedPage(),
-                'Monitor Sistema': () => hasAccess('admin-game') ? platformModule.platformMonitor() : unauthorizedPage()
+                'Monitor Sistema': () => hasAccess('admin-game') ? platformModule.platformMonitor() : unauthorizedPage(),
+                'Profilo': () => hasAccess('admin-game') ? playerModule.playerProfile() : unauthorizedPage()
             }
         }
     };
@@ -348,4 +352,13 @@ export function renderDashboard(userData) {
     buildNavigation();
     const firstPage = menuItems[0];
     if (firstPage) showPage(firstPage);
+
+    document.addEventListener('cgp:show-page', (e) => {
+        const pageName = e.detail;
+        if (!pageName || !cfg.pages[pageName]) return;
+        document.querySelectorAll('.sb-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.trim().endsWith(pageName) || btn.innerHTML.includes(pageName));
+        });
+        showPage(pageName);
+    });
 }

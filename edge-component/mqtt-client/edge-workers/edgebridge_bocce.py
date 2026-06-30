@@ -14,10 +14,13 @@ MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "bocce")
 
 # ID Fisico di questa pista da bocce nel Database (adattalo al tuo DB)
 ID_GIOCO_FISICO = int(os.getenv("ID_GIOCO_FISICO", 3))
+ID_COMPONENTE_EDGE = int(os.getenv("ID_COMPONENTE_EDGE", 1))
+LOCALE_SLUG = os.getenv("LOCALE_SLUG", "locale")
 
 # Topic in ascolto
 MQTT_TOPIC_PUNTEGGIO = "bocce/punteggio"
 MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
+MQTT_TOPIC_HEARTBEAT = f"locale/{LOCALE_SLUG}/edge/status"
 
 
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
@@ -36,12 +39,34 @@ MAPPA_SQUADRE = {
 
 # 3. LOGICA DI RICEZIONE
 
+def invia_heartbeat(client):
+    payload = json.dumps({"idComponenteEdge": ID_COMPONENTE_EDGE, "stato": "Online"})
+    client.publish(MQTT_TOPIC_HEARTBEAT, payload, qos=1)
+    try:
+        requests.post(
+            f"{API_BASE_URL}/api/iot/heartbeat",
+            params={"idComponenteEdge": ID_COMPONENTE_EDGE},
+            timeout=3
+        )
+    except requests.exceptions.RequestException:
+        pass
+
+def heartbeat_loop(client):
+    while True:
+        time.sleep(30)
+        try:
+            invia_heartbeat(client)
+        except Exception:
+            pass
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f" Connesso al Broker MQTT con successo!")
-        # Ci iscriviamo a ENTRAMBI i topic
         client.subscribe(MQTT_TOPIC_PUNTEGGIO)
         client.subscribe(MQTT_TOPIC_COMANDI)
+        invia_heartbeat(client)
+        import threading
+        threading.Thread(target=heartbeat_loop, args=(client,), daemon=True).start()
         print(f" In ascolto punteggi su: {MQTT_TOPIC_PUNTEGGIO}")
         print(f" In ascolto comandi su: {MQTT_TOPIC_COMANDI}")
     else:

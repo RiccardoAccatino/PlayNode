@@ -8,10 +8,13 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/sensori")
@@ -28,24 +31,23 @@ public class SensoreController {
 
     @PostMapping
     @Transactional
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public ResponseEntity<SensoreDTO> createSensore(@RequestBody SensoreDTO dto) {
         if (dto == null || dto.getIdGiocoFisico() == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        // otteniamo un riferimento al GiocoFisico esistente (non carichiamo l'entità
-        // interamente)
         GiocoFisico giocoRef = em.getReference(GiocoFisico.class, dto.getIdGiocoFisico());
 
         Sensore s = new Sensore();
         s.setGiocoFisico(giocoRef);
         s.setTipo(dto.getTipo());
         s.setPosizione(dto.getPosizione());
+        s.setAttivo(dto.getAttivo() != null ? dto.getAttivo() : true);
 
         Sensore saved = sensoreRepository.save(s);
-
-        // popola DTO di ritorno
         dto.setId(saved.getIdSensore());
+        dto.setAttivo(saved.getAttivo());
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -56,45 +58,77 @@ public class SensoreController {
     }
 
     @GetMapping("/gioco/{giocoFisicoId}")
-    public ResponseEntity<java.util.List<SensoreDTO>> getSensoriByGioco(@PathVariable Long giocoFisicoId) {
+    @PreAuthorize("hasAnyRole('GESTORE','ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<List<SensoreDTO>> getSensoriByGioco(@PathVariable Long giocoFisicoId) {
         if (giocoFisicoId == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        java.util.List<Sensore> sens = sensoreRepository.findByGiocoFisicoIdGiocoFisico(giocoFisicoId);
+        List<Sensore> sens = sensoreRepository.findByGiocoFisicoIdGiocoFisico(giocoFisicoId);
         return ResponseEntity.ok(mapSensoriToDto(sens));
     }
 
     @GetMapping("/tipologia/{tipologiaId}")
-    public ResponseEntity<java.util.List<SensoreDTO>> getSensoriByTipologia(@PathVariable Long tipologiaId) {
-        if (tipologiaId == null)
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<List<SensoreDTO>> getSensoriByTipologia(@PathVariable Long tipologiaId) {
+        if (tipologiaId == null) {
             return ResponseEntity.badRequest().build();
+        }
 
-        java.util.List<Sensore> sens = sensoreRepository.findByGiocoFisicoTipologiaGiocoId(tipologiaId);
+        List<Sensore> sens = sensoreRepository.findByGiocoFisicoTipologiaGiocoId(tipologiaId);
         return ResponseEntity.ok(mapSensoriToDto(sens));
     }
 
-    private java.util.List<SensoreDTO> mapSensoriToDto(java.util.List<Sensore> sens) {
-        java.util.List<SensoreDTO> out = new java.util.ArrayList<>();
+    @DeleteMapping("/{id}")
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<Void> deleteSensore(@PathVariable Long id) {
+        if (!sensoreRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        sensoreRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/toggle")
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<SensoreDTO> toggleSensore(@PathVariable Long id) {
+        return sensoreRepository.findById(id)
+                .map(s -> {
+                    boolean nuovoStato = !Boolean.TRUE.equals(s.getAttivo());
+                    s.setAttivo(nuovoStato);
+                    Sensore saved = sensoreRepository.save(s);
+                    return ResponseEntity.ok(mapSensoreToDto(saved));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private List<SensoreDTO> mapSensoriToDto(List<Sensore> sens) {
+        List<SensoreDTO> out = new ArrayList<>();
         for (Sensore s : sens) {
-            SensoreDTO d = new SensoreDTO();
-            d.setId(s.getIdSensore());
-            if (s.getGiocoFisico() != null) {
-                d.setIdGiocoFisico(s.getGiocoFisico().getIdGiocoFisico());
-                d.setTipologiaId(s.getGiocoFisico().getTipologiaGiocoId());
-            }
-            d.setTipo(s.getTipo());
-            d.setPosizione(s.getPosizione());
-            d.setNomeSensore(
-                    s.getPosizione() != null ? s.getPosizione()
-                            : (s.getTipo() != null ? s.getTipo() : "Sensore"));
-            d.setDescrizione(null);
-            d.setUnitaMisura(null);
-            d.setValoreMin(null);
-            d.setValoreMax(null);
-            d.setAttivo(true);
-            out.add(d);
+            out.add(mapSensoreToDto(s));
         }
         return out;
+    }
+
+    private SensoreDTO mapSensoreToDto(Sensore s) {
+        SensoreDTO d = new SensoreDTO();
+        d.setId(s.getIdSensore());
+        if (s.getGiocoFisico() != null) {
+            d.setIdGiocoFisico(s.getGiocoFisico().getIdGiocoFisico());
+            d.setTipologiaId(s.getGiocoFisico().getTipologiaGiocoId());
+        }
+        d.setTipo(s.getTipo());
+        d.setPosizione(s.getPosizione());
+        d.setNomeSensore(
+                s.getPosizione() != null ? s.getPosizione()
+                        : (s.getTipo() != null ? s.getTipo() : "Sensore"));
+        d.setDescrizione(null);
+        d.setUnitaMisura(null);
+        d.setValoreMin(null);
+        d.setValoreMax(null);
+        d.setAttivo(Boolean.TRUE.equals(s.getAttivo()));
+        return d;
     }
 }

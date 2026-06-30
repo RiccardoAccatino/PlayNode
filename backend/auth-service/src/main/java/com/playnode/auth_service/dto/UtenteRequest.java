@@ -9,6 +9,7 @@ public class UtenteRequest {
     private String password;
     private RuoloTipo ruolo;
     private SessoTipo sesso;
+    private String oldPassword;
 
     public UtenteRequest() {
     }
@@ -51,5 +52,13 @@ public class UtenteRequest {
 
     public void setSesso(SessoTipo sesso) {
         this.sesso = sesso;
+    }
+
+    public String getOldPassword() {
+        return oldPassword;
+    }
+
+    public void setOldPassword(String oldPassword) {
+        this.oldPassword = oldPassword;
     }
 }

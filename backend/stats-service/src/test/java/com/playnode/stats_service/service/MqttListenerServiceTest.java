@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -20,11 +19,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-/**
- * Test unitari per il Listener MQTT del servizio statistiche.
- * Verifica la corretta sottoscrizione ai topic e l'elaborazione
- * dei messaggi ricevuti senza connettersi a un broker reale.
- */
 @ExtendWith(MockitoExtension.class)
 public class MqttListenerServiceTest {
 
@@ -33,9 +27,12 @@ public class MqttListenerServiceTest {
     @Mock
     private IMqttClient mockClient;
 
+    @Mock
+    private MqttMatchEndPersistenceService matchEndPersistenceService;
+
     @BeforeEach
     void setUp() throws Exception {
-        mqttListenerService = spy(new MqttListenerService());
+        mqttListenerService = spy(new MqttListenerService(matchEndPersistenceService));
         ReflectionTestUtils.setField(mqttListenerService, "brokerUrl", "tcp://127.0.0.1:1883");
         ReflectionTestUtils.setField(mqttListenerService, "clientId", "stats-test-client");
         ReflectionTestUtils.setField(mqttListenerService, "topicName", "locale/#");
@@ -58,11 +55,10 @@ public class MqttListenerServiceTest {
         MqttCallback callback = callbackCaptor.getValue();
         assertNotNull(callback);
 
-        String jsonPayload = "{\"idUtente\": 1, \"punteggio\": 10, \"giocoId\": 2, \"vittoria\": true}";
+        String jsonPayload = "{\"idUtente\": 1, \"idPartita\": 5, \"punteggio\": 10, \"giocoId\": 2, \"vittoria\": true}";
         MqttMessage message = new MqttMessage(jsonPayload.getBytes());
-        
+
         assertDoesNotThrow(() -> callback.messageArrived("locale/1/match_end", message));
-        
-        assertDoesNotThrow(() -> callback.connectionLost(new RuntimeException("Connection lost test")));
+        verify(matchEndPersistenceService, times(1)).salvaFinePartita(any(), eq("locale/1/match_end"));
     }
 }

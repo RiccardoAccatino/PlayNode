@@ -6,8 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Date;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -53,7 +51,7 @@ public class JwtServiceTest {
     @Test
     void testTokenInvalido_throwsSignatureException() {
         String token = jwtService.generateToken(10L, "test", "test@test.com", "Giocatore");
-        
+
         // Alterazione del token per renderlo invalido
         String invalidToken = token + "xyz";
 
@@ -70,9 +68,9 @@ public class JwtServiceTest {
     void testTokenScaduto_throwsExpiredJwtException() throws InterruptedException {
         // Configuriamo un'espirazione brevissima (1 ms)
         ReflectionTestUtils.setField(jwtService, "expirationTime", 1L);
-        
+
         String token = jwtService.generateToken(10L, "test", "test@test.com", "Giocatore");
-        
+
         // Aspettiamo che scada
         Thread.sleep(10);
 

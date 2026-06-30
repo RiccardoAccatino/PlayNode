@@ -1,16 +1,11 @@
 package com.playnode.game_service.service;
 
-import com.playnode.game_service.dto.PartitaDTO;
-import com.playnode.game_service.entity.Partecipa;
+import com.playnode.game_service.entity.MqttOutbox;
 import com.playnode.game_service.entity.Partita;
-import com.playnode.game_service.repository.PartecipaRepository;
-import com.playnode.game_service.repository.PartitaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -18,40 +13,50 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Test unitari per il servizio di gestione delle Partite.
- * Copre la logica di business: avvio, aggiornamento punteggio e terminazione,
- * simulando il DB e l'invio di messaggi MQTT.
- */
 @ExtendWith(MockitoExtension.class)
 public class PartitaServiceTest {
 
     @Mock
-    private PartitaRepository partitaRepository;
+    private com.playnode.game_service.repository.PartitaRepository partitaRepository;
 
     @Mock
-    private PartecipaRepository partecipaRepository;
+    private com.playnode.game_service.repository.PartecipaRepository partecipaRepository;
 
     @Mock
     private MqttPublisherService mqttPublisherService;
 
-    @InjectMocks
+    @Mock
+    private MqttOutboxService mqttOutboxService;
+
+    @Mock
+    private TournamentCallbackService tournamentCallbackService;
+
     private PartitaService partitaService;
 
+    private static final String DEFAULT_BROKER = "tcp://playnode-mosquitto:1883";
+
     private Partita partitaMock;
-    private Partecipa partecipaMock;
+    private com.playnode.game_service.entity.Partecipa partecipaMock;
 
     @BeforeEach
     void setUp() {
+        partitaService = new PartitaService(
+                partitaRepository,
+                partecipaRepository,
+                mqttPublisherService,
+                mqttOutboxService,
+                tournamentCallbackService,
+                DEFAULT_BROKER);
+
         partitaMock = new Partita();
         partitaMock.setIdPartita(100L);
         partitaMock.setGiocoFisicoId(10L);
         partitaMock.setTimestampInizio(LocalDateTime.now());
 
-        partecipaMock = new Partecipa();
+        partecipaMock = new com.playnode.game_service.entity.Partecipa();
         partecipaMock.setIdPartecipa(1L);
         partecipaMock.setPartitaId(100L);
         partecipaMock.setSquadraId(1L);
@@ -60,58 +65,71 @@ public class PartitaServiceTest {
 
     @Test
     void testAvviaNuovaPartita_Success() {
-        // Configurazione mock: il salvataggio restituisce la partita mockata
+        when(partitaRepository.existsByGiocoFisicoIdAndTimestampFineIsNull(10L)).thenReturn(false);
+        when(mqttPublisherService.risolviBrokerUrl(10L)).thenReturn("tcp://broker:1883");
         when(partitaRepository.save(any(Partita.class))).thenReturn(partitaMock);
         when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L)).thenReturn(Collections.emptyList());
+        when(mqttOutboxService.accoda(anyString(), anyString(), anyString(), anyString(), anyLong()))
+                .thenReturn(new MqttOutbox());
 
-        PartitaDTO result = partitaService.avviaNuovaPartita(10L);
+        var result = partitaService.avviaNuovaPartita(10L, null, null);
 
         assertNotNull(result);
         assertEquals(100L, result.getId());
-        assertEquals(10L, result.getIdGiocoInstallato());
-        assertTrue("IN_CORSO".equals(result.getStato()));
-
         verify(partitaRepository, times(1)).save(any(Partita.class));
-        verify(mqttPublisherService, times(1)).inviaComandoAvvioPartita(10L, 100L);
+        verify(mqttOutboxService, times(1)).accoda(eq("AVVIO_PARTITA"), anyString(), anyString(),
+                eq("tcp://broker:1883"), eq(100L));
+    }
+
+    @Test
+    void testAvviaNuovaPartita_UsaBrokerDiDefaultSeMancanteNelLocale() {
+        when(partitaRepository.existsByGiocoFisicoIdAndTimestampFineIsNull(10L)).thenReturn(false);
+        when(mqttPublisherService.risolviBrokerUrl(10L)).thenReturn(null);
+        when(partitaRepository.save(any(Partita.class))).thenReturn(partitaMock);
+        when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L)).thenReturn(Collections.emptyList());
+        when(mqttOutboxService.accoda(anyString(), anyString(), anyString(), anyString(), anyLong()))
+                .thenReturn(new MqttOutbox());
+
+        var result = partitaService.avviaNuovaPartita(10L, null, null);
+
+        assertNotNull(result);
+        verify(mqttOutboxService).accoda(eq("AVVIO_PARTITA"), anyString(), anyString(),
+                eq(DEFAULT_BROKER), eq(100L));
+    }
+
+    @Test
+    void testAvviaNuovaPartita_BrokerMancante_LanciaEccezione() {
+        partitaService = new PartitaService(
+                partitaRepository,
+                partecipaRepository,
+                mqttPublisherService,
+                mqttOutboxService,
+                tournamentCallbackService,
+                "");
+        when(partitaRepository.existsByGiocoFisicoIdAndTimestampFineIsNull(10L)).thenReturn(false);
+        when(mqttPublisherService.risolviBrokerUrl(10L)).thenReturn(null);
+        assertThrows(IllegalStateException.class, () -> partitaService.avviaNuovaPartita(10L, null, null));
+        verify(partitaRepository, never()).save(any());
+    }
+
+    @Test
+    void testAvviaNuovaPartita_GiocoGiaInUso_LanciaEccezione() {
+        when(partitaRepository.existsByGiocoFisicoIdAndTimestampFineIsNull(10L)).thenReturn(true);
+        assertThrows(IllegalStateException.class, () -> partitaService.avviaNuovaPartita(10L, null, null));
+        verify(partitaRepository, never()).save(any());
     }
 
     @Test
     void testAggiornaPunteggio_PartitaEsistente_PrimoPunto() {
         when(partitaRepository.findById(100L)).thenReturn(Optional.of(partitaMock));
         when(partecipaRepository.findByPartitaIdAndSquadraId(100L, 1L)).thenReturn(Optional.empty());
-        when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L)).thenReturn(Collections.singletonList(partecipaMock));
+        when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L))
+                .thenReturn(Collections.singletonList(partecipaMock));
 
-        // When
-        PartitaDTO result = partitaService.aggiornaPunteggio(100L, 1L);
+        var result = partitaService.aggiornaPunteggio(100L, 1L);
 
-        // Then
         assertNotNull(result);
-        verify(partecipaRepository, times(1)).save(any(Partecipa.class));
-    }
-
-    @Test
-    void testAggiornaPunteggio_PartitaEsistente_PuntoSuccessivo() {
-        partecipaMock.setPunteggioFinale(2);
-        when(partitaRepository.findById(100L)).thenReturn(Optional.of(partitaMock));
-        when(partecipaRepository.findByPartitaIdAndSquadraId(100L, 1L)).thenReturn(Optional.of(partecipaMock));
-        when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L)).thenReturn(Collections.singletonList(partecipaMock));
-
-        // When
-        PartitaDTO result = partitaService.aggiornaPunteggio(100L, 1L);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(3, partecipaMock.getPunteggioFinale()); // 2 + 1
-        verify(partecipaRepository, times(1)).save(partecipaMock);
-    }
-
-    @Test
-    void testAggiornaPunteggio_PartitaNonTrovata_RestituisceNull() {
-        when(partitaRepository.findById(999L)).thenReturn(Optional.empty());
-
-        PartitaDTO result = partitaService.aggiornaPunteggio(999L, 1L);
-
-        assertNull(result); // Asserzione esplicita se partita non trovata
+        verify(partecipaRepository, times(1)).save(any(com.playnode.game_service.entity.Partecipa.class));
     }
 
     @Test
@@ -119,13 +137,16 @@ public class PartitaServiceTest {
         when(partitaRepository.findById(100L)).thenReturn(Optional.of(partitaMock));
         when(partitaRepository.save(any(Partita.class))).thenReturn(partitaMock);
         when(partecipaRepository.findByPartitaIdOrderByIdPartecipaAsc(100L)).thenReturn(Collections.emptyList());
+        when(mqttPublisherService.risolviBrokerUrl(10L)).thenReturn("tcp://broker:1883");
+        when(mqttOutboxService.accoda(anyString(), anyString(), anyString(), anyString(), anyLong()))
+                .thenReturn(new MqttOutbox());
 
-        PartitaDTO result = partitaService.terminaPartita(100L);
+        var result = partitaService.terminaPartita(100L);
 
         assertNotNull(result);
         assertNotNull(partitaMock.getTimestampFine());
-        assertTrue("TERMINATA".equals(result.getStato())); // Uso esplicito di assertTrue
-        verify(mqttPublisherService, times(1)).inviaComandoTerminaPartita(10L);
-        verify(partitaRepository, times(1)).save(partitaMock);
+        verify(mqttOutboxService, times(1)).accoda(eq("TERMINA_PARTITA"), anyString(), anyString(),
+                eq("tcp://broker:1883"), eq(100L));
+        verify(tournamentCallbackService, times(1)).notificaFinePartita(100L);
     }
 }

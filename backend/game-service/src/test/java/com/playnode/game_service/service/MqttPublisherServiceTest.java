@@ -58,7 +58,7 @@ public class MqttPublisherServiceTest {
 
         localeMock = new Locale();
         localeMock.setIdLocale(10L);
-        localeMock.setHost_broker("tcp://127.0.0.1:1883");
+        localeMock.setHostBroker("tcp://127.0.0.1:1883");
 
         // Return the mockClient instead of creating a real MqttClient
         doReturn(mockClient).when(mqttPublisherService).createMqttClient(anyString(), anyString());

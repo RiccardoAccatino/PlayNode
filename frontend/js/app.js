@@ -19,6 +19,12 @@ window.showToast = function(message, type = 'blu', duration = 3000) {
     const existing = document.getElementById('playnode-toast');
     if (existing) existing.remove();
     
+    // Mappatura compatibilità con vecchie chiamate (es. 'error' -> 'red')
+    if (type === 'error') type = 'red';
+    if (type === 'success') type = 'grn';
+    if (type === 'warning') type = 'amb';
+    if (type === 'info') type = 'blu';
+
     const toast = document.createElement('div');
     toast.id = 'playnode-toast';
     
@@ -49,6 +55,32 @@ window.showToast = function(message, type = 'blu', duration = 3000) {
     }
     
     return { close: closeToast };
+};
+
+window.showLoadingOverlay = function(message = 'Caricamento in corso...') {
+    window.hideLoadingOverlay();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'playnode-loading-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'playnode-loading-box';
+
+    const spinner = document.createElement('div');
+    spinner.className = 'playnode-loading-spinner';
+
+    const text = document.createElement('div');
+    text.className = 'playnode-loading-text';
+    text.textContent = message;
+
+    box.appendChild(spinner);
+    box.appendChild(text);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+};
+
+window.hideLoadingOverlay = function() {
+    document.getElementById('playnode-loading-overlay')?.remove();
 };
 
 window.showConfirm = function(message) {

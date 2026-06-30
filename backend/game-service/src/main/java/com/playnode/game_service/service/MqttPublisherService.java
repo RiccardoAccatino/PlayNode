@@ -35,13 +35,17 @@ public class MqttPublisherService {
     }
 
     private String getBrokerUrlByIdGioco(Long idGiocoFisico) {
+        return risolviBrokerUrl(idGiocoFisico);
+    }
+
+    public String risolviBrokerUrl(Long idGiocoFisico) {
         Optional<GiocoFisico> giocoOp = giocoFisicoRepository.findById(idGiocoFisico);
         if (giocoOp.isPresent()) {
             Long localeId = giocoOp.get().getLocaleId();
             Optional<Locale> localeOp = localeRepository.findById(localeId);
 
             if (localeOp.isPresent()) {
-                String hostBroker = localeOp.get().getHost_broker();
+                String hostBroker = localeOp.get().getHostBroker();
                 if (hostBroker != null && !hostBroker.startsWith("tcp://")) {
                     return "tcp://" + hostBroker + ":1883";
                 }
@@ -56,8 +60,18 @@ public class MqttPublisherService {
     }
 
     private IMqttClient getMqttClient(String brokerUrl) throws MqttException {
-        if (brokerClients.containsKey(brokerUrl) && brokerClients.get(brokerUrl).isConnected()) {
-            return brokerClients.get(brokerUrl);
+        IMqttClient existingClient = brokerClients.get(brokerUrl);
+        if (existingClient != null) {
+            if (existingClient.isConnected()) {
+                return existingClient;
+            } else {
+                try {
+                    existingClient.disconnect();
+                } catch (MqttException ignored) {}
+                try {
+                    existingClient.close();
+                } catch (MqttException ignored) {}
+            }
         }
 
         String uniqueClientId = clientIdPrefix + "_" + System.currentTimeMillis();
@@ -66,6 +80,8 @@ public class MqttPublisherService {
         MqttConnectOptions options = new MqttConnectOptions();
         options.setCleanSession(true);
         options.setAutomaticReconnect(true);
+        options.setConnectionTimeout(5);
+        options.setKeepAliveInterval(30);
         options.setUserName(mqttUsername);
         options.setPassword(mqttPassword.toCharArray());
 
@@ -76,6 +92,23 @@ public class MqttPublisherService {
         return newClient;
     }
 
+    public boolean pubblicaMessaggio(String brokerUrl, String topic, String payload) {
+        if (brokerUrl == null || brokerUrl.isBlank()) {
+            return false;
+        }
+        try {
+            IMqttClient client = getMqttClient(brokerUrl);
+            MqttMessage message = new MqttMessage(payload.getBytes());
+            message.setQos(1);
+            client.publish(topic, message);
+            System.out.println("📤 Inviato comando MQTT: " + payload + " su " + topic);
+            return true;
+        } catch (MqttException e) {
+            System.err.println("❌ Errore invio messaggio MQTT a " + brokerUrl + ": " + e.getMessage());
+            return false;
+        }
+    }
+
     public void inviaComandoAvvioPartita(Long ID_GIOCO_FISICO, Long idPartita) {
         String brokerUrl = getBrokerUrlByIdGioco(ID_GIOCO_FISICO);
         if (brokerUrl == null) {
@@ -83,19 +116,9 @@ public class MqttPublisherService {
             return;
         }
 
-        try {
-            IMqttClient client = getMqttClient(brokerUrl);
-            String topic = "edge/gioco/" + ID_GIOCO_FISICO + "/comandi";
-            String payload = "{\"nuova_partita_id\":" + idPartita + "}";
-
-            MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(1);
-
-            client.publish(topic, message);
-            System.out.println("📤 Inviato comando MQTT: " + payload + " sul broker " + brokerUrl);
-        } catch (MqttException e) {
-            System.err.println("❌ Errore invio messaggio MQTT a " + brokerUrl + ": " + e.getMessage());
-        }
+        String topic = "edge/gioco/" + ID_GIOCO_FISICO + "/comandi";
+        String payload = "{\"nuova_partita_id\":" + idPartita + "}";
+        pubblicaMessaggio(brokerUrl, topic, payload);
     }
 
     public void inviaComandoTerminaPartita(Long idGiocoInstallato) {
@@ -105,18 +128,8 @@ public class MqttPublisherService {
             return;
         }
 
-        try {
-            IMqttClient client = getMqttClient(brokerUrl);
-            String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
-            String payload = "{\"termina_partita\": true}";
-
-            MqttMessage message = new MqttMessage(payload.getBytes());
-            message.setQos(1);
-
-            client.publish(topic, message);
-            System.out.println("🛑 Inviato comando MQTT di FINE partita sul broker " + brokerUrl);
-        } catch (MqttException e) {
-            System.err.println("❌ Errore invio messaggio MQTT di terminazione a " + brokerUrl + ": " + e.getMessage());
-        }
+        String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
+        String payload = "{\"termina_partita\": true}";
+        pubblicaMessaggio(brokerUrl, topic, payload);
     }
 }

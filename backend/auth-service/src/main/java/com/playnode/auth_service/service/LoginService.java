@@ -53,7 +53,8 @@ public class LoginService {
         String emailPulita = request.getEmail().trim().toLowerCase();
 
         // Cerca l'utente per email
-        Utente u = rutente.findByEmail(emailPulita);
+        java.util.List<Utente> utenti = rutente.findByEmailIgnoreCase(emailPulita);
+        Utente u = utenti.isEmpty() ? null : utenti.get(0);
 
         if (u == null) {
             bruteForceProtection.recordFailedAttempt(clientIp);

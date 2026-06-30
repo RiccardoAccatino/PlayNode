@@ -505,21 +505,22 @@ POST /api/sensori
 
 ### Autorizzazione
 
-- `SecurityConfig` consente liberamente `/api/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/`.
-- Tutte le altre richieste richiedono autenticazione JWT valida.
-- Non ci sono controlli di accesso basati su ruolo nel codebase esaminato.
-- I ruoli definiti in `RuoloTipo` sono: `Giocatore`, `Gestore`, `AdminGioco`, `AdminPiattaforma`.
+- `SecurityConfig` in ogni microservizio richiede JWT valido (eccetto endpoint pubblici documentati).
+- `@PreAuthorize` su controller: ruoli (`hasRole`, `hasAnyRole`) e ownership (`#id.toString() == authentication.principal`, `@localeSecurity.isGestoreOfLocale(...)`).
+- Ruoli nel token JWT (prefisso `ROLE_` nel filter): `GIOCATORE`, `GESTORE`, `ADMINGIOCO`, `ADMINPIATTAFORMA`.
+- Principal JWT = `userId` come stringa (per match con path variable).
+- Endpoint pubblici (senza JWT): `POST /api/auth/**`, Swagger, `POST /api/iot/evento`, `PUT /api/partite/*/punteggio` (bridge Edge).
+- `LocaleAuthorizationService` (game-service): verifica che il gestore sia owner del locale.
 
 ### Middleware / security filter
 
 - `JwtAuthenticationFilter` valida token e blacklist.
-- `SecurityConfig` configura CORS e disabilita CSRF.
+- `SecurityConfig` configura CORS centralizzato leggendo i domini consentiti in application.properties e disabilita CSRF. Non utilizzare `@CrossOrigin` nei controller né classi `GlobalCorsConfig` addizionali per evitare conflitti (risolto issue di CORS preflight errato).
 - Brute force protection lato login è implementata in-memory con un limite di 5 tentativi per IP e blocco di 15 minuti.
 
 ### Vulnerabilità potenziali
 
-- Mancanza di autorizzazioni basate sul ruolo oltre all'autenticazione.
-- Blacklist JWT volatile e non persistente.
+- Blacklist JWT volatile e non persistente (logout non sopravvive al riavvio).
 - Il token JWT viene salvato in `localStorage` nel frontend (esposto a XSS se il sito non è protetto).
 
 ## 10. Configurazione e Deploy
@@ -837,9 +838,7 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
 - `SecurityConfig` non applica ruoli in modo selettivo.
 - Blacklist JWT è volatile e non persistente.
 - `game-service` e `stats-service` includono MQTT ma la sincronizzazione offline non è completata.
-- `tournament-service` ha un typo di configurazione `pring.application.name`.
-- Naming inconsistente tra DB e Java (`host_broker`, `gioco_fisico_id`, `stato_sync`).
-- `edgebridge_bocce.py` contiene un blocco `if` indentato erroneamente.
+- Naming inconsistente tra DB e Java (es. `gioco_fisico_id`, `stato_sync`).
 - Frontend usa `localStorage` per il token e non ha protezione XSS dichiarata.
 - Non esiste una chiara strategia di deployment multistanza o service discovery.
 - Le view SQL sono utili, ma non sono accompagnate da test di regressione o indici specifici.
@@ -951,138 +950,23 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
 - **Supporto Multi-Locale e Fallback Gestore:** Completata l'implementazione del flusso di login. Se un gestore possiede più locali, una finestra modale nativa (`window.showLocaleSelectorModal` tramite `.btn-locale-select`) ne forza la scelta prima di proseguire. Implementato lo switch rapido (menu a tendina) nella Topbar (`dashboard.js`). Rimosso l'hardcoding al "Locale ID 1"; qualora un gestore non abbia locali associati, tutte le tab della dashboard visualizzeranno correttamente un *Empty State* pulito ("Nessun locale associato").
 - **Implementazione Test Backend (Java):** Completata la suite di test unitari con `JUnit 5` e `Mockito` per `game-service` (`PartitaService`, `MqttPublisherService`), `stats-service` (`MqttListenerService`), e `auth-service` (`JwtService`). Utilizzate asserzioni esplicite come `assertThrows`, `assertNull`, `assertTrue` e disabilitato temporaneamente il load del contesto Spring Boot tramite `@Disabled` per consentire l'esecuzione locale della suite Maven senza la necessità di database Dockerizzati in esecuzione.
 - **Isolamento Test Componente Edge (Python):** Tutti gli script di test preesistenti (compreso `mock_bocce.py` e simulazione calcetto) sono stati suddivisi nelle cartelle `test/` dei rispettivi moduli (`edge-component/test/`, `iot-devices/test/`). Configurato il `sys.path.append` dinamico all'interno dei test in modo che non richiedano l'esportazione del `PYTHONPATH`. 
-- **Tool Diagnostico MQTT (CLI):** Il vecchio file hardcoded `test_mqtt.py` è stato rifattorizzato in uno strumento diagnostico a riga di comando (`argparse`) flessibile, capace di ricevere come parametri IP, credenziali, e Topic, offrendo validazioni e log d'errore leggibili in caso di instabilità del broker in produzione.
+- **Frontend dinamico (Gestore Locale + Monitor):** Eliminate tutte le sezioni mock in `locale.js` (Dispositivi Edge, Statistiche Locale, Impostazioni). Nuovi endpoint `GET /api/iot/stato/{localeId}` e `GET /api/statistiche/locale/{localeId}` in `game-service`. Monitor senza `Random()` né log sintetici: latenze da `RequestTimingFilter`, log solo da `Evento_iot`. CRUD sensori/tipologie e impostazioni edge (`POST /api/locali/{id}/edge/*`).
+- **Autorizzazione per ruoli (JWT + @PreAuthorize):** Aggiunto `spring-boot-starter-security` e package `security/` in `game-service`, `stats-service`, `tournament-service`. `@EnableMethodSecurity` in `auth-service`. Ruoli: `GESTORE`, `ADMINGIOCO`, `ADMINPIATTAFORMA`, `GIOCATORE`. Principal JWT = `userId` (stringa). `LocaleAuthorizationService` verifica ownership locale per gestori. Endpoint pubblici Edge: `POST /api/iot/evento`, `PUT /api/partite/*/punteggio`.
+- **Transactional Outbox avvio partita:** Tabella `mqtt_outbox`, entità `MqttOutbox`, `MqttOutboxService` + `MqttOutboxProcessor` (`@Scheduled` ogni 5s). `PartitaService` salva partita e accoda messaggio MQTT in transazione; pubblicazione asincrona con retry.
+- **Persistenza MQTT → DB (stats-service):** `MqttMatchEndPersistenceService` su topic `*/match_end` salva `Partecipa` e chiude `Partita` (`timestamp_fine`), aggiornando le view SQL.
+- **UI Locale completa:** Tutte le tab gestore (`Panoramica`, `Partite Live`, `Giochi`, `Dispositivi`, `Statistiche`, `Impostazioni`) dinamiche via API. Subtitle con nome locale. Polling 5s partite live, 30s dispositivi edge. Fix `AUTH_API_URL` esportato da `api.js` per logout in `dashboard.js`.
+- **Refactoring & Pulizia (Pre-Consegna):** Correzione naming inconsistente `hostBroker`, risolto memory leak MQTT in `MqttPublisherService`, pulizia documentazione tecnica da falsi positivi.
 
-
-## TODO
-
-## 🔴 Critico (blocca demo/esame)
-
-- [ ] Sostituire dati mockati nella pagina "Dispositivi Edge" con endpoint reale
-  - File coinvolti: `frontend/views/locale.js` (variabile `localeDevices()`, `['locale/bar-belvedere/calciobalilla...']`)
-  - Motivazione: La tab mostra dati 100% hardcoded ("Online", "12ms latency", topic attivi statici).
-  - Complessità: Media (richiede creazione endpoint).
-  - Dipendenze: Creare `GET /api/iot/stato/{localeId}` in `game-service` basato su heartbeat MQTT.
-
-- [ ] Sostituire dati mockati nella pagina "Statistiche Locale" con endpoint reale
-  - File coinvolti: `frontend/views/locale.js` (variabile `localeStats()`, valori fissi come 412 partite)
-  - Motivazione: Statistiche uso per gioco 100% mockate (58% Calciobalilla, 24% Freccette). Non veritiere.
-  - Complessità: Media.
-  - Dipendenze: Creare `GET /api/statistiche/locale/{localeId}` e usare viste SQL correnti `statistica_utente`.
-
-- [ ] Rimuovere generazione mock in Latenze e Rate (Monitor di Sistema)
-  - File coinvolti: `backend/game-service/src/main/java/com/playnode/game_service/controller/MonitorController.java`
-  - Motivazione: I metodi `latencies()` e `summary()` usano `new Random()` o logica fittizia per i tassi di richiesta.
-  - Complessità: Alta (richiede Spring Boot Actuator e Micrometer).
-  - Dipendenze: Aggiungere dipendenze Micrometer per latenze reali.
-
-- [ ] Rimuovere fallback statici nei Logs (Monitor di Sistema)
-  - File coinvolti: `backend/game-service/src/main/java/com/playnode/game_service/controller/MonitorController.java` (metodo `logs()`)
-  - Motivazione: Ritorna array con stringhe come "Edge LOC-004 in ritardo" non derivate da alcun sistema di logging reale.
-  - Complessità: Bassa.
-  - Dipendenze: Inoltrare log da `Slf4j` o restituire JSON vuoto se l'integrazione ELK manca.
-
-- [ ] Implementare Endpoint REST mancanti chiamati dalla UI
-  - File coinvolti: `frontend/js/api.js`, `SensoreController.java`, `TipologiaGiocoController.java`
-  - Motivazione: Il FE invoca regolarmente `DELETE /api/sensori/{id}`, `PATCH /api/sensori/{id}/toggle`, `PUT /api/tipologie-gioco/{id}`, `DELETE /api/tipologie-gioco/{id}`. Il BE restituisce 404/405 causando fallimenti silenziosi.
-  - Complessità: Media.
-  - Dipendenze: Completare controller con autorizzazione.
-
-- [ ] Implementare Handler "Impostazioni Locale" morti
-  - File coinvolti: `frontend/views/locale.js` (metodo `localeSettings()`)
-  - Motivazione: I pulsanti "Cambia password edge", "Rigenera token API" e "Disconnetti locale" hanno onClick vuoti. La UI promette funzionalità non esistenti.
-  - Complessità: Media.
-  - Dipendenze: Endpoint su `game-service` e UI Modals.
-
-- [ ] Aggiungere Autorizzazione (Ruoli) alle API
-  - File coinvolti: `backend/auth-service/.../SecurityConfig.java` e Controllers
-  - Motivazione: Qualsiasi token valido consente l'accesso a endpoint di altre entità (es. un Giocatore può cancellare un Locale).
-  - Complessità: Alta.
-  - Dipendenze: Imporre `@PreAuthorize("hasRole(...)")`.
-
-- [ ] Atomicità e transazionalità nel flusso End-to-End "Avvio Partita"
-  - File coinvolti: `backend/game-service/.../PartitaService.java`
-  - Motivazione: Il servizio salva su DB e invia MQTT. Se MQTT fallisce, DB ha `IN_CORSO` ma Edge tace (flusso spezzato).
-  - Complessità: Media.
-  - Dipendenze: Implementare Transactional Outbox pattern.
-
-- [ ] Persistere Sincronizzazione MQTT -> DB (Flusso Statistiche Rotti)
-  - File coinvolti: `backend/stats-service/.../MqttListenerService.java`
-  - Motivazione: Il subscriber logga i payload ma NON salva su DB. Gli eventi real-time Edge non aggiornano storico né viste.
-  - Complessità: Alta.
-  - Dipendenze: Repository EventoIot.
-
-## 🟠 Alta Priorità
-
-- [ ] Completamento End-to-End della gestione Tornei
-  - File coinvolti: `frontend/views/admin-platform.js`, `TournamentController.java`
-  - Motivazione: Manca la pagina di dettaglio generata da "Gestisci", manca logica del tabellone, iscrizione giocatori (es. bottone `tournamentIscriviti`), avanzamento al termine partita.
-  - Complessità: Alta.
-
-- [ ] Errore Referencing `AUTH_API_URL` nel Logout Frontend
-  - File coinvolti: `frontend/views/dashboard.js`
-  - Motivazione: Manca scope import per `Api.AUTH_API_URL` nel logout handler, provocando log errato. Inoltre la blacklist BE in `TokenBlacklistService.java` è RAM-based e si azzera al riavvio, non invalidando realmente i token.
-  - Complessità: Media.
-
-- [ ] Allineare `TipologiaGiocoDTO` con il form del Frontend
-  - File coinvolti: `backend/game-service/.../TipologiaGiocoDTO.java`
-  - Motivazione: Frontend invia "descrizione" e "regole", ma il DTO ignora questi campi, causando perdita di dati (dead code).
-  - Complessità: Bassa.
-
-- [ ] Endpoint di Partecipazione Partita Inesistente
-  - File coinvolti: `PartitaController.java`
-  - Motivazione: Impossibile aggiungere o rimuovere partecipanti a una partita appena creata.
-  - Complessità: Media.
-
-- [ ] Form Modifica Profilo Anagrafico Utente
-  - File coinvolti: `frontend/views/player.js`
-  - Motivazione: Nessuna UI implementata per modificare il proprio profilo, solo view statica.
-  - Complessità: Bassa.
-
-- [ ] Heartbeat Watchdog MQTT
-  - File coinvolti: `game-service`, Scripts Edge Python
-  - Motivazione: Implementare "Ping" ogni 30s dall'Edge e LastWill per conoscere stato online/offline.
-  - Complessità: Media.
-
-- [ ] Brute-Force in-memory volatile
-  - File coinvolti: `backend/auth-service/.../BruteForceProtection.java`
-  - Motivazione: Mappa resettata al reboot del container. Migrare in Redis o Postgres.
-  - Complessità: Bassa.
-
-- [ ] Test `@Disabled` e Mancanza UI Testing
-  - File coinvolti: Backend Tests
-  - Motivazione: I test richiedono container per girare, quindi bypassati. Frontend completamente assente di suite E2E.
-  - Complessità: Alta.
-
-## 🟡 Media Priorità
-
-- [ ] Cleanup Leak Connessioni MQTT
-  - File coinvolti: `backend/game-service/.../MqttPublisherService.java`
-  - Motivazione: Connessioni MQTT istanziate e inserite in `ConcurrentHashMap` senza `client.disconnect()`. Causa leak alla lunga.
-  - Complessità: Bassa.
-
-- [ ] Fix Filtro Locale Buggato
-  - File coinvolti: `frontend/views/admin-platform.js` (`platformTournaments()`)
-  - Motivazione: Handler invia ignorando selezione UI l'intero array locali IDs.
-  - Complessità: Bassa.
-
-- [ ] Naming Consistency Database
-  - File coinvolti: Migrations, Entities
-  - Motivazione: Variabili `host_broker` mixed con `gioco_fisico_id`. 
-  - Complessità: Media (rifattorizzazione di diverse dipendenze JPA).
-
-- [ ] Implementazione Modali di Conferma
-  - File coinvolti: Tutte le view UI
-  - Motivazione: Eliminazioni usano `window.confirm()` del browser, poco estetico rispetto a custom UI Toast.
-  - Complessità: Bassa.
+- **Alta Priorità (sessione corrente):** TipologiaGiocoDTO allineato con `@JsonAlias`. Endpoint partecipazione partita (`GET/POST/DELETE /api/partite/{id}/partecipanti`).Tornei E2E: tabelle `iscrizione_torneo`/`incontro_torneo`, API dettaglio/iscrivi/genera-tabellone/avanza, UI dettaglio admin e bottone Iscriviti giocatore. Heartbeat MQTT: `POST /api/iot/heartbeat`, listener `locale/+/edge/status`, watchdog 90s, edge bridges aggiornati. Brute-force persistente su tabella `login_attempt`. Test: `game-service` context H2, `BruteForceProtectionTest`, `frontend/test/api-modules.test.mjs`.
+- **Fix login 403 (giocatore/gestore):** `LocaleController` ora autorizza esplicitamente `GIOCATORE` su `GET /api/locali` e sotto-risorse di lettura. Query native in `PartitaRepository` (`trovaOraPunta`, `trovaPiccoEventiOggi`) usano `CAST(... AS INTEGER)` al posto di `::int` (Hibernate interpretava `::` come parametro). `fetchWithAuth` in `api.js` effettua logout solo su `401`, non su `403` (accesso negato ≠ sessione scaduta). `StatisticaController`/`StoricoPartitaController`: confronto ownership con `.equals()` su principal JWT.
+- **Avvio partita (gestore):** `PartitaService` impedisce doppio avvio se esiste già una partita attiva sul gioco; fallback broker su `mqtt.broker.url`; outbox MQTT processata subito in async (`MqttOutboxDispatcher`). `LocaleService.ottieniGiochiPerLocale` ottimizzato (query mirata al posto di `findAll()` su partite). Frontend: overlay di caricamento (`showLoadingOverlay`) su "Avvia partita", messaggi errore dal backend, refresh tabella giochi dopo successo.
 
 ## 🟢 Miglioramenti
 
-- [ ] Sostituire localStorage per JWT con httpOnly cookie e pattern CSRF.
-- [ ] Implementare Reverse Proxy unico tramite NGINX / API Gateway per eludere porte specifiche.
+- [ ] Sostituire localStorage per JWT con httpOnly cookie e pattern CSRF??
 - [ ] Soft delete per Entities critiche (Partita, Utente, Locale).
-- [ ] Caching su backend via Redis per Statistiche User-side (lentissime all'aumentare storico).
-- [ ] Aggiunta CI/CD Action e Dockerfile Stage multiplo per .jar di produzione.
 - [ ] Refresh token flow con scadenza breve per access token.
-- [ ] PWA, notifiche app o WebSocket (per evitare l'attuale polling 5s in "Partite Live").
-
+- [ ] Nel profilo aggiungere la mofica della password e quando cambia la password non deve essere uguale a quella vecchia. E aggiungengere il controllo con la password attuale per aggiungere sicurezza.
+- [ ] Aggiungere in player -> torneo un badeg nei tornei che indichi se sono scritto o meno, e se sono iscritto a un torneo nascondere/disabilitare il bottone iscriviti
+- [ ] Nelle impostazioni del locale il gestore deve poter modificare l'indirizzo del locale e il nome del locale
+- [ ] Bottone avvio partita alcune volte non va
