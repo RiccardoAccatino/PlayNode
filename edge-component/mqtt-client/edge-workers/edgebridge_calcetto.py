@@ -2,40 +2,31 @@ import json
 import time
 import requests
 import paho.mqtt.client as mqtt
-import os
 
 # ==========================================
 # 1. CONFIGURAZIONI MQTT (Rete Locale/Centrale)
 # ==========================================
-MQTT_BROKER = os.getenv("MQTT_BROKER", "127.0.0.1")
-MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
-MQTT_USER = os.getenv("MQTT_USER", "cv_calcetto")
-MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "calcetto")
+MQTT_BROKER = "127.0.0.1"
+MQTT_PORT = 1883
+MQTT_USER = "arduino_calcetto" 
+MQTT_PASSWORD = "arduino"
 
-# ID Fisico di questo calcetto nel Database Server
-ID_GIOCO_FISICO = int(os.getenv("ID_GIOCO_FISICO", 1))
-ID_COMPONENTE_EDGE = int(os.getenv("ID_COMPONENTE_EDGE", 1))
-LOCALE_SLUG = os.getenv("LOCALE_SLUG", "locale")
-# ID del tavolo configurato nello sketch Arduino
-ID_TAVOLO_ARDUINO = "tavolo1"
+# Sostituiamo gli ID singoli con le wildcard (+) per gestire più tavoli contemporaneamente
+MQTT_WILDCARD_GOAL   = "playnode/calcetto/+/goal"
+MQTT_WILDCARD_DIST_A = "playnode/calcetto/+/distA"
+MQTT_WILDCARD_DIST_B = "playnode/calcetto/+/distB"
 
-# Topic in ascolto coerenti con firmware Arduino
-MQTT_TOPIC_GOAL = f"calcetto/{ID_TAVOLO_ARDUINO}/goal"
-MQTT_TOPIC_DIST_A = f"calcetto/{ID_TAVOLO_ARDUINO}/distA"
-MQTT_TOPIC_DIST_B = f"calcetto/{ID_TAVOLO_ARDUINO}/distB"
-
-# Topic comandi dal Backend
-MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
-MQTT_TOPIC_HEARTBEAT = f"locale/{LOCALE_SLUG}/edge/status"
+# Nuovo topic comandi dal Backend: playnode/{ID_LOCALE}/{ID_TIPOLOGIA_GIOCO}/{ID_GIOCO_FISICO}/comandi
+# Tipologia gioco calcetto = 1
+MQTT_WILDCARD_COMANDI = "playnode/server/comandi"
 
 # ==========================================
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
 # ==========================================
-#API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
+API_BASE_URL = "http://192.168.1.25:8080"
 
-# Stato della partita
-PARTITA_ATTIVA = None
+# Stato delle partite: gestiamo più partite con un dizionario {id_gioco_fisico: id_partita}
+PARTITE_ATTIVE = {}
 
 # Mappa per tradurre il payload di Arduino ('A' o 'B') nell'ID della squadra a Database
 MAPPA_SQUADRE = {
@@ -46,76 +37,73 @@ MAPPA_SQUADRE = {
 # ==========================================
 # 3. LOGICA DI RICEZIONE
 # ==========================================
-def invia_heartbeat(client):
-    payload = json.dumps({"idComponenteEdge": ID_COMPONENTE_EDGE, "stato": "Online"})
-    client.publish(MQTT_TOPIC_HEARTBEAT, payload, qos=1)
-    try:
-        requests.post(
-            f"{API_BASE_URL}/api/iot/heartbeat",
-            params={"idComponenteEdge": ID_COMPONENTE_EDGE},
-            timeout=3
-        )
-    except requests.exceptions.RequestException:
-        pass
-
-def heartbeat_loop(client):
-    while True:
-        time.sleep(30)
-        try:
-            invia_heartbeat(client)
-        except Exception:
-            pass
-
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"✅ Connesso al Broker MQTT con successo!")
-        client.subscribe(MQTT_TOPIC_GOAL)
-        client.subscribe(MQTT_TOPIC_DIST_A)
-        client.subscribe(MQTT_TOPIC_DIST_B)
-        client.subscribe(MQTT_TOPIC_COMANDI)
-        invia_heartbeat(client)
-        import threading
-        threading.Thread(target=heartbeat_loop, args=(client,), daemon=True).start()
-        print(f" In ascolto goal su: {MQTT_TOPIC_GOAL}")
-        print(f" In ascolto distanze su: {MQTT_TOPIC_DIST_A} e {MQTT_TOPIC_DIST_B}")
-        print(f" In ascolto comandi su: {MQTT_TOPIC_COMANDI}")
+        client.subscribe(MQTT_WILDCARD_GOAL)
+        client.subscribe(MQTT_WILDCARD_DIST_A)
+        client.subscribe(MQTT_WILDCARD_DIST_B)
+        client.subscribe(MQTT_WILDCARD_COMANDI)
+        print(f" In ascolto goal su: {MQTT_WILDCARD_GOAL}")
+        print(f" In ascolto distanze su: {MQTT_WILDCARD_DIST_A} e {MQTT_WILDCARD_DIST_B}")
+        print(f" In ascolto comandi su: {MQTT_WILDCARD_COMANDI}")
     else:
         print(f" Connessione fallita. Codice errore: {rc}")
 
 def on_message(client, userdata, msg):
-    global PARTITA_ATTIVA
+    global PARTITE_ATTIVE
     payload = msg.payload.decode('utf-8')
     topic = msg.topic
+    parti_topic = topic.split("/")
 
     # -----------------------------------------------------
     # CASO A: Il Backend ci dice che è iniziata o finita una partita
+    # Topic atteso: playnode/server/comandi
+    # Payload atteso: {"idGiocoFisico":1, "idPartita":xx}
     # -----------------------------------------------------
-    if topic == MQTT_TOPIC_COMANDI:
+    if topic == "playnode/server/comandi":
         try:
-            dati = json.loads(payload) # Solo i comandi del server sono JSON
-            if "nuova_partita_id" in dati:
-                PARTITA_ATTIVA = dati["nuova_partita_id"]
-                print(f"\n[COMANDO SERVER] Nuova partita avviata! ID: {PARTITA_ATTIVA}")
+            dati = json.loads(payload)
+            print(payload)
+            # Recuperiamo i dati dal JSON (usiamo .get() così non dà errore se mancano)
+            id_gioco_fisico = dati.get("idGiocoFisico")
+            id_partita = dati.get("idPartita")
+            
+            # Se il JSON contiene idPartita, avviamo/registriamo la partita
+            if id_gioco_fisico is not None and id_partita is not None:
+                PARTITE_ATTIVE[id_gioco_fisico] = id_partita
+                print(f"\n[COMANDO SERVER] Nuova partita avviata sul gioco {id_gioco_fisico}! ID Partita: {id_partita}")
                 
                 # INVIA IL RESET ALL'ARDUINO AUTOMATICAMENTE
-                topic_reset = f"calcetto/{ID_TAVOLO_ARDUINO}/reset"
+                topic_reset = f"calcetto/{id_gioco_fisico}/reset"
                 client.publish(topic_reset, "1")
                 print(f"  Inviato comando di reset all'Arduino sul topic {topic_reset}.")
-                
-            elif "termina_partita" in dati:
-                print(f"\n [COMANDO SERVER] Partita {PARTITA_ATTIVA} terminata.")
-                PARTITA_ATTIVA = None
+            
+            # (Opzionale) Se vuoi gestire anche la fine della partita con lo stesso topic
+            # basterà inviare un JSON tipo: {"idGiocoFisico":1, "termina_partita": true}
+            elif "termina_partita" in dati and id_gioco_fisico is not None:
+                print(f"\n [COMANDO SERVER] Partita {PARTITE_ATTIVE.get(id_gioco_fisico)} terminata sul gioco {id_gioco_fisico}.")
+                PARTITE_ATTIVE[id_gioco_fisico] = None
+
         except json.JSONDecodeError:
             print(" Ricevuto comando server non JSON, ignorato.")
 
     # -----------------------------------------------------
     # CASO B: L'Arduino rileva un GOAL
+    # Topic: playnode/calcetto/{ID_GIOCO_FISICO}/goal
     # -----------------------------------------------------
-    elif topic == MQTT_TOPIC_GOAL:
-        print(f"\n [MQTT LOCALE] Ricevuto GOAL: Squadra {payload}")
+    elif len(parti_topic) == 4 and parti_topic[1] == "calcetto" and parti_topic[3] == "goal":
+        try:
+            id_gioco_fisico = int(parti_topic[2])
+        except ValueError:
+            return
 
-        if PARTITA_ATTIVA is None:
-            print(" Ignorato: Nessuna partita di calcetto attiva sul server.")
+        partita_attiva = PARTITE_ATTIVE.get(id_gioco_fisico)
+        
+        print(f"\n [MQTT LOCALE] Ricevuto GOAL dal gioco {id_gioco_fisico}: Squadra {payload}")
+
+        if partita_attiva is None:
+            print(f" Ignorato: Nessuna partita di calcetto attiva sul server per il gioco {id_gioco_fisico}.")
             return
 
         id_squadra = MAPPA_SQUADRE.get(payload)
@@ -125,13 +113,13 @@ def on_message(client, userdata, msg):
             return
 
         # Chiamata REST per registrare il punto
-        url = f"{API_BASE_URL}/api/partite/{PARTITA_ATTIVA}/punteggio"
+        url = f"{API_BASE_URL}/api/partite/{partita_attiva}/punteggio"
         parametri = {"idSquadra": id_squadra}
 
         try:
             risposta = requests.put(url, params=parametri, timeout=5)
             if risposta.status_code == 200:
-                print(f" [REST] GOAL registrato per squadra {payload} (Partita ID {PARTITA_ATTIVA})")
+                print(f" [REST] GOAL registrato per squadra {payload} (Partita ID {partita_attiva})")
             else:
                 print(f" [REST] Errore dal server: {risposta.status_code}")
         except requests.exceptions.RequestException as req_err:
@@ -139,30 +127,33 @@ def on_message(client, userdata, msg):
 
     # -----------------------------------------------------
     # CASO C: L'Arduino invia le distanze rilevate
+    # Topic: playnode/calcetto/{ID_GIOCO_FISICO}/distA o distB
     # -----------------------------------------------------
-    elif topic in [MQTT_TOPIC_DIST_A, MQTT_TOPIC_DIST_B]:
-        # Se serve vedere debug continuo
-        # print(f"[MQTT] Sensore {topic} -> {payload} cm")
+    elif len(parti_topic) == 4 and parti_topic[1] == "calcetto" and parti_topic[3] in ["distA", "distB"]:
+        try:
+            id_gioco_fisico = int(parti_topic[2])
+        except ValueError:
+            return
+
+        partita_attiva = PARTITE_ATTIVE.get(id_gioco_fisico)
         
-        if PARTITA_ATTIVA is None:
+        if partita_attiva is None:
             return
             
         # Assegna un ID fittizio ai due sensori di distanza
-        id_sensore = 1 if topic == MQTT_TOPIC_DIST_A else 2
+        id_sensore = 1 if parti_topic[3] == "distA" else 2
 
         url_evento = f"{API_BASE_URL}/api/iot/evento"
         params_evento = {
-            "idPartita": PARTITA_ATTIVA,
+            "idPartita": partita_attiva,
             "idSensore": id_sensore,
             "valore": str(payload)
         }
 
         try:
             requests.post(url_evento, params=params_evento, timeout=5)
-            # Volendo puoi stampare conferma, ma per le distanze genererebbe troppo spam a terminale
         except requests.exceptions.RequestException:
             pass
-
 
 # ==========================================
 # 4. AVVIO
@@ -172,11 +163,10 @@ client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 client.on_connect = on_connect
 client.on_message = on_message
 
-if __name__ == "__main__":
-    try:
-        print("Avvio Edge Bridge Calcetto...")
-        client.connect(MQTT_BROKER, MQTT_PORT, 60)
-        client.loop_forever()
-    except KeyboardInterrupt:
-        print("\nChiusura Edge Bridge Calcetto.")
-        client.disconnect()
+try:
+    print("Avvio Edge Bridge Calcetto Multi-Tavolo...")
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
+    client.loop_forever()
+except KeyboardInterrupt:
+    print("\nChiusura Edge Bridge Calcetto.")
+    client.disconnect()
