@@ -119,7 +119,8 @@ public class PartitaService {
 
             String brokerUrl = mqttPublisherService.risolviBrokerUrl(partita.getGiocoFisicoId());
             if (brokerUrl != null && !brokerUrl.isBlank()) {
-                String topic = "edge/gioco/" + partita.getGiocoFisicoId() + "/comandi";
+
+                String topic = "playnode/server/comandi";
                 String payload = "{\"termina_partita\": true}";
                 mqttOutboxService.accoda("TERMINA_PARTITA", topic, payload, brokerUrl, partita.getIdPartita());
             }
