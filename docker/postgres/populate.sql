@@ -64,11 +64,11 @@ INSERT INTO Membro_squadra (id_utente, id_squadra) VALUES
 
 
 -- 5. LOCALI
-INSERT INTO Locale (nome, indirizzo, accesso, gestore_id) VALUES
-('Taverna del Cinghiale', 'Via Roma 10, Torino', 'Luogo pubblico',  3), -- 1
-('Circolo Sportivo Nord', 'Piazza Milano 5, Torino', 'Luogo privato', 4), -- 2
-('Bar dello Sport', 'Corso Francia 45, Milano', 'Luogo pubblico', 15), -- 3
-('Bocciofila La Rampa', 'Via Napoli 12, Roma', 'Luogo pubblico',3); -- 4
+INSERT INTO Locale (nome, indirizzo, accesso,host_broker, gestore_id) VALUES
+('Taverna del Cinghiale', 'Via Roma 10, Torino', 'Luogo pubblico','tcp://broker:1883',3), -- 1
+('Circolo Sportivo Nord', 'Piazza Milano 5, Torino', 'Luogo privato', 'tcp://broker:1883',4), -- 2
+('Bar dello Sport', 'Corso Francia 45, Milano', 'Luogo pubblico', 'tcp://broker:1883', 15), -- 3
+('Bocciofila La Rampa', 'Via Napoli 12, Roma', 'Luogo pubblico', 'tcp://broker:1883',3); -- 4
 
 
 -- 6. COMPONENTI EDGE

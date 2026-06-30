@@ -116,8 +116,8 @@ public class MqttPublisherService {
             return;
         }
 
-        String topic = "edge/gioco/" + ID_GIOCO_FISICO + "/comandi";
-        String payload = "{\"nuova_partita_id\":" + idPartita + "}";
+        String topic = "playnode/server/comandi";
+        String payload = "{\"idGiocoFisico\":" + ID_GIOCO_FISICO + ",\"idPartita\":" + idPartita + "}";
         pubblicaMessaggio(brokerUrl, topic, payload);
     }
 
@@ -128,7 +128,7 @@ public class MqttPublisherService {
             return;
         }
 
-        String topic = "edge/gioco/" + idGiocoInstallato + "/comandi";
+        String topic = "playnode/server/comandi";
         String payload = "{\"termina_partita\": true}";
         pubblicaMessaggio(brokerUrl, topic, payload);
     }
