@@ -18,7 +18,7 @@ MQTT_WILDCARD_DIST_B = "playnode/calcetto/+/distB"
 
 # Nuovo topic comandi dal Backend: playnode/{ID_LOCALE}/{ID_TIPOLOGIA_GIOCO}/{ID_GIOCO_FISICO}/comandi
 # Tipologia gioco calcetto = 1
-MQTT_WILDCARD_COMANDI = "playnode/+/1/+/comandi"
+MQTT_WILDCARD_COMANDI = "playnode/server/comandi"
 
 # ==========================================
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
@@ -58,32 +58,30 @@ def on_message(client, userdata, msg):
 
     # -----------------------------------------------------
     # CASO A: Il Backend ci dice che è iniziata o finita una partita
-    # Topic atteso: playnode/{ID_LOCALE}/{ID_TIPOLOGIA_GIOCO}/{ID_GIOCO_FISICO}/comandi
+    # Topic atteso: playnode/server/comandi
+    # Payload atteso: {"idGiocoFisico":1, "idPartita":xx}
     # -----------------------------------------------------
-    if len(parti_topic) == 5 and parti_topic[0] == "playnode" and parti_topic[4] == "comandi":
+    if topic == "playnode/server/comandi":
         try:
-            id_locale = int(parti_topic[1])
-            id_tipologia_gioco = int(parti_topic[2])
-            id_gioco_fisico = int(parti_topic[3])
+            dati = json.loads(payload)
+            print(payload)
+            # Recuperiamo i dati dal JSON (usiamo .get() così non dà errore se mancano)
+            id_gioco_fisico = dati.get("idGiocoFisico")
+            id_partita = dati.get("idPartita")
             
-            if id_tipologia_gioco != 1:
-                return # Ignora i comandi se non è un calcetto
-        except ValueError:
-            return
-
-        try:
-            dati = json.loads(payload) # Solo i comandi del server sono JSON
-            if "nuova_partita_id" in dati:
-                PARTITE_ATTIVE[id_gioco_fisico] = dati["nuova_partita_id"]
-                print(f"\n[COMANDO SERVER] Nuova partita avviata sul gioco {id_gioco_fisico} (Locale: {id_locale})! ID: {PARTITE_ATTIVE[id_gioco_fisico]}")
+            # Se il JSON contiene idPartita, avviamo/registriamo la partita
+            if id_gioco_fisico is not None and id_partita is not None:
+                PARTITE_ATTIVE[id_gioco_fisico] = id_partita
+                print(f"\n[COMANDO SERVER] Nuova partita avviata sul gioco {id_gioco_fisico}! ID Partita: {id_partita}")
                 
                 # INVIA IL RESET ALL'ARDUINO AUTOMATICAMENTE
-                # Usa il formato del topic presente nel tuo script originale
                 topic_reset = f"calcetto/{id_gioco_fisico}/reset"
                 client.publish(topic_reset, "1")
                 print(f"  Inviato comando di reset all'Arduino sul topic {topic_reset}.")
-                
-            elif "termina_partita" in dati:
+            
+            # (Opzionale) Se vuoi gestire anche la fine della partita con lo stesso topic
+            # basterà inviare un JSON tipo: {"idGiocoFisico":1, "termina_partita": true}
+            elif "termina_partita" in dati and id_gioco_fisico is not None:
                 print(f"\n [COMANDO SERVER] Partita {PARTITE_ATTIVE.get(id_gioco_fisico)} terminata sul gioco {id_gioco_fisico}.")
                 PARTITE_ATTIVE[id_gioco_fisico] = None
 
