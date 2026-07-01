@@ -324,8 +324,8 @@ export function localeGames() {
               <label style="display:flex; align-items:center; gap: 5px; cursor:pointer;">
                 <input type="radio" name="tipoPartita" value="singola" checked> Partita Singola
               </label>
-              <label style="display:flex; align-items:center; gap: 5px; cursor:not-allowed; opacity: 0.5;">
-                <input type="radio" name="tipoPartita" value="torneo" disabled> Torneo (Prossimamente)
+              <label style="display:flex; align-items:center; gap: 5px; cursor:pointer;">
+                <input type="radio" name="tipoPartita" value="torneo"> Torneo
               </label>
             </div>
           </div>
@@ -342,6 +342,22 @@ export function localeGames() {
               <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Giocatore / Squadra 2</label>
               <select id="select-sq2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
                 <option value="" disabled selected>-- Seleziona utente --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div id="sezione-partita-torneo" style="display:none;">
+            <div style="margin-bottom: 10px;">
+              <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Seleziona Torneo in corso</label>
+              <select id="select-torneo" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
+                <option value="" disabled selected>-- Caricamento tornei... --</option>
+              </select>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Seleziona Incontro</label>
+              <select id="select-incontro" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);" disabled>
+                <option value="" disabled selected>-- Prima seleziona un torneo --</option>
               </select>
             </div>
           </div>
@@ -386,7 +402,7 @@ async function initLocaleGames(tbodyId) {
 
     const azioneBtn = inUso
       ? `<button class="act-btn btn-termina-gioco" data-partita-id="${idPartitaAttiva ?? ''}" data-gioco-id="${idGiocoInstallato}" style="background:var(--red);border-color:var(--red);color:#fff">Termina partita</button>`
-      : `<button class="act-btn btn-avvia" data-id="${idGiocoInstallato}">Avvia partita</button>`;
+      : `<button class="act-btn btn-avvia" data-id="${idGiocoInstallato}" data-tipologia-id="${g.tipologiaId || g.id_tipologia_gioco || ''}">Avvia partita</button>`;
 
     return `
       <tr>
@@ -444,12 +460,34 @@ async function initLocaleGames(tbodyId) {
   const btnConferma = document.getElementById('btn-conferma-partita');
   const selectSq1 = document.getElementById('select-sq1');
   const selectSq2 = document.getElementById('select-sq2');
+  const radiosTipoPartita = document.querySelectorAll('input[name="tipoPartita"]');
+  const sezioneSingola = document.getElementById('sezione-partita-singola');
+  const sezioneTorneo = document.getElementById('sezione-partita-torneo');
+  const selectTorneo = document.getElementById('select-torneo');
+  const selectIncontro = document.getElementById('select-incontro');
+
   let selectedGiocoId = null;
+  let selectedTipologiaId = null;
+  let tuttiTornei = [];
+  let utentiMap = new Map();
+
+  radiosTipoPartita.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (e.target.value === 'singola') {
+        sezioneSingola.style.display = 'block';
+        sezioneTorneo.style.display = 'none';
+      } else {
+        sezioneSingola.style.display = 'none';
+        sezioneTorneo.style.display = 'block';
+      }
+    });
+  });
 
   // Carica utenti per le select
   try {
     let utenti = await Api.getAllUtenti();
     if (utenti && utenti.length > 0) {
+      utentiMap = new Map(utenti.map(u => [String(u.id), u]));
       // Filtra solo gli utenti con ruolo Giocatore
       utenti = utenti.filter(u => u.ruolo && u.ruolo.toLowerCase() === 'giocatore');
       const optionsHtml = utenti.map(u => `<option value="${u.id}">${u.username} (${u.email})</option>`).join('');
@@ -464,24 +502,112 @@ async function initLocaleGames(tbodyId) {
     btnAnnulla.addEventListener('click', () => {
       if (modalAvvia) modalAvvia.classList.remove('open');
       selectedGiocoId = null;
+      selectedTipologiaId = null;
     });
   }
+
+  // Load tornei when select-torneo is focused/clicked (or we can just load them on btn-avvia click)
+  const populateTornei = async () => {
+    try {
+      tuttiTornei = await Api.getAllTornei();
+      const localeIdStr = String(localStorage.getItem('localeId'));
+      
+      const validTornei = tuttiTornei.filter(t => 
+        String(t.idTipologiaGioco) === String(selectedTipologiaId) &&
+        t.localiIds.map(String).includes(localeIdStr)
+      );
+
+      if (validTornei.length === 0) {
+        selectTorneo.innerHTML = '<option value="" disabled selected>-- Nessun torneo in corso trovato --</option>';
+      } else {
+        selectTorneo.innerHTML = '<option value="" disabled selected>-- Seleziona un torneo --</option>' + 
+          validTornei.map(t => `<option value="${t.id}">${t.nome} (ID: ${t.id})</option>`).join('');
+      }
+      selectIncontro.innerHTML = '<option value="" disabled selected>-- Prima seleziona un torneo --</option>';
+      selectIncontro.disabled = true;
+    } catch (e) {
+      selectTorneo.innerHTML = '<option value="" disabled selected>-- Errore caricamento tornei --</option>';
+    }
+  };
+
+  selectTorneo.addEventListener('change', async (e) => {
+    const torneoId = e.target.value;
+    if (!torneoId) return;
+
+    selectIncontro.innerHTML = '<option value="" disabled selected>-- Caricamento incontri... --</option>';
+    try {
+      const dettaglio = await Api.getTorneoById(torneoId);
+      if (dettaglio && dettaglio.incontri && dettaglio.incontri.length > 0) {
+        const validIncontri = dettaglio.incontri.filter(i => 
+          i.partitaId == null && i.vincitoreId == null && i.giocatore1Id != null && i.giocatore2Id != null
+        );
+
+        if (validIncontri.length === 0) {
+          selectIncontro.innerHTML = '<option value="" disabled selected>-- Nessun incontro giocabile rimasto --</option>';
+          selectIncontro.disabled = true;
+        } else {
+          selectIncontro.innerHTML = '<option value="" disabled selected>-- Seleziona incontro --</option>' +
+            validIncontri.map(i => {
+              const u1 = utentiMap.get(String(i.giocatore1Id))?.username || `ID ${i.giocatore1Id}`;
+              const u2 = utentiMap.get(String(i.giocatore2Id))?.username || `ID ${i.giocatore2Id}`;
+              return `<option value="${i.id}">Round ${i.round} (Slot ${i.slot}): ${u1} vs ${u2}</option>`;
+            }).join('');
+          selectIncontro.disabled = false;
+        }
+      } else {
+        selectIncontro.innerHTML = '<option value="" disabled selected>-- Tabellone non generato --</option>';
+        selectIncontro.disabled = true;
+      }
+    } catch (e) {
+      selectIncontro.innerHTML = '<option value="" disabled selected>-- Errore caricamento incontri --</option>';
+      selectIncontro.disabled = true;
+    }
+  });
 
   if (btnConferma) {
     btnConferma.addEventListener('click', async () => {
       if (!selectedGiocoId) return;
 
-      const userId1 = selectSq1.value;
-      const userId2 = selectSq2.value;
+      const tipoPartita = document.querySelector('input[name="tipoPartita"]:checked').value;
+      
+      let userId1 = null;
+      let userId2 = null;
+      let incontroId = null;
 
-      if (!userId1 || !userId2) {
-        window.showToast("Devi selezionare per forza due utenti per avviare la partita.", "red", 5000);
-        return;
-      }
+      if (tipoPartita === 'singola') {
+        userId1 = selectSq1.value;
+        userId2 = selectSq2.value;
 
-      if (userId1 && userId2 && userId1 === userId2) {
-        window.showToast("Un utente non può giocare contro se stesso.", "red", 5000);
-        return;
+        if (!userId1 || !userId2) {
+          window.showToast("Devi selezionare per forza due utenti per avviare la partita.", "red", 5000);
+          return;
+        }
+
+        if (userId1 && userId2 && userId1 === userId2) {
+          window.showToast("Un utente non può giocare contro se stesso.", "red", 5000);
+          return;
+        }
+      } else {
+        // Logica Torneo
+        incontroId = selectIncontro.value;
+        if (!incontroId) {
+          window.showToast("Devi selezionare un incontro del torneo per avviare la partita.", "red", 5000);
+          return;
+        }
+        
+        // Find players for the match to attach them to the Game match
+        const torneoId = selectTorneo.value;
+        try {
+          const dettaglio = await Api.getTorneoById(torneoId);
+          const incontroObj = dettaglio.incontri.find(i => String(i.id) === String(incontroId));
+          if (incontroObj) {
+            userId1 = incontroObj.giocatore1Id;
+            userId2 = incontroObj.giocatore2Id;
+          }
+        } catch(e) {
+          window.showToast("Errore lettura dati incontro.", "red");
+          return;
+        }
       }
 
       btnConferma.disabled = true;
@@ -501,6 +627,15 @@ async function initLocaleGames(tbodyId) {
           try {
             await Api.aggiungiPartecipantePartita(partitaId, userId2, null);
           } catch (e) { console.error("Errore aggiunta partecipante 2", e); }
+        }
+
+        if (tipoPartita === 'torneo' && incontroId) {
+          try {
+            await Api.collegaPartitaTorneo(incontroId, partitaId);
+          } catch (e) {
+            console.error("Errore collegamento torneo", e);
+            window.showToast("Partita avviata ma errore nel collegamento al torneo.", "amb");
+          }
         }
 
         window.showToast(`Partita avviata! (ID: ${partitaId})`, 'grn');
@@ -525,12 +660,12 @@ async function initLocaleGames(tbodyId) {
   tbody.querySelectorAll('.btn-avvia').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const currentBtn = e.currentTarget;
-      const id = currentBtn.getAttribute('data-id');
-
-      if (!id || currentBtn.disabled) return;
-
-      selectedGiocoId = id;
-      if (modalAvvia) modalAvvia.classList.add('open');
+      selectedGiocoId = currentBtn.getAttribute('data-id');
+      selectedTipologiaId = currentBtn.getAttribute('data-tipologia-id');
+      if (modalAvvia) {
+        modalAvvia.classList.add('open');
+        populateTornei(); // Load tournaments related to this Game Type
+      }
     });
   });
 }
