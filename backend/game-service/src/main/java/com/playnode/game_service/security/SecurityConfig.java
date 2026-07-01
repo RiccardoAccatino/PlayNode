@@ -15,6 +15,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.DispatcherType;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -42,8 +43,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/").permitAll()
+                        // AGGIUNGI "/error" QUI SOTTO:
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/", "/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iot/evento").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iot/heartbeat").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/partite/*/punteggio").permitAll()

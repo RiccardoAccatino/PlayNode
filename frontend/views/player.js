@@ -362,10 +362,18 @@ async function showSquadreModal(torneoId, tipologiaGiocoId, onSuccess) {
     const existing = document.getElementById('modal-squadre');
     if (existing) existing.remove();
 
+
     // 2. Recupera le squadre dal backend
     let squadre = [];
     try {
-        if (tipologiaGiocoId) {
+        // Controllo rigoroso per evitare che passi la stringa 'null', 'undefined' o vuota
+        const isIdValid = tipologiaGiocoId !== null &&
+            tipologiaGiocoId !== undefined &&
+            String(tipologiaGiocoId).toLowerCase() !== 'null' &&
+            String(tipologiaGiocoId).toLowerCase() !== 'undefined' &&
+            String(tipologiaGiocoId).trim() !== '';
+
+        if (isIdValid) {
             squadre = await Api.getSquadreByGioco(tipologiaGiocoId);
         } else {
             squadre = await Api.getAllSquadre();
@@ -439,8 +447,9 @@ async function showSquadreModal(torneoId, tipologiaGiocoId, onSuccess) {
             if (nuovaSquadraNome) {
                 const req = {
                     nomeSquadra: nuovaSquadraNome,
-                    idTipologiaGioco: tipologiaGiocoId,
-                    membriIds: [] // l'utente corrente potrebbe essere aggiunto nel backend o qui se conoscessimo il suo ID
+                    // Evitiamo di inviare la stringa "null" al backend
+                    idTipologiaGioco: (tipologiaGiocoId && tipologiaGiocoId !== 'null') ? tipologiaGiocoId : null,
+                    membriIds: []
                 };
                 const nuovaSquadra = await Api.creaSquadra(req);
                 squadraId = nuovaSquadra.idSquadra;
