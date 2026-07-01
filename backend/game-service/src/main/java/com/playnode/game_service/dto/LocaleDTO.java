@@ -6,6 +6,7 @@ public class LocaleDTO {
     private String indirizzo;
     private String accesso;
     private Long gestoreId;
+    private String hostBroker;
 
     public LocaleDTO() {
     }
@@ -49,4 +50,8 @@ public class LocaleDTO {
     public void setGestoreId(Long gestoreId) {
         this.gestoreId = gestoreId;
     }
+
+    public String getHostBroker() {return hostBroker; }
+
+    public void setHostBroker(String hostBroker) {this.hostBroker = hostBroker; }
 }

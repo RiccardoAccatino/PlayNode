@@ -16,6 +16,9 @@ public class Partita {
     @Column(name = "gioco_fisico_id")
     private Long giocoFisicoId;
 
+    @Column(name = "torneo_id")
+    private Long torneoId;
+
     @Column(name = "timestamp_inizio")
     private LocalDateTime timestampInizio;
 
@@ -44,6 +47,14 @@ public class Partita {
 
     public void setGiocoFisicoId(Long giocoFisicoId) {
         this.giocoFisicoId = giocoFisicoId;
+    }
+
+    public Long getTorneoId() {
+        return torneoId;
+    }
+
+    public void setTorneoId(Long torneoId) {
+        this.torneoId = torneoId;
     }
 
     public LocalDateTime getTimestampInizio() {

@@ -1,28 +1,36 @@
 package com.playnode.tournament_service.controller;
 
 import com.playnode.tournament_service.dto.TorneoDTO;
+import com.playnode.tournament_service.dto.TorneoDettaglioDTO;
+import org.springframework.web.bind.annotation.*;
+
 import com.playnode.tournament_service.service.TorneoService;
+import com.playnode.tournament_service.service.TorneoTabelloneService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/tornei")
 @Tag(name = "Tornei", description = "API per la gestione del ciclo di vita dei tornei")
-@CrossOrigin(origins = "*")
 public class TorneoController {
 
     @Autowired
     private TorneoService torneoService;
 
+    @Autowired
+    private TorneoTabelloneService torneoTabelloneService;
+
     @Operation(summary = "Ottieni tutti i tornei", description = "Restituisce una lista di tutti i tornei presenti nel sistema.")
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TorneoDTO>> getAllTornei() {
         List<TorneoDTO> tornei = torneoService.ottieniTuttiITornei();
         return ResponseEntity.ok(tornei);
@@ -32,6 +40,7 @@ public class TorneoController {
     @ApiResponse(responseCode = "201", description = "Torneo creato con successo")
     @ApiResponse(responseCode = "400", description = "Dati del torneo non validi (es. errore nelle date)")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public ResponseEntity<?> creaNuovoTorneo(@RequestBody TorneoDTO torneoDTO) {
         try {
             TorneoDTO torneoCreato = torneoService.creaTorneo(torneoDTO);
@@ -45,6 +54,7 @@ public class TorneoController {
     @ApiResponse(responseCode = "200", description = "Torneo trovato")
     @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TorneoDTO> getTorneoById(@PathVariable Long id) {
         TorneoDTO torneo = torneoService.ottieniTorneoPerId(id);
 
@@ -59,6 +69,7 @@ public class TorneoController {
     @ApiResponse(responseCode = "200", description = "Torneo aggiornato")
     @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
     public ResponseEntity<?> aggiornaTorneo(
             @PathVariable Long id,
             @RequestBody TorneoDTO torneoDTO) {
@@ -79,6 +90,7 @@ public class TorneoController {
     @ApiResponse(responseCode = "204", description = "Torneo eliminato correttamente")
     @ApiResponse(responseCode = "404", description = "Torneo non trovato")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINPIATTAFORMA')")
     public ResponseEntity<Void> eliminaTorneo(@PathVariable Long id) {
         boolean eliminato = torneoService.eliminaTorneo(id);
 
@@ -86,6 +98,74 @@ public class TorneoController {
             return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{id}/dettaglio")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TorneoDettaglioDTO> dettaglioTorneo(@PathVariable Long id, Authentication auth) {
+        Long utenteId = null;
+        if (auth != null && auth.getPrincipal() != null) {
+            try {
+                utenteId = Long.valueOf(auth.getPrincipal().toString());
+            } catch (NumberFormatException e) {
+                // Ignore if principal is not a valid number (e.g. "unknown" from old tokens)
+            }
+        }
+        return torneoTabelloneService.dettaglio(id, utenteId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/iscrivi")
+    @PreAuthorize("hasRole('GIOCATORE')")
+    public ResponseEntity<?> iscrivi(@PathVariable Long id, Authentication auth) {
+        try {
+            Long utenteId = null;
+            if (auth != null && auth.getPrincipal() != null) {
+                try {
+                    utenteId = Long.valueOf(auth.getPrincipal().toString());
+                } catch (NumberFormatException e) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token non valido o utente non identificato.");
+                }
+            }
+            if (utenteId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            return torneoTabelloneService.iscrivi(id, utenteId)
+                    ? ResponseEntity.ok().build()
+                    : ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/iscrivi")
+    @PreAuthorize("hasRole('GIOCATORE')")
+    public ResponseEntity<Void> disiscrivi(@PathVariable Long id, Authentication auth) {
+        Long utenteId = null;
+        if (auth != null && auth.getPrincipal() != null) {
+            try {
+                utenteId = Long.valueOf(auth.getPrincipal().toString());
+            } catch (NumberFormatException e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        }
+        if (utenteId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return torneoTabelloneService.disiscrivi(id, utenteId)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/{id}/genera-tabellone")
+    @PreAuthorize("hasAnyRole('ADMINGIOCO','ADMINPIATTAFORMA')")
+    public ResponseEntity<?> generaTabellone(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(torneoTabelloneService.generaTabellone(id));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

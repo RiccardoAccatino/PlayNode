@@ -1,5 +1,6 @@
 import json
 import time
+import threading
 from ultralytics import YOLO
 import config
 import cv2
@@ -8,6 +9,65 @@ import math
 # Connessione al broker MQTT locale
 client = config.get_mqtt_client()
 
+# ==========================================
+# STATO PARTITA (gestito via MQTT)
+# ==========================================
+ID_GIOCO_FISICO = 3  # ID di questa pista da bocce nel  db
+
+TOPIC_INIZIO_PARTITA = "playnode/bocce/+/inizio_partita"
+
+stato_lock = threading.Lock()
+partita_attiva = False
+id_partita_corrente = None
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print(" Connesso al Broker MQTT (CV Bocce)!")
+        client.subscribe(TOPIC_INIZIO_PARTITA)
+        print(f" In ascolto comandi inizio/fine partita su: {TOPIC_INIZIO_PARTITA}")
+    else:
+        print(f" Connessione MQTT fallita. Codice errore: {rc}")
+
+def on_message(client, userdata, msg):
+    global partita_attiva, id_partita_corrente
+
+    # -----------------------------------------------------
+    # Estraiamo l'ID del gioco fisico dal topic: playnode/bocce/{id}/inizio_partita
+    # -----------------------------------------------------
+    parti_topic = msg.topic.split("/")
+    if len(parti_topic) != 4:
+        return
+
+    try:
+        id_gioco_ricevuto = int(parti_topic[2])
+    except ValueError:
+        return
+
+    # Ignoriamo qualsiasi comando destinato ad altre piste/tavoli
+    if id_gioco_ricevuto != ID_GIOCO_FISICO:
+        return
+
+    try:
+        dati = json.loads(msg.payload.decode('utf-8'))
+    except json.JSONDecodeError:
+        return
+
+    stato = dati.get("stato")
+
+    with stato_lock:
+        if stato == "inizio":
+            partita_attiva = True
+            id_partita_corrente = dati.get("idPartita")
+            print(f"\n[MQTT] Ricevuto comando di INIZIO partita per il gioco {ID_GIOCO_FISICO}. ID Partita: {id_partita_corrente}")
+        elif stato == "fine":
+            partita_attiva = False
+            id_partita_corrente = None
+            print(f"\n[MQTT] Ricevuto comando di FINE partita per il gioco {ID_GIOCO_FISICO}. Torno in stato idle.")
+
+client.on_connect = on_connect
+client.on_message = on_message
+client.loop_start()  # Loop MQTT in background, non blocca il video
+
 def distanza(p1, p2):
     return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
@@ -15,19 +75,15 @@ def calcola_punteggio(boccino, bocce_blu, bocce_rosse):
     if not bocce_blu and not bocce_rosse:
         return None, 0, [], []
 
-    # Calcola tutte le distanze tupla --> [(0,distanza),(1,distanza)]
     dist_blu   = [(b, distanza(boccino, b)) for b in bocce_blu]
     dist_rosse = [(b, distanza(boccino, b)) for b in bocce_rosse]
 
-    # Ordina per distanza
     dist_blu.sort(key=lambda x: x[1])
     dist_rosse.sort(key=lambda x: x[1])
 
-    # Chi è più vicino?
     min_blu   = dist_blu[0][1]   if dist_blu   else float('inf')
     min_rossa = dist_rosse[0][1] if dist_rosse else float('inf')
 
-    # Assegno i punti in base a quante bocce sono più vicine al boccino rispetto all'avversario
     if min_blu < min_rossa:
         punti = sum(1 for _, d in dist_blu if d < min_rossa)
         return "BLU", punti, dist_blu, dist_rosse
@@ -36,7 +92,7 @@ def calcola_punteggio(boccino, bocce_blu, bocce_rosse):
         return "ROSSO", punti, dist_blu, dist_rosse
 
 # Caricamento Modello
-model = YOLO("best.pt")
+model = YOLO("best2.pt")
 
 # Passaggio a stream video (0 = webcam predefinita su Raspberry)
 cap = cv2.VideoCapture(0)
@@ -46,7 +102,7 @@ DEBOUNCE_TIME = 3.0  # Secondi in cui la situazione deve rimanere stabile prima 
 tempo_inizio_stabilita = None
 round_pubblicato = False
 
-print("Avvio stream telecamera... Premi 'q' per uscire.")
+print("Avvio stream telecamera... In attesa del comando di inizio partita. Premi 'q' per uscire.")
 
 while True:
     ret, frame = cap.read()
@@ -54,13 +110,37 @@ while True:
         print("Errore nella lettura della webcam.")
         break
 
+    with stato_lock:
+        attiva_ora = partita_attiva
+        id_partita_ora = id_partita_corrente
+
+    # -----------------------------------------------------
+    # STATO IDLE: nessuna partita attiva -> nessuna detection, nessuna pubblicazione
+    # -----------------------------------------------------
+    if not attiva_ora:
+        # Reset di eventuali stati residui della partita precedente
+        tempo_inizio_stabilita = None
+        round_pubblicato = False
+
+        cv2.rectangle(frame, (0, 0), (800, 50), (0, 0, 0), -1)
+        cv2.putText(frame, "IN ATTESA DI INIZIO PARTITA...",
+                    (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 165, 255), 2)
+
+        cv2.imshow("Bocce - PlayNode Sensor", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        continue  # Salta tutta la logica di detection/punteggio
+
+    # -----------------------------------------------------
+    # STATO ATTIVO: partita in corso -> logica normale di detection
+    # -----------------------------------------------------
     risultati = model(frame, verbose=False)
 
     bocce_blu   = []
     bocce_rosse = []
     boccino     = None
 
-    # --- RACCOGLI LE POSIZIONI E DISEGNA I BOX ---
     for r in risultati:
         for box in r.boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
@@ -84,37 +164,29 @@ while True:
             cv2.putText(frame, f"{classe} {confidenza:.0%}",
                         (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colore, 2)
 
-    # Contiamo quante bocce ci sono fisicamente in campo in questo preciso frame
     totale_bocce = len(bocce_blu) + len(bocce_rosse)
 
     # --- RESET DEL ROUND ---
-    # Se i giocatori raccolgono le bocce (0 bocce rilevate), il sistema si "riarma" per la manche successiva
     if totale_bocce == 0:
         round_pubblicato = False
 
     # --- LOGICA DI DEBOUNCE (TIMER) ---
-    # La condizione di stabilità si ha quando in campo ci sono ESATTAMENTE 4 bocce e 1 boccino
     if totale_bocce == 4 and boccino is not None:
-        
-        # Se è la prima volta che vede 4 bocce, fa partire il timer
+
         if tempo_inizio_stabilita is None:
-            tempo_inizio_stabilita = time.time()  
+            tempo_inizio_stabilita = time.time()
         else:
             tempo_trascorso = time.time() - tempo_inizio_stabilita
-            
-            # Disegna il timer a schermo per far capire ai giocatori cosa sta succedendo
-            cv2.putText(frame, f"Attendere: {tempo_trascorso:.1f}s / {DEBOUNCE_TIME}s", 
+
+            cv2.putText(frame, f"Attendere: {tempo_trascorso:.1f}s / {DEBOUNCE_TIME}s",
                         (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
-            # Se i 3 secondi sono passati senza interruzioni...
             if tempo_trascorso >= DEBOUNCE_TIME:
-                
-                # Disegna un pallino verde sul boccino
+
                 cv2.circle(frame, boccino, 6, (0, 255, 0), -1)
 
                 team, punti, dist_blu, dist_rosse = calcola_punteggio(boccino, bocce_blu, bocce_rosse)
-                
-                # Disegno linee delle distanze a schermo
+
                 for i, (b, d) in enumerate(dist_blu):
                     spessore = 2 if i == 0 else 1
                     cv2.line(frame, boccino, b, (255, 0, 0), spessore)
@@ -125,43 +197,42 @@ while True:
                     cv2.line(frame, boccino, b, (0, 0, 255), spessore)
                     cv2.putText(frame, f"{d:.0f}px", (b[0] + 10, b[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-                # Mostra Punteggio In alto a Sinistra
                 colore_team = (255, 0, 0) if team == "BLU" else (0, 0, 255)
                 cv2.rectangle(frame, (0, 0), (800, 50), (0, 0, 0), -1)
                 cv2.putText(frame, f"PUNTO A {team}: {punti} {'boccia' if punti == 1 else 'bocce'}!",
                             (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0, colore_team, 2)
-                
+
                 # --- PUBBLICAZIONE MQTT (Solo una volta per Manche!) ---
                 if not round_pubblicato and team is not None:
-                    # Strutturiamo il messaggio in JSON
                     payload = {
                         "gioco": "bocce",
+                        "idPartita": id_partita_ora,
                         "squadra_vincitrice": team,
                         "punti": punti
                     }
                     client.publish(config.TOPIC, json.dumps(payload))
                     print(f"✅ Inviato via MQTT: {payload}")
-                    round_pubblicato = True # Blocca futuri invii finché le bocce non vengono rimosse
-                
+                    round_pubblicato = True
+
                 elif round_pubblicato:
-                    cv2.putText(frame, "ROUND CONCLUSO - Raccogliere le bocce", 
+                    cv2.putText(frame, "ROUND CONCLUSO - Raccogliere le bocce",
                                 (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
     else:
-        # Se qualcuno passa davanti, o la palla rotola (quindi i count cambiano), resetta il timer!
         tempo_inizio_stabilita = None
-        
+
         if boccino is None:
             cv2.putText(frame, "In attesa del boccino...", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         elif totale_bocce > 0 and totale_bocce != 4:
             cv2.putText(frame, f"Bocce rilevate: {totale_bocce}/4", (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
 
     cv2.imshow("Bocce - PlayNode Sensor", frame)
-    
-    # Premi 'q' sulla tastiera per chiudere la finestra e fermare il programma
+
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # Chiusura sicura
 cap.release()
 cv2.destroyAllWindows()
+client.loop_stop()
+client.disconnect()

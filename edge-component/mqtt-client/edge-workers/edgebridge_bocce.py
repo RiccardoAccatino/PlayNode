@@ -3,40 +3,39 @@ import time
 import requests
 import paho.mqtt.client as mqtt
 
-
+# ==========================================
 # 1. CONFIGURAZIONI MQTT (Rete Locale/Centrale)
-
-MQTT_BROKER = "127.0.0.1" 
+# ==========================================
+MQTT_BROKER = "127.0.0.1"
 MQTT_PORT = 1883
 MQTT_USER = "cv_bocce"
 MQTT_PASSWORD = "bocce"
 
-# ID Fisico di questa pista da bocce nel Database (adattalo al tuo DB)
-ID_GIOCO_FISICO = 2 
-
 # Topic in ascolto
-MQTT_TOPIC_PUNTEGGIO = "bocce/punteggio"
-MQTT_TOPIC_COMANDI = f"edge/gioco/{ID_GIOCO_FISICO}/comandi"
+MQTT_TOPIC_PUNTEGGIO = "playnode/bocce/punteggio"
+MQTT_TOPIC_COMANDI = "playnode/server/comandi"
 
-
+# ==========================================
 # 2. CONFIGURAZIONI REST API (Cloud/Server)
-
+# ==========================================
 API_BASE_URL = "http://MacBook-Pro-di-Francesco.local:8080"
-# La variabile ora parte da None (Nessuna partita in corso) e verrà popolata dal backend
+
+# La partita attiva e l'ID del gioco fisico ora vengono POPOLATI dal backend
+# tramite il payload ricevuto su playnode/server/comandi, non più hardcodati.
 PARTITA_ATTIVA = None
+ID_GIOCO_ATTIVO = None
 
 MAPPA_SQUADRE = {
     "BLU": 1,
     "ROSSO": 2
 }
 
-
+# ==========================================
 # 3. LOGICA DI RICEZIONE
-
+# ==========================================
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print(f" Connesso al Broker MQTT con successo!")
-        # Ci iscriviamo a ENTRAMBI i topic
+        print(f"✅ Connesso al Broker MQTT con successo!")
         client.subscribe(MQTT_TOPIC_PUNTEGGIO)
         client.subscribe(MQTT_TOPIC_COMANDI)
         print(f" In ascolto punteggi su: {MQTT_TOPIC_PUNTEGGIO}")
@@ -45,25 +44,53 @@ def on_connect(client, userdata, flags, rc):
         print(f" Connessione fallita. Codice errore: {rc}")
 
 def on_message(client, userdata, msg):
-    global PARTITA_ATTIVA
+    global PARTITA_ATTIVA, ID_GIOCO_ATTIVO
     payload = msg.payload.decode('utf-8')
 
     try:
         dati = json.loads(payload)
 
+        # -----------------------------------------------------
         # CASO A: Il Backend ci dice che è iniziata o finita una partita
-                if msg.topic == MQTT_TOPIC_COMANDI:
-                    if "nuova_partita_id" in dati:
-                        PARTITA_ATTIVA = dati["nuova_partita_id"]
-                        print(f"\n [COMANDO SERVER] Nuova partita avviata! ID aggiornato a: {PARTITA_ATTIVA}")
-                    elif "termina_partita" in dati:
-                        PARTITA_ATTIVA = None
-                        print("\n [COMANDO SERVER] Partita terminata. Punti bloccati.")
+        # Topic: playnode/server/comandi
+        # -----------------------------------------------------
+        if msg.topic == MQTT_TOPIC_COMANDI:
+            id_gioco_fisico = dati.get("idGiocoFisico")
+            id_partita = dati.get("idPartita")
 
+            if id_gioco_fisico is None:
+                return
+
+            if id_partita is not None:
+                PARTITA_ATTIVA = id_partita
+                ID_GIOCO_ATTIVO = id_gioco_fisico
+                print(f"\n[COMANDO SERVER] Nuova partita avviata sul gioco {ID_GIOCO_ATTIVO}! ID Partita: {PARTITA_ATTIVA}")
+
+                topic_inizio = f"playnode/bocce/{id_gioco_fisico}/inizio_partita"
+                messaggio_inizio = json.dumps({"idPartita": PARTITA_ATTIVA, "stato": "inizio"})
+                client.publish(topic_inizio, messaggio_inizio)
+                print(f"  Inviato segnale di inizio partita all'edge sul topic {topic_inizio}.")
+
+            elif "termina_partita" in dati:
+                if id_gioco_fisico != ID_GIOCO_ATTIVO:
+                    return
+
+                print(f"\n[COMANDO SERVER] Partita {PARTITA_ATTIVA} terminata sul gioco {ID_GIOCO_ATTIVO}.")
+
+                topic_fine = f"playnode/bocce/{id_gioco_fisico}/inizio_partita"
+                messaggio_fine = json.dumps({"stato": "fine"})
+                client.publish(topic_fine, messaggio_fine)
+                print(f"  Inviato segnale di fine partita all'edge sul topic {topic_fine}.")
+
+                PARTITA_ATTIVA = None
+                ID_GIOCO_ATTIVO = None
+
+        # -----------------------------------------------------
         # CASO B: La telecamera OpenCV ci invia un punteggio
+        # -----------------------------------------------------
         elif msg.topic == MQTT_TOPIC_PUNTEGGIO:
-            print(f"\n [MQTT LOCALE] Ricevuto punteggio: {payload}")
-            
+            print(f"\n[MQTT LOCALE] Ricevuto punteggio: {payload}")
+
             if PARTITA_ATTIVA is None:
                 print(" Ignorato: Nessuna partita attualmente attiva sul server.")
                 return
@@ -91,19 +118,20 @@ def on_message(client, userdata, msg):
                     print(f"    [REST] Errore di connessione al backend: {req_err}")
 
     except json.JSONDecodeError:
-        pass # Ignoriamo messaggi non JSON
+        pass  # Ignoriamo messaggi non JSON
 
-
+# ==========================================
 # 4. AVVIO
-
+# ==========================================
 client = mqtt.Client()
+client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 client.on_connect = on_connect
 client.on_message = on_message
 
 try:
-    print("Avvio Edge Bridge...")
+    print("Avvio Edge Bridge Bocce...")
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
     client.loop_forever()
 except KeyboardInterrupt:
-    print("\nChiusura Edge Bridge.")
+    print("\nChiusura Edge Bridge Bocce.")
     client.disconnect()

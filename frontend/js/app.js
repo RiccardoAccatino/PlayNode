@@ -6,6 +6,33 @@ import { renderRegister } from '../views/register.js';
 import { renderDashboard } from '../views/dashboard.js';
 import { adminGameDashboard, disposeAdminGame } from '../views/admin-game.js';
 
+// ============================================================================
+// PATCH SETINTERVAL PER PREVENIRE MEMORY E NETWORK LEAK
+// ============================================================================
+if (!window.originalSetInterval) {
+    window.originalSetInterval = window.setInterval;
+    window.originalClearInterval = window.clearInterval;
+    window.activeIntervals = new Set();
+    
+    window.setInterval = function(fn, delay) {
+        const id = window.originalSetInterval(fn, delay);
+        window.activeIntervals.add(id);
+        return id;
+    };
+    
+    window.clearInterval = function(id) {
+        window.activeIntervals.delete(id);
+        window.originalClearInterval(id);
+    };
+    
+    window.clearAllIntervals = function() {
+        if (window.activeIntervals) {
+            window.activeIntervals.forEach(id => window.originalClearInterval(id));
+            window.activeIntervals.clear();
+        }
+    };
+}
+
 /**
  * L'ID del contenitore principale all'interno di index.html dove verrà iniettato
  * l'HTML del login o della registrazione.
@@ -13,6 +40,172 @@ import { adminGameDashboard, disposeAdminGame } from '../views/admin-game.js';
  */
 const APP_CONTAINER_ID = 'app-root';
 let currentView = null;
+
+// Esposizione globale per i Toast e Confirm Modals (usati in tutte le views)
+window.showToast = function(message, type = 'blu', duration = 3000) {
+    const existing = document.getElementById('playnode-toast');
+    if (existing) existing.remove();
+    
+    // Mappatura compatibilità con vecchie chiamate (es. 'error' -> 'red')
+    if (type === 'error') type = 'red';
+    if (type === 'success') type = 'grn';
+    if (type === 'warning') type = 'amb';
+    if (type === 'info') type = 'blu';
+
+    const toast = document.createElement('div');
+    toast.id = 'playnode-toast';
+    
+    let icon = 'ℹ️';
+    if (type === 'grn') icon = '✅';
+    if (type === 'amb') icon = '⚠️';
+    if (type === 'red') icon = '❌';
+    if (type === 'load') icon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+
+    toast.innerHTML = `<span style="font-size: 18px; display: flex;">${icon}</span> <span>${message}</span>`;
+    
+    if (type === 'load' && !document.getElementById('toast-spin-style')) {
+        const style = document.createElement('style');
+        style.id = 'toast-spin-style';
+        style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+    
+    const closeToast = () => {
+        toast.style.animation = 'slideUp 0.3s ease-in forwards';
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 300);
+    };
+
+    if (duration > 0) {
+        setTimeout(closeToast, duration);
+    }
+    
+    return { close: closeToast };
+};
+
+window.showLoadingOverlay = function(message = 'Caricamento in corso...') {
+    window.hideLoadingOverlay();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'playnode-loading-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'playnode-loading-box';
+
+    const spinner = document.createElement('div');
+    spinner.className = 'playnode-loading-spinner';
+
+    const text = document.createElement('div');
+    text.className = 'playnode-loading-text';
+    text.textContent = message;
+
+    box.appendChild(spinner);
+    box.appendChild(text);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+};
+
+window.hideLoadingOverlay = function() {
+    document.getElementById('playnode-loading-overlay')?.remove();
+};
+
+window.showConfirm = function(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.id = 'playnode-confirm-overlay';
+        
+        const box = document.createElement('div');
+        box.id = 'playnode-confirm-box';
+        
+        const text = document.createElement('div');
+        text.id = 'playnode-confirm-text';
+        text.textContent = message;
+        
+        const actions = document.createElement('div');
+        actions.id = 'playnode-confirm-actions';
+        
+        const btnCancel = document.createElement('button');
+        btnCancel.className = 'btn-confirm-cancel';
+        btnCancel.textContent = 'Annulla';
+        
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn-confirm-ok';
+        btnOk.textContent = 'Conferma';
+        
+        actions.appendChild(btnCancel);
+        actions.appendChild(btnOk);
+        box.appendChild(text);
+        box.appendChild(actions);
+        overlay.appendChild(box);
+        
+        const close = (result) => {
+            overlay.style.animation = 'fadeIn 0.2s ease-in reverse forwards';
+            box.style.animation = 'scaleIn 0.2s ease-in reverse forwards';
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.remove();
+                resolve(result);
+            }, 200);
+        };
+        
+        btnCancel.addEventListener('click', () => close(false));
+        btnOk.addEventListener('click', () => close(true));
+        
+        document.body.appendChild(overlay);
+    });
+};
+
+window.showLocaleSelectorModal = function(locali) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.id = 'playnode-confirm-overlay';
+        
+        const box = document.createElement('div');
+        box.id = 'playnode-confirm-box';
+        box.style.width = '320px';
+        
+        const title = document.createElement('div');
+        title.style.fontFamily = 'var(--ff)';
+        title.style.fontSize = '18px';
+        title.style.fontWeight = '700';
+        title.style.marginBottom = '8px';
+        title.style.textAlign = 'center';
+        title.textContent = 'Seleziona Locale';
+        
+        const text = document.createElement('div');
+        text.id = 'playnode-confirm-text';
+        text.style.marginBottom = '20px';
+        text.style.textAlign = 'center';
+        text.textContent = 'Scegli a quale locale desideri connetterti per questa sessione.';
+        
+        const list = document.createElement('div');
+        list.style.display = 'flex';
+        list.style.flexDirection = 'column';
+        list.style.gap = '10px';
+        
+        locali.forEach(l => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-locale-select';
+            btn.innerHTML = `<span style="font-size:18px">📍</span> <span>${l.nome}</span>`;
+            btn.addEventListener('click', () => {
+                overlay.style.animation = 'fadeIn 0.2s ease-in reverse forwards';
+                box.style.animation = 'scaleIn 0.2s ease-in reverse forwards';
+                setTimeout(() => {
+                    if (overlay.parentNode) overlay.remove();
+                    resolve(l.id);
+                }, 200);
+            });
+            list.appendChild(btn);
+        });
+        
+        box.appendChild(title);
+        box.appendChild(text);
+        box.appendChild(list);
+        overlay.appendChild(box);
+        
+        document.body.appendChild(overlay);
+    });
+};
 
 /**
  * Funzione di navigazione principale dell'applicazione.
@@ -30,6 +223,11 @@ export function navigateTo(viewName) {
 
     if (currentView === 'admin-game' && viewName !== 'admin-game') {
         if (typeof disposeAdminGame === 'function') disposeAdminGame();
+    }
+
+    // Pulisce tutti i setInterval lasciati in sospeso dalle view precedenti (es. live partite, admin game)
+    if (window.clearAllIntervals) {
+        window.clearAllIntervals();
     }
 
     currentView = viewName;

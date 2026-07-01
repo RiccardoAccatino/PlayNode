@@ -1,174 +1,79 @@
 package com.playnode.auth_service.security;
 
+import com.playnode.auth_service.entity.LoginAttemptEntity;
+import com.playnode.auth_service.repository.LoginAttemptRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
-/**
- * Service per la protezione da attacchi brute force.
- * 
- * Meccanismo semplice e in-memory (senza Redis):
- * - Traccia i tentativi di login falliti per IP
- * - Blocca temporaneamente dopo N tentativi
- * - Sblocca automaticamente dopo il timeout
- * 
- * Configurazione:
- * - Max 5 tentativi per IP
- * - Blocco per 15 minuti (900 secondi)
- */
 @Service
 public class BruteForceProtection {
 
-    private static class LoginAttempt {
-        int count;
-        long lastAttempt;
-        long blockUntil;
-
-        LoginAttempt() {
-            this.count = 0;
-            this.lastAttempt = System.currentTimeMillis();
-            this.blockUntil = 0;
-        }
-    }
-
-    private final ConcurrentHashMap<String, LoginAttempt> attempts = new ConcurrentHashMap<>();
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
     private static final int MAX_ATTEMPTS = 5;
-    private static final long BLOCK_DURATION_SECONDS = 900;  // 15 minuti
-    private static final long ATTEMPT_EXPIRY_SECONDS = 3600; // 1 ora
+    private static final long BLOCK_DURATION_SECONDS = 900;
+    private static final long ATTEMPT_EXPIRY_SECONDS = 3600;
 
-    /**
-     * Registra un tentativo di login fallito
-     *
-     * @param clientIp Indirizzo IP del client
-     */
+    private final LoginAttemptRepository repository;
+
+    public BruteForceProtection(LoginAttemptRepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional
     public void recordFailedAttempt(String clientIp) {
-        lock.writeLock().lock();
-        try {
-            int att = attempts.computeIfAbsent(clientIp, k -> new LoginAttempt()).count;
-            LoginAttempt attempt = attempts.get(clientIp);
-            attempt.count++;
-            attempt.lastAttempt = System.currentTimeMillis();
-
-            // Se supera il limite, blocca per il timeout specificato
-            if (attempt.count >= MAX_ATTEMPTS) {
-                attempt.blockUntil = System.currentTimeMillis() + (BLOCK_DURATION_SECONDS * 1000);
-            }
-        } finally {
-            lock.writeLock().unlock();
+        LoginAttemptEntity attempt = repository.findById(clientIp).orElseGet(() -> {
+            LoginAttemptEntity e = new LoginAttemptEntity();
+            e.setClientIp(clientIp);
+            e.setAttemptCount(0);
+            return e;
+        });
+        attempt.setAttemptCount(attempt.getAttemptCount() + 1);
+        attempt.setLastAttempt(LocalDateTime.now());
+        if (attempt.getAttemptCount() >= MAX_ATTEMPTS) {
+            attempt.setBlockUntil(LocalDateTime.now().plusSeconds(BLOCK_DURATION_SECONDS));
         }
+        repository.save(attempt);
     }
 
-    /**
-     * Registra un tentativo di login riuscito (reset dei contatori)
-     *
-     * @param clientIp Indirizzo IP del client
-     */
+    @Transactional
     public void recordSuccessfulAttempt(String clientIp) {
-        lock.writeLock().lock();
-        try {
-            attempts.remove(clientIp);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        repository.deleteById(clientIp);
     }
 
-    /**
-     * Controlla se un IP è temporaneamente bloccato
-     *
-     * @param clientIp Indirizzo IP del client
-     * @return true se bloccato, false altrimenti
-     */
+    @Transactional(readOnly = true)
     public boolean isBlocked(String clientIp) {
-        lock.readLock().lock();
-        try {
-            LoginAttempt attempt = attempts.get(clientIp);
-            if (attempt == null) {
-                return false;
-            }
-
-            long now = System.currentTimeMillis();
-
-            // Se il blocco è scaduto, sblocca
-            if (now > attempt.blockUntil && attempt.blockUntil > 0) {
-                lock.readLock().unlock();
-                lock.writeLock().lock();
-                try {
-                    attempts.remove(clientIp);
-                    return false;
-                } finally {
-                    lock.writeLock().unlock();
-                    lock.readLock().lock();
-                }
-            }
-
-            // Se i tentativi sono scaduti, resetta
-            if (now - attempt.lastAttempt > ATTEMPT_EXPIRY_SECONDS * 1000) {
-                lock.readLock().unlock();
-                lock.writeLock().lock();
-                try {
-                    attempts.remove(clientIp);
-                    return false;
-                } finally {
-                    lock.writeLock().unlock();
-                    lock.readLock().lock();
-                }
-            }
-
-            return attempt.blockUntil > now;
-        } finally {
-            lock.readLock().unlock();
+        Optional<LoginAttemptEntity> op = repository.findById(clientIp);
+        if (op.isEmpty()) {
+            return false;
         }
+        LoginAttemptEntity attempt = op.get();
+        LocalDateTime now = LocalDateTime.now();
+        if (attempt.getLastAttempt().plusSeconds(ATTEMPT_EXPIRY_SECONDS).isBefore(now)) {
+            return false;
+        }
+        return attempt.getBlockUntil() != null && attempt.getBlockUntil().isAfter(now);
     }
 
-    /**
-     * Ottiene il tempo rimanente di blocco in secondi
-     *
-     * @param clientIp Indirizzo IP del client
-     * @return Secondi rimasti di blocco, 0 se non bloccato
-     */
+    @Transactional(readOnly = true)
     public long getRemainingBlockTime(String clientIp) {
-        lock.readLock().lock();
-        try {
-            LoginAttempt attempt = attempts.get(clientIp);
-            if (attempt == null || attempt.blockUntil == 0) {
-                return 0;
-            }
-
-            long remaining = attempt.blockUntil - System.currentTimeMillis();
-            return Math.max(0, remaining / 1000);
-        } finally {
-            lock.readLock().unlock();
-        }
+        return repository.findById(clientIp)
+                .filter(a -> a.getBlockUntil() != null && a.getBlockUntil().isAfter(LocalDateTime.now()))
+                .map(a -> java.time.Duration.between(LocalDateTime.now(), a.getBlockUntil()).getSeconds())
+                .orElse(0L);
     }
 
-    /**
-     * Pulisce i dati vecchi
-     * Rimuove gli IP che non hanno tentato nulla da 1 ora
-     */
+    @Transactional
     public void cleanExpired() {
-        lock.writeLock().lock();
-        try {
-            long now = System.currentTimeMillis();
-            attempts.entrySet().removeIf(entry ->
-                    now - entry.getValue().lastAttempt > ATTEMPT_EXPIRY_SECONDS * 1000
-            );
-        } finally {
-            lock.writeLock().unlock();
-        }
+        LocalDateTime cutoff = LocalDateTime.now().minusSeconds(ATTEMPT_EXPIRY_SECONDS);
+        repository.findAll().stream()
+                .filter(a -> a.getLastAttempt().isBefore(cutoff))
+                .forEach(a -> repository.deleteById(a.getClientIp()));
     }
 
-    /**
-     * Resetta tutti i tentativi
-     */
+    @Transactional
     public void reset() {
-        lock.writeLock().lock();
-        try {
-            attempts.clear();
-        } finally {
-            lock.writeLock().unlock();
-        }
+        repository.deleteAll();
     }
 }

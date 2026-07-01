@@ -9,4 +9,6 @@ import java.util.List;
 public interface GiocoFisicoRepository extends JpaRepository<GiocoFisico, Long> {
     // Questo metodo magico trova tutti i giochi usando l'ID del locale!
     List<GiocoFisico> findByLocaleId(Long localeId);
+
+    boolean existsByTipologiaGiocoId(Long tipologiaGiocoId);
 }

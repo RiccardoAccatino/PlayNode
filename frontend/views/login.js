@@ -5,7 +5,7 @@
  * 3. Comunicare con il backend tramite il modulo `api.js` per l'autenticazione.
  */
 
-import { loginUser } from '../js/api.js';
+import { loginUser, getAllLocali } from '../js/api.js';
 
 
 /**
@@ -180,7 +180,6 @@ export function renderLogin(onSuccess) {
           </div>
       </div>`;
 
-  // 1. Iniettiamo l'HTML generato all'interno del contenitore base (index.html)
   document.getElementById('app-root').innerHTML = html;
 
   /*
@@ -227,23 +226,15 @@ export function renderLogin(onSuccess) {
    * Funzioni helper per gestire la visualizzazione degli errori
    */
   function showError(msg) {
-    errorBox.textContent = msg;
-    errorBox.style.display = 'block';
+    window.showToast(msg, 'red');
   }
 
-  function hideError() {
-    errorBox.style.display = 'none';
-  }
-
-  /* autofill credenziali demo */
   document.querySelectorAll('.demo-fill').forEach(el => {
     el.addEventListener('mouseenter', () => el.style.background = 'var(--surf3)');
     el.addEventListener('mouseleave', () => el.style.background = '');
     el.addEventListener('click', () => {
-      // Inserisce l'email e la password associate al pulsante
       emailInput.value = el.dataset.email;
       passwordInput.value = el.dataset.password;
-      hideError();
     });
   });
 
@@ -254,9 +245,6 @@ export function renderLogin(onSuccess) {
    * @throws {Error} Se le credenziali sono non valide o se si verifica un errore di rete
    */
   async function attemptLogin() {
-    hideError(); // Resettiamo eventuali errori precedenti all'avvio del tentativo
-
-    // Prendiamo i valori digitati. trim() rimuove gli spazi vuoti accidentali e toLowerCase() uniforma le mail.
     const email = emailInput.value.trim().toLowerCase();
     const pwd = passwordInput.value;
 
@@ -282,6 +270,28 @@ export function renderLogin(onSuccess) {
         localStorage.setItem('token', userData.token);
         localStorage.setItem('userId', String(userData.userId));
         localStorage.setItem('userRole', userData.ruolo || userData.role);
+
+        // Multi-Locale: fetch and save manager's locales
+        const roleStr = String(userData.ruolo || userData.role || '').toLowerCase();
+        if (roleStr === 'gestore') {
+          try {
+            const locali = await getAllLocali();
+            const myLocali = locali.filter(l => l.gestoreId == userData.userId);
+            if (myLocali.length > 1) {
+              localStorage.setItem('myLocali', JSON.stringify(myLocali));
+              const scelto = await window.showLocaleSelectorModal(myLocali);
+              localStorage.setItem('localeId', String(scelto));
+            } else if (myLocali.length === 1) {
+              localStorage.setItem('myLocali', JSON.stringify(myLocali));
+              localStorage.setItem('localeId', String(myLocali[0].id));
+            } else {
+              localStorage.removeItem('myLocali');
+              localStorage.removeItem('localeId');
+            }
+          } catch (e) {
+            console.error("Errore recupero locali gestore al login:", e);
+          }
+        }
       }
 
       // 5. Normalizzazione dei dati: ci assicuriamo che le variabili abbiano un valore

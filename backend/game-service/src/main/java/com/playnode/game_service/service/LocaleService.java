@@ -4,7 +4,6 @@ import com.playnode.game_service.dto.GiocoInstallatoDTO;
 import com.playnode.game_service.dto.LocaleDTO;
 import com.playnode.game_service.entity.GiocoFisico;
 import com.playnode.game_service.entity.Locale;
-import com.playnode.game_service.entity.Partita;
 import com.playnode.game_service.entity.TipologiaGioco;
 import com.playnode.game_service.repository.GiocoFisicoRepository;
 import com.playnode.game_service.repository.LocaleRepository;
@@ -40,6 +39,9 @@ public class LocaleService {
         this.partitaRepository = partitaRepository;
     }
 
+    public String ottieniHostLocale(Long id) {
+        return ottieniLocalePerId(id).getHostBroker();
+    }
     public List<LocaleDTO> ottieniTuttiILocali() {
         List<LocaleDTO> localiDTO = new ArrayList<>();
         for (Locale locale : localeRepository.findAll()) {
@@ -104,12 +106,7 @@ public class LocaleService {
         List<GiocoFisico> giochiDalDatabase = giocoFisicoRepository.findByLocaleId(idLocale);
         List<GiocoInstallatoDTO> giochiDTO = new ArrayList<>();
 
-        Set<Long> giochiInUso = new HashSet<>();
-        for (Partita partita : partitaRepository.findAll()) {
-            if (partita.getTimestampFine() == null && partita.getGiocoFisicoId() != null) {
-                giochiInUso.add(partita.getGiocoFisicoId());
-            }
-        }
+        Set<Long> giochiInUso = new HashSet<>(partitaRepository.findGiocoFisicoIdsAttiviPerLocale(idLocale));
 
         for (GiocoFisico gioco : giochiDalDatabase) {
             GiocoInstallatoDTO dto = new GiocoInstallatoDTO();
@@ -127,7 +124,8 @@ public class LocaleService {
             dto.setTipoGioco(nomeTipologia);
 
             dto.setStato(giochiInUso.contains(gioco.getIdGiocoFisico()) ? "IN_USO" : "LIBERO");
-            dto.setNumSensori(sensoreRepository.findByGiocoFisicoIdGiocoFisico(gioco.getIdGiocoFisico()).size());
+            dto.setNumSensori((int) sensoreRepository.findByGiocoFisicoIdGiocoFisico(gioco.getIdGiocoFisico()).stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getAttivo())).count());
 
             giochiDTO.add(dto);
         }

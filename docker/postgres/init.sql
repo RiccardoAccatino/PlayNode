@@ -60,6 +60,10 @@ create table Locale(
     nome varchar(100) not null,
     indirizzo varchar(255) not null,
     accesso accesso_tipo not null,
+    -- host_broker varchar default 'tcp://broker:1883',
+    host_broker varchar default 'tcp://broker:1883',
+    edge_api_token varchar(64),
+    edge_password varchar(255),
     gestore_id int not null,
     foreign key(gestore_id) references Utente(id_utente)
         on update cascade
@@ -72,6 +76,7 @@ create table Componente_edge(
     address varchar(17) not null unique,
     locale_id int not null,
     stato stato_tipo default 'Offline',
+    ultimo_heartbeat timestamp,
     foreign key(locale_id) references Locale(id_locale)
         on update cascade
         on delete cascade
@@ -100,6 +105,7 @@ create table Sensore(
     gioco_fisico_id int not null,
     tipo varchar(50) not null,
     posizione varchar(100) not null,
+    attivo boolean not null default true,
     foreign key(gioco_fisico_id) references Gioco_fisico(id_gioco_fisico)
         on update cascade
         on delete cascade
@@ -133,6 +139,20 @@ create table Torneo_locale(
         on delete cascade
 );
 
+-- 10b. Iscrizione giocatori a torneo
+create table Iscrizione_torneo(
+    id_torneo int not null,
+    id_utente int not null,
+    data_iscrizione timestamp not null default now(),
+    primary key(id_torneo, id_utente),
+    foreign key(id_torneo) references Torneo(id_torneo)
+        on update cascade
+        on delete cascade,
+    foreign key(id_utente) references Utente(id_utente)
+        on update cascade
+        on delete cascade
+);
+
 -- 11. Partita
 create table Partita(
     id_partita serial primary key,
@@ -146,6 +166,34 @@ create table Partita(
         on update cascade
         on delete restrict,
     foreign key(torneo_id) references Torneo(id_torneo)
+        on update cascade
+        on delete set null
+);
+
+-- 11b. Incontri tabellone torneo
+create table Incontro_torneo(
+    id_incontro serial primary key,
+    id_torneo int not null,
+    round_num int not null,
+    slot_num int not null,
+    giocatore1_id int,
+    giocatore2_id int,
+    vincitore_id int,
+    id_partita int,
+    unique(id_torneo, round_num, slot_num),
+    foreign key(id_torneo) references Torneo(id_torneo)
+        on update cascade
+        on delete cascade,
+    foreign key(giocatore1_id) references Utente(id_utente)
+        on update cascade
+        on delete set null,
+    foreign key(giocatore2_id) references Utente(id_utente)
+        on update cascade
+        on delete set null,
+    foreign key(vincitore_id) references Utente(id_utente)
+        on update cascade
+        on delete set null,
+    foreign key(id_partita) references Partita(id_partita)
         on update cascade
         on delete set null
 );
@@ -181,6 +229,32 @@ create table Evento_iot(
         on update cascade
         on delete cascade,
     foreign key(sensore_id) references Sensore(id_sensore)
+        on update cascade
+        on delete set null
+);
+
+-- 14. Tentativi login (brute-force protection persistente)
+create table login_attempt(
+    client_ip varchar(45) primary key,
+    attempt_count int not null default 0,
+    last_attempt timestamp not null default now(),
+    block_until timestamp
+);
+
+-- 15. Outbox MQTT (Transactional Outbox per comandi Edge)
+create table mqtt_outbox(
+    id_outbox serial primary key,
+    tipo varchar(50) not null,
+    topic varchar(255) not null,
+    payload text not null,
+    broker_url varchar(255) not null,
+    id_partita int,
+    stato varchar(20) not null default 'PENDING',
+    tentativi int not null default 0,
+    created_at timestamp not null default now(),
+    processed_at timestamp,
+    error_message varchar(500),
+    foreign key(id_partita) references Partita(id_partita)
         on update cascade
         on delete set null
 );

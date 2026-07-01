@@ -63,16 +63,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Estrae i claims dal token
             String email = jwtService.extractEmail(token);
             String ruolo = jwtService.extractRole(token);
+            Long userId = jwtService.extractUserId(token);
 
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + ruolo.toUpperCase());
 
-            // Crea un UsernamePasswordAuthenticationToken e lo memorizza nel
-            // SecurityContext
-            // Principal: userId (identificativo univoco)
-            // Credentials: null (non usato in JWT, il token è già nel header)
-            // Authorities: ruoli estratti dal token con prefisso ROLE_
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    email, null, Collections.singletonList(authority)
+                    userId != null ? userId.toString() : email, null, Collections.singletonList(authority)
             );
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 

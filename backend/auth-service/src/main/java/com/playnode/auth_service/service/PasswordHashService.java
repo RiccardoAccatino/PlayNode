@@ -17,4 +17,14 @@ public class PasswordHashService {
     public String hashPassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
+
+    /**
+     * Verifica se una password in chiaro corrisponde all'hash
+     * @param rawPassword la password in chiaro
+     * @param encodedPassword l'hash salvato sul database
+     * @return true se corrispondono, false altrimenti
+     */
+    public boolean verifyPassword(String rawPassword, String encodedPassword) {
+        return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
 }

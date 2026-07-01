@@ -19,6 +19,9 @@ public class GiocoFisico {
     @Column(name = "tipologia_gioco_id")
     private Long tipologiaGiocoId;
 
+    @Column(name = "edge_id")
+    private Long edgeId;
+
     // Costruttori, Getter e Setter
     public GiocoFisico() {
     }
@@ -45,5 +48,13 @@ public class GiocoFisico {
 
     public void setTipologiaGiocoId(Long tipologiaGiocoId) {
         this.tipologiaGiocoId = tipologiaGiocoId;
+    }
+
+    public Long getEdgeId() {
+        return edgeId;
+    }
+
+    public void setEdgeId(Long edgeId) {
+        this.edgeId = edgeId;
     }
 }

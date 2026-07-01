@@ -40,12 +40,17 @@ public class UtenteService {
         }
 
         String email = request.getEmail().trim().toLowerCase();
-        if (repositoryUtente.findByEmail(email) != null) {
+        if (!repositoryUtente.findByEmailIgnoreCase(email).isEmpty()) {
             throw new IllegalArgumentException("Email già registrata.");
+        }
+        
+        String username = request.getUsername().trim();
+        if (!repositoryUtente.findByUsernameIgnoreCase(username).isEmpty()) {
+            throw new IllegalArgumentException("Username già in uso.");
         }
 
         Utente u = new Utente();
-        u.setUsername(request.getUsername().trim());
+        u.setUsername(username);
         u.setEmail(email);
         u.setPassword(passwordHashService.hashPassword(request.getPassword()));
         u.setRuolo(request.getRuolo());
@@ -54,24 +59,43 @@ public class UtenteService {
         return toDto(repositoryUtente.save(u));
     }
 
-    public UtenteDTO aggiorna(Integer id, UtenteRequest request) {
+    public UtenteDTO aggiorna(Integer id, UtenteRequest request, boolean isAdmin) {
         Optional<Utente> op = repositoryUtente.findById(id);
         if (op.isEmpty())
             return null;
 
         Utente u = op.get();
         if (request.getUsername() != null && !request.getUsername().isBlank()) {
-            u.setUsername(request.getUsername().trim());
+            String username = request.getUsername().trim();
+            java.util.List<Utente> existingUsernames = repositoryUtente.findByUsernameIgnoreCase(username);
+            if (!existingUsernames.isEmpty()) {
+                Utente existingUsername = existingUsernames.get(0);
+                if (!existingUsername.getId().equals(id)) {
+                    throw new IllegalArgumentException("Username già in uso da un altro utente.");
+                }
+            }
+            u.setUsername(username);
         }
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             String email = request.getEmail().trim().toLowerCase();
-            Utente existing = repositoryUtente.findByEmail(email);
-            if (existing != null && !existing.getId().equals(id)) {
-                throw new IllegalArgumentException("Email già in uso da un altro utente.");
+            java.util.List<Utente> existings = repositoryUtente.findByEmailIgnoreCase(email);
+            if (!existings.isEmpty()) {
+                Utente existing = existings.get(0);
+                if (!existing.getId().equals(id)) {
+                    throw new IllegalArgumentException("Email già in uso da un altro utente.");
+                }
             }
             u.setEmail(email);
         }
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            if (!isAdmin) {
+                if (request.getOldPassword() == null || request.getOldPassword().isBlank()) {
+                    throw new IllegalArgumentException("La password attuale è obbligatoria per poterne impostare una nuova.");
+                }
+                if (!passwordHashService.verifyPassword(request.getOldPassword(), u.getPassword())) {
+                    throw new IllegalArgumentException("La password attuale è errata.");
+                }
+            }
             u.setPassword(passwordHashService.hashPassword(request.getPassword()));
         }
         if (request.getRuolo() != null)
