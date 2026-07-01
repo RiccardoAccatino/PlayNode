@@ -22,7 +22,7 @@ public class UtenteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINPIATTAFORMA','ADMINGIOCO')")
+    @PreAuthorize("hasAnyRole('ADMINPIATTAFORMA','ADMINGIOCO','GESTORE')")
     public List<UtenteDTO> getAllUtenti() {
         return utenteService.ottieniTutti();
     }

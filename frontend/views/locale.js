@@ -311,7 +311,49 @@ export function localeGames() {
           <tr><td colspan="5" style="text-align:center; padding: 20px;">Caricamento giochi in corso...</td></tr>
         </tbody>
       </table>
-    </div>`;
+    </div>
+
+    <!-- Modal Avvia Partita -->
+    <div id="modal-avvia-partita" class="cgp-modal-overlay">
+      <div class="cgp-modal" style="width: 450px; max-width: 95%">
+        <div class="cgp-modal-title">Avvia Nuova Partita</div>
+        <div class="cgp-modal-body">
+          <div style="margin-bottom: 15px;">
+            <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px; font-weight: 600;">Tipo Partita</label>
+            <div style="display:flex; gap: 15px;">
+              <label style="display:flex; align-items:center; gap: 5px; cursor:pointer;">
+                <input type="radio" name="tipoPartita" value="singola" checked> Partita Singola
+              </label>
+              <label style="display:flex; align-items:center; gap: 5px; cursor:not-allowed; opacity: 0.5;">
+                <input type="radio" name="tipoPartita" value="torneo" disabled> Torneo (Prossimamente)
+              </label>
+            </div>
+          </div>
+          
+          <div id="sezione-partita-singola">
+            <div style="margin-bottom: 10px;">
+              <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Giocatore / Squadra 1</label>
+              <select id="select-sq1" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
+                <option value="" disabled selected>-- Seleziona utente --</option>
+              </select>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Giocatore / Squadra 2</label>
+              <select id="select-sq2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
+                <option value="" disabled selected>-- Seleziona utente --</option>
+              </select>
+            </div>
+          </div>
+          
+        </div>
+        <div class="cgp-modal-actions">
+          <button id="btn-annulla-partita" class="act-btn" style="background:none; border:1px solid var(--bdr); color: var(--txt);">Annulla</button>
+          <button id="btn-conferma-partita" class="act-btn">Avvia</button>
+        </div>
+      </div>
+    </div>
+    `;
 }
 
 async function initLocaleGames(tbodyId) {
@@ -397,20 +439,72 @@ async function initLocaleGames(tbodyId) {
     });
   });
 
-  tbody.querySelectorAll('.btn-avvia').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const currentBtn = e.currentTarget;
-      const id = currentBtn.getAttribute('data-id');
+  const modalAvvia = document.getElementById('modal-avvia-partita');
+  const btnAnnulla = document.getElementById('btn-annulla-partita');
+  const btnConferma = document.getElementById('btn-conferma-partita');
+  const selectSq1 = document.getElementById('select-sq1');
+  const selectSq2 = document.getElementById('select-sq2');
+  let selectedGiocoId = null;
 
-      if (!id || currentBtn.disabled) return;
+  // Carica utenti per le select
+  try {
+    let utenti = await Api.getAllUtenti();
+    if (utenti && utenti.length > 0) {
+      // Filtra solo gli utenti con ruolo Giocatore
+      utenti = utenti.filter(u => u.ruolo && u.ruolo.toLowerCase() === 'giocatore');
+      const optionsHtml = utenti.map(u => `<option value="${u.id}">${u.username} (${u.email})</option>`).join('');
+      selectSq1.innerHTML = `<option value="" disabled selected>-- Seleziona utente --</option>${optionsHtml}`;
+      selectSq2.innerHTML = `<option value="" disabled selected>-- Seleziona utente --</option>${optionsHtml}`;
+    }
+  } catch (err) {
+    console.warn("Impossibile caricare la lista utenti per il gestore:", err);
+  }
 
-      currentBtn.disabled = true;
+  if (btnAnnulla) {
+    btnAnnulla.addEventListener('click', () => {
+      if (modalAvvia) modalAvvia.classList.remove('open');
+      selectedGiocoId = null;
+    });
+  }
+
+  if (btnConferma) {
+    btnConferma.addEventListener('click', async () => {
+      if (!selectedGiocoId) return;
+
+      const userId1 = selectSq1.value;
+      const userId2 = selectSq2.value;
+
+      if (!userId1 || !userId2) {
+        window.showToast("Devi selezionare per forza due utenti per avviare la partita.", "red", 5000);
+        return;
+      }
+
+      if (userId1 && userId2 && userId1 === userId2) {
+        window.showToast("Un utente non può giocare contro se stesso.", "red", 5000);
+        return;
+      }
+
+      btnConferma.disabled = true;
+      btnConferma.textContent = 'Avvio in corso...';
       window.showLoadingOverlay?.('Avvio partita in corso...');
 
       try {
-        const partita = await Api.avviaPartita(id);
+        const partita = await Api.avviaPartita(selectedGiocoId);
         const partitaId = partita.id || partita.idPartita || '-';
+
+        if (userId1) {
+          try {
+            await Api.aggiungiPartecipantePartita(partitaId, userId1, null);
+          } catch (e) { console.error("Errore aggiunta partecipante 1", e); }
+        }
+        if (userId2) {
+          try {
+            await Api.aggiungiPartecipantePartita(partitaId, userId2, null);
+          } catch (e) { console.error("Errore aggiunta partecipante 2", e); }
+        }
+
         window.showToast(`Partita avviata! (ID: ${partitaId})`, 'grn');
+        if (modalAvvia) modalAvvia.classList.remove('open');
         await initLocaleGames(tbodyId);
       } catch (error) {
         console.error('Errore avvio partita:', error);
@@ -421,12 +515,22 @@ async function initLocaleGames(tbodyId) {
         window.showToast(msg + hint, 'red', 6000);
       } finally {
         window.hideLoadingOverlay?.();
-        const row = currentBtn.closest('tr');
-        const badge = row?.querySelector('.badge');
-        if (badge?.textContent?.trim() !== 'In uso') {
-          currentBtn.disabled = false;
-        }
+        btnConferma.disabled = false;
+        btnConferma.textContent = 'Avvia';
+        selectedGiocoId = null;
       }
+    });
+  }
+
+  tbody.querySelectorAll('.btn-avvia').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const currentBtn = e.currentTarget;
+      const id = currentBtn.getAttribute('data-id');
+
+      if (!id || currentBtn.disabled) return;
+
+      selectedGiocoId = id;
+      if (modalAvvia) modalAvvia.classList.add('open');
     });
   });
 }

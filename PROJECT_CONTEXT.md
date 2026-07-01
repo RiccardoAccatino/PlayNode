@@ -969,3 +969,5 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
 - [ ] Nel profilo aggiungere la mofica della password e quando cambia la password non deve essere uguale a quella vecchia. E aggiungengere il controllo con la password attuale per aggiungere sicurezza.
 - [ ] Aggiungere in player -> torneo un badeg nei tornei che indichi se sono scritto o meno, e se sono iscritto a un torneo nascondere/disabilitare il bottone iscriviti
 - [ ] Nelle impostazioni del locale il gestore deve poter modificare l'indirizzo del locale e il nome del locale
+- [ ] Il profilo del gestore ogni tanto carica i dati del giocatore e non del gestore.
+- [ ] In locale.js la partita singola deve poter lasciare giocare delle squadre. Si può implementare con una select multipla? e in automatico crea la squadra 1 e 2
