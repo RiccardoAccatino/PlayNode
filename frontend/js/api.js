@@ -694,6 +694,21 @@ export async function toggleSensore(id) {
     }
 }
 
+/** TORNEI - tournament-service /api/tornei */
+export async function getTorneoById(id) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/${id}/dettaglio`);
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function collegaPartitaTorneo(incontroId, partitaId) {
+    const response = await fetchWithAuth(`${TORNEI_API_URL}/tornei/interno/incontri/${incontroId}/collega-partita?partitaId=${partitaId}`, {
+        method: 'POST'
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return;
+}
+
 /** Monitor endpoints */
 export async function getMonitorSummary() {
     const res = await fetchWithAuth(`${GAME_API_URL}/monitor/summary`);
