@@ -357,17 +357,23 @@ function badgeTorneo(classifica, dataFine) {
     return { cls: 'b-amb', label: classifica || 'In arrivo' };
 }
 // Modale per l'iscrizione a squadre
-function showSquadreModal(torneoId, onSuccess) {
+async function showSquadreModal(torneoId, tipologiaGiocoId, onSuccess) {
     // 1. Rimuovi modali precedenti se esistono
     const existing = document.getElementById('modal-squadre');
     if (existing) existing.remove();
 
-    // 2. Recupera le squadre dal backend (Simulato/TODO)
-    // Sostituisci questa variabile quando avrai l'endpoint API pronto, es:
-    // let squadre = await Api.getSquadreTorneo(torneoId).catch(() => []);
-    let squadre = [
-        /* { id: 1, nome: "I Leoni" }, { id: 2, nome: "I Draghi" } */ // Esempi di dati
-    ];
+    // 2. Recupera le squadre dal backend
+    let squadre = [];
+    try {
+        if (tipologiaGiocoId) {
+            squadre = await Api.getSquadreByGioco(tipologiaGiocoId);
+        } else {
+            squadre = await Api.getAllSquadre();
+        }
+    } catch (err) {
+        console.error("Errore nel recupero squadre:", err);
+        window.showToast("Impossibile caricare le squadre", "error");
+    }
 
     // 3. Costruisci l'HTML del modale
     const modalHtml = `
@@ -379,7 +385,7 @@ function showSquadreModal(torneoId, onSuccess) {
                 <label style="font-size:12px;font-weight:600;color:var(--txt3);">Seleziona una squadra esistente:</label>
                 <select id="select-squadra" style="width:100%;padding:8px 12px;margin-top:4px;background:var(--surf);color:var(--txt);border:1px solid var(--bdr);border-radius:6px;outline:none;">
                     <option value="">-- Scegli una squadra --</option>
-                    ${squadre.map(s => `<option value="${s.id}">${esc(s.nome)}</option>`).join('')}
+                    ${squadre.map(s => `<option value="${s.idSquadra}">${esc(s.nomeSquadra)}</option>`).join('')}
                 </select>
                 ${squadre.length === 0 ? '<div style="font-size:10px;color:var(--txt3);margin-top:4px;">Nessuna squadra disponibile al momento.</div>' : ''}
             </div>
@@ -418,7 +424,7 @@ function showSquadreModal(torneoId, onSuccess) {
     btnAnnulla.addEventListener('click', () => modal.remove());
 
     btnConferma.addEventListener('click', async () => {
-        const squadraId = selectSquadra.value;
+        let squadraId = selectSquadra.value;
         const nuovaSquadraNome = inputNuovaSquadra.value.trim();
 
         if (!squadraId && !nuovaSquadraNome) {
@@ -430,9 +436,19 @@ function showSquadreModal(torneoId, onSuccess) {
         btnConferma.disabled = true;
 
         try {
-            // Nota: quando implementerai l'API lato backend per l'iscrizione a squadre,
-            // potrai inviare `squadraId` o `nuovaSquadraNome`.
-            // Per ora usiamo il fallback standard `Api.iscriviTorneo`.
+            if (nuovaSquadraNome) {
+                const req = {
+                    nomeSquadra: nuovaSquadraNome,
+                    idTipologiaGioco: tipologiaGiocoId,
+                    membriIds: [] // l'utente corrente potrebbe essere aggiunto nel backend o qui se conoscessimo il suo ID
+                };
+                const nuovaSquadra = await Api.creaSquadra(req);
+                squadraId = nuovaSquadra.idSquadra;
+            }
+
+            // Nota: quando implementerai l'API lato backend per l'iscrizione a squadre associando l'iscrizione alla squadra,
+            // potrai inviare `squadraId` al torneo.
+            // Per ora usiamo il fallback standard `Api.iscriviTorneo` che iscrive solo l'utente.
             await Api.iscriviTorneo(torneoId);
 
             window.showToast('Iscrizione a squadre completata con successo.', 'success');
@@ -498,7 +514,7 @@ async function initTournaments() {
         // Aggiungiamo data-modalita al bottone per sapere che tipo di iscrizione gestire
         const pulsanteIscriviti = (terminato || t.giaIscritto)
             ? (t.giaIscritto ? `<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>` : '')
-            : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" data-modalita="${t.modalita || ''}" style="font-size:11px">Iscriviti</button>`;
+            : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" data-modalita="${t.modalita || ''}" data-gioco-id="${t.idTipologiaGioco}" style="font-size:11px">Iscriviti</button>`;
 
         return `
             <div class="card" style="margin-bottom:10px" data-torneo-id="${t.id}">
@@ -527,6 +543,7 @@ async function initTournaments() {
         btn.addEventListener('click', async (e) => {
             const id = e.target.getAttribute('data-id');
             const modalita = (e.target.getAttribute('data-modalita') || '').toUpperCase();
+            const idTipologiaGioco = e.target.getAttribute('data-gioco-id');
 
             // Definiamo la callback di successo per aggiornare l'interfaccia istantaneamente
             const onSuccessAction = () => {
@@ -537,7 +554,7 @@ async function initTournaments() {
 
             // Controlla se la modalità richiede il modale delle squadre
             if (modalita.includes('SQUADR')) {
-                showSquadreModal(id, onSuccessAction);
+                showSquadreModal(id, idTipologiaGioco, onSuccessAction);
                 return;
             }
 

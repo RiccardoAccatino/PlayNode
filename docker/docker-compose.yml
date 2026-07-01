@@ -7,6 +7,9 @@
 #
 # 2. Per avviare tutta l'infrastruttura pulita:
 #    docker-compose --env-file .env -f docker/docker-compose.yml up -d
+#
+# Riavviare il singolo container
+#  docker-compose --env-file .env -f docker/docker-compose.yml up -d --build game-service
 # =========================================================================
 
 # version: '3.8'

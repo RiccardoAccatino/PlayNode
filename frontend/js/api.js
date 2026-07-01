@@ -429,6 +429,31 @@ export async function generaTabelloneTorneo(id) {
     return await response.json();
 }
 
+// --- API SQUADRE ---
+
+export async function getAllSquadre() {
+    const response = await fetchWithAuth(`${GAME_API_URL}/squadre`);
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function getSquadreByGioco(idTipologiaGioco) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/squadre/gioco/${idTipologiaGioco}`);
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+export async function creaSquadra(squadraData) {
+    const response = await fetchWithAuth(`${GAME_API_URL}/squadre`, {
+        method: 'POST',
+        body: JSON.stringify(squadraData)
+    });
+    if (!response.ok) throw await parseApiError(response);
+    return await response.json();
+}
+
+// --- API PARTECIPANTI PARTITA ---
+
 export async function getPartecipantiPartita(idPartita) {
     const response = await fetchWithAuth(`${GAME_API_URL}/partite/${idPartita}/partecipanti`);
     if (!response.ok) throw await parseApiError(response);
