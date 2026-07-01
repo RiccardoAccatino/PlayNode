@@ -334,12 +334,17 @@ async function initLocaleGames(tbodyId) {
 
   tbody.innerHTML = giochi.map(g => {
     const idGiocoInstallato = g.idGiocoInstallato || g.id || g.id_gioco_installato;
+    const idPartitaAttiva = g.idPartitaAttiva || g.id_partita_attiva;
     const nome = g.tipoGioco || g.nome || g.nomeGioco || g.nomeTipologiaGioco || g.nome_tipologia_gioco || `Gioco #${idGiocoInstallato}`;
     const sensori = g.numSensori || g.sensors || g.sensori || g.numeroSensori || 0;
     const inUso = g.stato === 'IN_USO';
     const libero = g.stato === 'LIBERO';
     const badgeClass = inUso ? 'b-amb' : 'b-grn';
     const badgeLabel = inUso ? 'In uso' : (libero ? 'Libero' : (g.stato || '—'));
+
+    const azioneBtn = inUso
+      ? `<button class="act-btn btn-termina-gioco" data-partita-id="${idPartitaAttiva ?? ''}" data-gioco-id="${idGiocoInstallato}" style="background:var(--red);border-color:var(--red);color:#fff">Termina partita</button>`
+      : `<button class="act-btn btn-avvia" data-id="${idGiocoInstallato}">Avvia partita</button>`;
 
     return `
       <tr>
@@ -348,7 +353,7 @@ async function initLocaleGames(tbodyId) {
         <td>${sensori} attivi</td>
         <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
         <td style="display:flex;gap:8px;justify-content:flex-end;">
-          <button class="act-btn btn-avvia" data-id="${idGiocoInstallato}" ${inUso ? 'disabled' : ''}>Avvia partita</button>
+          ${azioneBtn}
           <button class="act-btn btn-config" data-id="${idGiocoInstallato}">Edge</button>
         </td>
       </tr>
@@ -358,6 +363,37 @@ async function initLocaleGames(tbodyId) {
   tbody.querySelectorAll('.btn-config').forEach(btn => {
     btn.addEventListener('click', () => {
       document.dispatchEvent(new CustomEvent('cgp:show-page', { detail: 'Dispositivi' }));
+    });
+  });
+
+  tbody.querySelectorAll('.btn-termina-gioco').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const currentBtn = e.currentTarget;
+      const idPartita = currentBtn.getAttribute('data-partita-id');
+      if (!idPartita) {
+        window.showToast('Partita attiva non trovata. Aggiorna la pagina.', 'red', 5000);
+        return;
+      }
+      if (!await window.showConfirm(`Terminare la partita #${idPartita} su questo gioco?`)) return;
+
+      currentBtn.disabled = true;
+      window.showLoadingOverlay?.('Terminazione partita...');
+      try {
+        const result = await Api.terminaPartita(idPartita);
+        if (result) {
+          window.showToast(`Partita #${idPartita} terminata. Il gioco è di nuovo libero.`, 'grn');
+          await initLocaleGames(tbodyId);
+        } else {
+          window.showToast('Partita non trovata.', 'red', 5000);
+          currentBtn.disabled = false;
+        }
+      } catch (error) {
+        console.error('Errore terminazione partita:', error);
+        window.showToast(error.message || 'Impossibile terminare la partita.', 'red', 5000);
+        currentBtn.disabled = false;
+      } finally {
+        window.hideLoadingOverlay?.();
+      }
     });
   });
 
@@ -378,7 +414,11 @@ async function initLocaleGames(tbodyId) {
         await initLocaleGames(tbodyId);
       } catch (error) {
         console.error('Errore avvio partita:', error);
-        window.showToast(error.message || 'Impossibile avviare la partita.', 'red', 5000);
+        const msg = error.message || 'Impossibile avviare la partita.';
+        const hint = msg.includes('partita in corso')
+          ? ' Termina la partita attiva prima di avviarne una nuova.'
+          : '';
+        window.showToast(msg + hint, 'red', 6000);
       } finally {
         window.hideLoadingOverlay?.();
         const row = currentBtn.closest('tr');
