@@ -12,6 +12,8 @@ client = config.get_mqtt_client()
 # ==========================================
 # STATO PARTITA (gestito via MQTT)
 # ==========================================
+ID_GIOCO_FISICO = 3  # ID di questa pista da bocce nel  db
+
 TOPIC_INIZIO_PARTITA = "playnode/bocce/+/inizio_partita"
 
 stato_lock = threading.Lock()
@@ -20,7 +22,7 @@ id_partita_corrente = None
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("✅ Connesso al Broker MQTT (CV Bocce)!")
+        print(" Connesso al Broker MQTT (CV Bocce)!")
         client.subscribe(TOPIC_INIZIO_PARTITA)
         print(f" In ascolto comandi inizio/fine partita su: {TOPIC_INIZIO_PARTITA}")
     else:
@@ -28,6 +30,23 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     global partita_attiva, id_partita_corrente
+
+    # -----------------------------------------------------
+    # Estraiamo l'ID del gioco fisico dal topic: playnode/bocce/{id}/inizio_partita
+    # -----------------------------------------------------
+    parti_topic = msg.topic.split("/")
+    if len(parti_topic) != 4:
+        return
+
+    try:
+        id_gioco_ricevuto = int(parti_topic[2])
+    except ValueError:
+        return
+
+    # Ignoriamo qualsiasi comando destinato ad altre piste/tavoli
+    if id_gioco_ricevuto != ID_GIOCO_FISICO:
+        return
+
     try:
         dati = json.loads(msg.payload.decode('utf-8'))
     except json.JSONDecodeError:
@@ -39,11 +58,11 @@ def on_message(client, userdata, msg):
         if stato == "inizio":
             partita_attiva = True
             id_partita_corrente = dati.get("idPartita")
-            print(f"\n[MQTT] Ricevuto comando di INIZIO partita. ID Partita: {id_partita_corrente}")
+            print(f"\n[MQTT] Ricevuto comando di INIZIO partita per il gioco {ID_GIOCO_FISICO}. ID Partita: {id_partita_corrente}")
         elif stato == "fine":
             partita_attiva = False
             id_partita_corrente = None
-            print("\n[MQTT] Ricevuto comando di FINE partita. Torno in stato idle.")
+            print(f"\n[MQTT] Ricevuto comando di FINE partita per il gioco {ID_GIOCO_FISICO}. Torno in stato idle.")
 
 client.on_connect = on_connect
 client.on_message = on_message

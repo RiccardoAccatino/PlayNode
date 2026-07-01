@@ -53,29 +53,25 @@ def on_message(client, userdata, msg):
         # -----------------------------------------------------
         # CASO A: Il Backend ci dice che è iniziata o finita una partita
         # Topic: playnode/server/comandi
-        # Payload atteso: {"idGiocoFisico":2, "nuova_partita_id":xx}
-        # oppure: {"idGiocoFisico":2, "termina_partita": true}
         # -----------------------------------------------------
         if msg.topic == MQTT_TOPIC_COMANDI:
             id_gioco_fisico = dati.get("idGiocoFisico")
+            id_partita = dati.get("idPartita")
 
-            # Se il comando non contiene idGiocoFisico, lo ignoriamo
             if id_gioco_fisico is None:
                 return
 
-            if "nuova_partita_id" in dati:
-                PARTITA_ATTIVA = dati["nuova_partita_id"]
+            if id_partita is not None:
+                PARTITA_ATTIVA = id_partita
                 ID_GIOCO_ATTIVO = id_gioco_fisico
                 print(f"\n[COMANDO SERVER] Nuova partita avviata sul gioco {ID_GIOCO_ATTIVO}! ID Partita: {PARTITA_ATTIVA}")
 
-                # INVIA IL SEGNALE DI INIZIO PARTITA AL COMPONENTE EDGE (telecamera OpenCV)
                 topic_inizio = f"playnode/bocce/{id_gioco_fisico}/inizio_partita"
                 messaggio_inizio = json.dumps({"idPartita": PARTITA_ATTIVA, "stato": "inizio"})
                 client.publish(topic_inizio, messaggio_inizio)
                 print(f"  Inviato segnale di inizio partita all'edge sul topic {topic_inizio}.")
 
             elif "termina_partita" in dati:
-                # Confermiamo che il comando riguardi il gioco attualmente attivo
                 if id_gioco_fisico != ID_GIOCO_ATTIVO:
                     return
 

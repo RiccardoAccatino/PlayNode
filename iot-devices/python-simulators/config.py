@@ -6,7 +6,7 @@ import os
 # Indirizzo del broker MQTT a cui i simulatori devono connettersi.
 # Usare l'IP locale (127.0.0.1) se il broker Mosquitto gira sulla stessa macchina.
 # Usare l'IP della macchina host (es. 192.168.1.11) se i simulatori girano su un dispositivo esterno.
-BROKER   = os.getenv("MQTT_BROKER", "127.0.0.1")       # IP locale del broker mosquitto
+BROKER   = os.getenv("broker", "192.168.1.15")       # IP locale del broker mosquitto
 
 # Porta standard per la connessione MQTT non crittografata
 PORT     = 1883
