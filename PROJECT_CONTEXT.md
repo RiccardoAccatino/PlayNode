@@ -970,4 +970,5 @@ Questi script collaudano la connessione diretta a Mosquitto e i Bridge Edge real
 - [ ] Nelle impostazioni del locale il gestore deve poter modificare l'indirizzo del locale e il nome del locale
 - [ ] Il profilo del gestore ogni tanto carica i dati del giocatore e non del gestore.
 - [ ] In locale.js la partita singola deve poter lasciare giocare delle squadre. Si può implementare con una select multipla? e in automatico crea la squadra 1 e 2
-- [ ] Genera tabellone-Tornei: se il tabellone è già generato bisogna disabilitare il pulsante. e se è in corso non si deve poter modificare il torneo.
+- [x] Genera tabellone-Tornei: se il tabellone è già generato bisogna disabilitare il pulsante. e se è in corso non si deve poter modificare il torneo.
+- [ ] Testare/implementare la classsifica del torneo e la fine del torneo (quando tutte le partite del tabellone sono state efettuate allora il torneo è concluso e genera la classifica)
