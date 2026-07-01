@@ -55,6 +55,7 @@ public class JwtService {
             extractAllClaims(token);
             return !isTokenExpired(token);
         } catch (Exception e) {
+            System.out.println("JWT validation failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             return false;
         }
     }
