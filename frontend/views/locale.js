@@ -3,6 +3,7 @@
  * Pagine e componenti per i GESTORI LOCALI
  */
 
+
 import * as Api from '../js/api.js';
 import { iconaGioco, coloreGioco } from '../js/game-icons.js';
 
@@ -333,17 +334,15 @@ export function localeGames() {
           <div id="sezione-partita-singola">
             <div style="margin-bottom: 10px;">
               <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Giocatore / Squadra 1</label>
-              <select id="select-sq1" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
-                <option value="" disabled selected>-- Seleziona utente --</option>
-              </select>
+              <input type="text" id="select-sq1" list="lista-utenti" placeholder="Scrivi per cercare..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
             </div>
             
             <div style="margin-bottom: 10px;">
               <label style="display:block; margin-bottom: 5px; color:var(--txt2); font-size:13px">Giocatore / Squadra 2</label>
-              <select id="select-sq2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
-                <option value="" disabled selected>-- Seleziona utente --</option>
-              </select>
+              <input type="text" id="select-sq2" list="lista-utenti" placeholder="Scrivi per cercare..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--bdr); background: var(--surf); color: var(--txt);">
             </div>
+
+            <datalist id="lista-utenti"></datalist>
           </div>
           
           <div id="sezione-partita-torneo" style="display:none;">
@@ -490,9 +489,15 @@ async function initLocaleGames(tbodyId) {
       utentiMap = new Map(utenti.map(u => [String(u.id), u]));
       // Filtra solo gli utenti con ruolo Giocatore
       utenti = utenti.filter(u => u.ruolo && u.ruolo.toLowerCase() === 'giocatore');
-      const optionsHtml = utenti.map(u => `<option value="${u.id}">${u.username} (${u.email})</option>`).join('');
-      selectSq1.innerHTML = `<option value="" disabled selected>-- Seleziona utente --</option>${optionsHtml}`;
-      selectSq2.innerHTML = `<option value="" disabled selected>-- Seleziona utente --</option>${optionsHtml}`;
+
+      // Creiamo i tag <option> adatti al datalist (usano il value per il testo e data-id per il valore reale)
+      const optionsHtml = utenti.map(u => `<option value="${u.username} (${u.email})" data-id="${u.id}"></option>`).join('');
+
+      // Riempiamo l'unico datalist condiviso da entrambi gli input
+      const datalistUtenti = document.getElementById('lista-utenti');
+      if (datalistUtenti) {
+        datalistUtenti.innerHTML = optionsHtml;
+      }
     }
   } catch (err) {
     console.warn("Impossibile caricare la lista utenti per il gestore:", err);
@@ -511,8 +516,8 @@ async function initLocaleGames(tbodyId) {
     try {
       tuttiTornei = await Api.getAllTornei();
       const localeIdStr = String(localStorage.getItem('localeId'));
-      
-      const validTornei = tuttiTornei.filter(t => 
+
+      const validTornei = tuttiTornei.filter(t =>
         String(t.idTipologiaGioco) === String(selectedTipologiaId) &&
         t.localiIds.map(String).includes(localeIdStr)
       );
@@ -520,7 +525,7 @@ async function initLocaleGames(tbodyId) {
       if (validTornei.length === 0) {
         selectTorneo.innerHTML = '<option value="" disabled selected>-- Nessun torneo in corso trovato --</option>';
       } else {
-        selectTorneo.innerHTML = '<option value="" disabled selected>-- Seleziona un torneo --</option>' + 
+        selectTorneo.innerHTML = '<option value="" disabled selected>-- Seleziona un torneo --</option>' +
           validTornei.map(t => `<option value="${t.id}">${t.nome} (ID: ${t.id})</option>`).join('');
       }
       selectIncontro.innerHTML = '<option value="" disabled selected>-- Prima seleziona un torneo --</option>';
@@ -934,3 +939,5 @@ function wireSettingsButtons(idLocale) {
     }
   });
 }
+
+
