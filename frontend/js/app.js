@@ -6,6 +6,33 @@ import { renderRegister } from '../views/register.js';
 import { renderDashboard } from '../views/dashboard.js';
 import { adminGameDashboard, disposeAdminGame } from '../views/admin-game.js';
 
+// ============================================================================
+// PATCH SETINTERVAL PER PREVENIRE MEMORY E NETWORK LEAK
+// ============================================================================
+if (!window.originalSetInterval) {
+    window.originalSetInterval = window.setInterval;
+    window.originalClearInterval = window.clearInterval;
+    window.activeIntervals = new Set();
+    
+    window.setInterval = function(fn, delay) {
+        const id = window.originalSetInterval(fn, delay);
+        window.activeIntervals.add(id);
+        return id;
+    };
+    
+    window.clearInterval = function(id) {
+        window.activeIntervals.delete(id);
+        window.originalClearInterval(id);
+    };
+    
+    window.clearAllIntervals = function() {
+        if (window.activeIntervals) {
+            window.activeIntervals.forEach(id => window.originalClearInterval(id));
+            window.activeIntervals.clear();
+        }
+    };
+}
+
 /**
  * L'ID del contenitore principale all'interno di index.html dove verrà iniettato
  * l'HTML del login o della registrazione.
@@ -196,6 +223,11 @@ export function navigateTo(viewName) {
 
     if (currentView === 'admin-game' && viewName !== 'admin-game') {
         if (typeof disposeAdminGame === 'function') disposeAdminGame();
+    }
+
+    // Pulisce tutti i setInterval lasciati in sospeso dalle view precedenti (es. live partite, admin game)
+    if (window.clearAllIntervals) {
+        window.clearAllIntervals();
     }
 
     currentView = viewName;

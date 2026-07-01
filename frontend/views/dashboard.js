@@ -294,6 +294,10 @@ export function renderDashboard(userData) {
      * @returns {void}
      */
     async function showPage(name) {
+        if (window.clearAllIntervals) {
+            window.clearAllIntervals();
+        }
+
         const fn = cfg.pages[name];
         const main = document.getElementById('main-content');
 
