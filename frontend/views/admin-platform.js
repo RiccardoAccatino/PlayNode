@@ -11,11 +11,11 @@ const TIPI_SENSORE = ['OTTICO', 'MAGNETICO', 'PRESSIONE', 'ULTRASONICO', 'INFRAR
 
 // ─── Helper globale: icona per tipo sensore ──────────────────────────────────
 function iconaSensore(tipo) {
-  const mappa = {
-    OTTICO: '👁️', MAGNETICO: '🧲', PRESSIONE: '⚖️',
-    ULTRASONICO: '🔊', INFRAROSSO: '🌡️', ACCELEROMETRO: '📐', CUSTOM: '⚙️'
-  };
-  return mappa[tipo] || '⚙️';
+    const mappa = {
+        OTTICO: '👁️', MAGNETICO: '🧲', PRESSIONE: '⚖️',
+        ULTRASONICO: '🔊', INFRAROSSO: '🌡️', ACCELEROMETRO: '📐', CUSTOM: '⚙️'
+    };
+    return mappa[tipo] || '⚙️';
 }
 
 // ─── Stile condiviso per input / select nei modal ────────────────────────────
@@ -29,78 +29,78 @@ const SESSI_UTENTE = ['Maschio', 'Femmina', 'Altro'];
 const TIPI_ACCESSO = ['Luogo pubblico', 'Luogo privato'];
 
 function esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function badgeRuolo(ruolo) {
-  const r = ruolo || '';
-  if (r === 'Giocatore') return 'b-blu';
-  if (r === 'Gestore') return 'b-amb';
-  if (r === 'AdminGioco') return 'b-grn';
-  if (r === 'AdminPiattaforma') return 'b-red';
-  return 'b-txt';
+    const r = ruolo || '';
+    if (r === 'Giocatore') return 'b-blu';
+    if (r === 'Gestore') return 'b-amb';
+    if (r === 'AdminGioco') return 'b-grn';
+    if (r === 'AdminPiattaforma') return 'b-red';
+    return 'b-txt';
 }
 
 function formatLogTime(t) {
-  if (!t) return '—';
-  try {
-    const d = new Date(t);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-    const m = String(t).match(/(\d{2}:\d{2}:\d{2})/);
-    return m ? m[1] : String(t).slice(0, 16);
-  } catch { return String(t).slice(0, 16); }
+    if (!t) return '—';
+    try {
+        const d = new Date(t);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        const m = String(t).match(/(\d{2}:\d{2}:\d{2})/);
+        return m ? m[1] : String(t).slice(0, 16);
+    } catch { return String(t).slice(0, 16); }
 }
 
 function _selectOptions(values, selected) {
-  return values.map(v =>
-    `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`
-  ).join('');
+    return values.map(v =>
+        `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`
+    ).join('');
 }
 
 // ─── OVERVIEW ────────────────────────────────────────────────────────────────
 export async function platformOverview() {
-  let utenti = [], locali = [], tornei = [], partite = [], giochi = [], tipologie = [], summary = null, errBanner = '';
+    let utenti = [], locali = [], tornei = [], partite = [], giochi = [], tipologie = [], summary = null, errBanner = '';
 
-  try {
-    [utenti, locali, tornei, partite, giochi, tipologie, summary] = await Promise.all([
-      Api.getAllUtenti(),
-      Api.getAllLocali(),
-      Api.getAllTournaments(),
-      Api.getAllPartite(),
-      Api.getAllGiochiInstallati(),
-      Api.getAllTipologieGioco(),
-      Api.getMonitorSummary()
-    ]);
-  } catch (err) {
-    errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
-  }
+    try {
+        [utenti, locali, tornei, partite, giochi, tipologie, summary] = await Promise.all([
+            Api.getAllUtenti(),
+            Api.getAllLocali(),
+            Api.getAllTournaments(),
+            Api.getAllPartite(),
+            Api.getAllGiochiInstallati(),
+            Api.getAllTipologieGioco(),
+            Api.getMonitorSummary()
+        ]);
+    } catch (err) {
+        errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
+    }
 
-  const torneiAttivi = tornei.filter(t => {
-    const c = (t.classifica || '').toLowerCase();
-    return c.includes('corso') || c.includes('definire') || !t.dataFine;
-  }).length;
+    const torneiAttivi = tornei.filter(t => {
+        const c = (t.classifica || '').toLowerCase();
+        return c.includes('corso') || c.includes('definire') || !t.dataFine;
+    }).length;
 
-  const partiteLive = partite.filter(p => (p.stato || '').toUpperCase() === 'IN_CORSO').length;
+    const partiteLive = partite.filter(p => (p.stato || '').toUpperCase() === 'IN_CORSO').length;
 
-  const giochiPerLocale = {};
-  giochi.forEach(g => {
-    const lid = g.localeId || g.idLocale;
-    if (lid) giochiPerLocale[lid] = (giochiPerLocale[lid] || 0) + 1;
-  });
+    const giochiPerLocale = {};
+    giochi.forEach(g => {
+        const lid = g.localeId || g.idLocale;
+        if (lid) giochiPerLocale[lid] = (giochiPerLocale[lid] || 0) + 1;
+    });
 
-  const localiPreview = locali.slice(0, 6).map(l => ({
-    name: l.nome,
-    indirizzo: l.indirizzo || '—',
-    accesso: l.accesso || '—',
-    games: giochiPerLocale[l.id] || 0
-  }));
+    const localiPreview = locali.slice(0, 6).map(l => ({
+        name: l.nome,
+        indirizzo: l.indirizzo || '—',
+        accesso: l.accesso || '—',
+        games: giochiPerLocale[l.id] || 0
+    }));
 
-  return `
+    return `
     <div class="pg-title">Overview Globale</div>
     <div class="pg-sub">Stato dell'intera piattaforma PlayNode — dati live dal backend</div>
     ${errBanner}
@@ -144,8 +144,8 @@ export async function platformOverview() {
 
 // ─── USERS ───────────────────────────────────────────────────────────────────
 export function platformUsers() {
-  setTimeout(initPlatformUsers, 0);
-  return `
+    setTimeout(initPlatformUsers, 0);
+    return `
     <div class="pg-title">Gestione Utenti</div>
     <div class="pg-sub">CRUD utenti — auth-service /api/utenti</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -198,23 +198,23 @@ export function platformUsers() {
 }
 
 async function initPlatformUsers() {
-  const tbody = document.getElementById('users-tbody');
-  const modal = document.getElementById('modal-utente');
-  if (!tbody) return;
+    const tbody = document.getElementById('users-tbody');
+    const modal = document.getElementById('modal-utente');
+    if (!tbody) return;
 
-  let utenti = [];
-  try {
-    utenti = await Api.getAllUtenti();
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
-    window.showToast(err.message, 'error', 5000);
-    return;
-  }
+    let utenti = [];
+    try {
+        utenti = await Api.getAllUtenti();
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
+        window.showToast(err.message, 'error', 5000);
+        return;
+    }
 
-  if (!utenti.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nessun utente registrato.</td></tr>`;
-  } else {
-    tbody.innerHTML = utenti.map(u => `
+    if (!utenti.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--txt3)">Nessun utente registrato.</td></tr>`;
+    } else {
+        tbody.innerHTML = utenti.map(u => `
       <tr>
         <td style="font-family:monospace;font-size:11px;color:var(--txt3)">#${u.id}</td>
         <td style="font-weight:500;font-size:12px">${esc(u.username)}</td>
@@ -227,94 +227,94 @@ async function initPlatformUsers() {
         </td>
       </tr>
     `).join('');
-  }
-
-  document.getElementById('btn-nuovo-utente')?.addEventListener('click', () => {
-    document.getElementById('mu-title').textContent = 'Nuovo utente';
-    document.getElementById('mu-id').value = '';
-    document.getElementById('mu-username').value = '';
-    document.getElementById('mu-email').value = '';
-    document.getElementById('mu-password').value = '';
-    document.getElementById('mu-ruolo').value = 'Giocatore';
-    document.getElementById('mu-sesso').value = 'Maschio';
-    document.getElementById('mu-pw-hint').textContent = '*';
-    modal.classList.add('open');
-  });
-
-  document.getElementById('mu-annulla')?.addEventListener('click', () => modal.classList.remove('open'));
-  modal?.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
-
-  document.getElementById('mu-salva')?.addEventListener('click', async () => {
-    const id = document.getElementById('mu-id').value;
-    const payload = {
-      username: document.getElementById('mu-username').value.trim(),
-      email: document.getElementById('mu-email').value.trim(),
-      password: document.getElementById('mu-password').value,
-      ruolo: document.getElementById('mu-ruolo').value,
-      sesso: document.getElementById('mu-sesso').value
-    };
-    if (!payload.username || !payload.email) {
-      window.showToast('Username e email sono obbligatori.', 'warning'); return;
     }
-    if (!id && !payload.password) {
-      window.showToast('La password è obbligatoria per i nuovi utenti.', 'warning'); return;
-    }
-    const btn = document.getElementById('mu-salva');
-    btn.disabled = true; btn.textContent = 'Salvataggio…';
-    try {
-      if (id) {
-        if (!payload.password) delete payload.password;
-        await Api.updateUtente(id, payload);
-        window.showToast(`Utente #${id} aggiornato.`, 'success');
-      } else {
-        await Api.createUtente(payload);
-        window.showToast('Utente creato con successo.', 'success');
-      }
-      modal.classList.remove('open');
-      initPlatformUsers();
-    } catch (err) {
-      window.showToast(err.message, 'error', 5000);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Salva';
-    }
-  });
 
-  tbody.querySelectorAll('.btn-edit-user').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const u = utenti.find(x => String(x.id) === btn.getAttribute('data-id'));
-      if (!u) return;
-      document.getElementById('mu-title').textContent = `Modifica utente #${u.id}`;
-      document.getElementById('mu-id').value = u.id;
-      document.getElementById('mu-username').value = u.username || '';
-      document.getElementById('mu-email').value = u.email || '';
-      document.getElementById('mu-password').value = '';
-      document.getElementById('mu-ruolo').value = u.ruolo || 'Giocatore';
-      document.getElementById('mu-sesso').value = u.sesso || 'Maschio';
-      document.getElementById('mu-pw-hint').textContent = '(lascia vuoto per non cambiare)';
-      modal.classList.add('open');
+    document.getElementById('btn-nuovo-utente')?.addEventListener('click', () => {
+        document.getElementById('mu-title').textContent = 'Nuovo utente';
+        document.getElementById('mu-id').value = '';
+        document.getElementById('mu-username').value = '';
+        document.getElementById('mu-email').value = '';
+        document.getElementById('mu-password').value = '';
+        document.getElementById('mu-ruolo').value = 'Giocatore';
+        document.getElementById('mu-sesso').value = 'Maschio';
+        document.getElementById('mu-pw-hint').textContent = '*';
+        modal.classList.add('open');
     });
-  });
 
-  tbody.querySelectorAll('.btn-del-user').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      const name = btn.getAttribute('data-name');
-      if (!(await window.showConfirm(`Eliminare l'utente "${name}" (#${id})?`))) return;
-      try {
-        const ok = await Api.deleteUtente(id);
-        window.showToast(ok ? `Utente #${id} eliminato.` : `Utente #${id} non trovato.`, ok ? 'success' : 'warning');
-        initPlatformUsers();
-      } catch (err) {
-        window.showToast(err.message, 'error', 5000);
-      } id = "locale-selector"
+    document.getElementById('mu-annulla')?.addEventListener('click', () => modal.classList.remove('open'));
+    modal?.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+    document.getElementById('mu-salva')?.addEventListener('click', async () => {
+        const id = document.getElementById('mu-id').value;
+        const payload = {
+            username: document.getElementById('mu-username').value.trim(),
+            email: document.getElementById('mu-email').value.trim(),
+            password: document.getElementById('mu-password').value,
+            ruolo: document.getElementById('mu-ruolo').value,
+            sesso: document.getElementById('mu-sesso').value
+        };
+        if (!payload.username || !payload.email) {
+            window.showToast('Username e email sono obbligatori.', 'warning'); return;
+        }
+        if (!id && !payload.password) {
+            window.showToast('La password è obbligatoria per i nuovi utenti.', 'warning'); return;
+        }
+        const btn = document.getElementById('mu-salva');
+        btn.disabled = true; btn.textContent = 'Salvataggio…';
+        try {
+            if (id) {
+                if (!payload.password) delete payload.password;
+                await Api.updateUtente(id, payload);
+                window.showToast(`Utente #${id} aggiornato.`, 'success');
+            } else {
+                await Api.createUtente(payload);
+                window.showToast('Utente creato con successo.', 'success');
+            }
+            modal.classList.remove('open');
+            initPlatformUsers();
+        } catch (err) {
+            window.showToast(err.message, 'error', 5000);
+        } finally {
+            btn.disabled = false; btn.textContent = 'Salva';
+        }
     });
-  });
+
+    tbody.querySelectorAll('.btn-edit-user').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const u = utenti.find(x => String(x.id) === btn.getAttribute('data-id'));
+            if (!u) return;
+            document.getElementById('mu-title').textContent = `Modifica utente #${u.id}`;
+            document.getElementById('mu-id').value = u.id;
+            document.getElementById('mu-username').value = u.username || '';
+            document.getElementById('mu-email').value = u.email || '';
+            document.getElementById('mu-password').value = '';
+            document.getElementById('mu-ruolo').value = u.ruolo || 'Giocatore';
+            document.getElementById('mu-sesso').value = u.sesso || 'Maschio';
+            document.getElementById('mu-pw-hint').textContent = '(lascia vuoto per non cambiare)';
+            modal.classList.add('open');
+        });
+    });
+
+    tbody.querySelectorAll('.btn-del-user').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name');
+            if (!(await window.showConfirm(`Eliminare l'utente "${name}" (#${id})?`))) return;
+            try {
+                const ok = await Api.deleteUtente(id);
+                window.showToast(ok ? `Utente #${id} eliminato.` : `Utente #${id} non trovato.`, ok ? 'success' : 'warning');
+                initPlatformUsers();
+            } catch (err) {
+                window.showToast(err.message, 'error', 5000);
+            } id = "locale-selector"
+        });
+    });
 }
 
 // ─── LOCALI ───────────────────────────────────────────────────────────────────
 export function platformLocali() {
-  setTimeout(initPlatformLocali, 0);
-  return `
+    setTimeout(initPlatformLocali, 0);
+    return `
     <div class="pg-title">Gestione Locali</div>
     <div class="pg-sub">CRUD locali — game-service /api/locali</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -365,34 +365,34 @@ export function platformLocali() {
 }
 
 async function initPlatformLocali() {
-  const tbody = document.getElementById('locali-tbody');
-  const modal = document.getElementById('modal-locale');
-  if (!tbody) return;
+    const tbody = document.getElementById('locali-tbody');
+    const modal = document.getElementById('modal-locale');
+    if (!tbody) return;
 
-  let locali = [], utenti = [], giochi = [];
-  try {
-    [locali, utenti, giochi] = await Promise.all([
-      Api.getAllLocali(),
-      Api.getAllUtenti(),
-      Api.getAllGiochiInstallati()
-    ]);
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
-    window.showToast(err.message, 'error', 5000);
-    return;
-  }
+    let locali = [], utenti = [], giochi = [];
+    try {
+        [locali, utenti, giochi] = await Promise.all([
+            Api.getAllLocali(),
+            Api.getAllUtenti(),
+            Api.getAllGiochiInstallati()
+        ]);
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red)">${esc(err.message)}</td></tr>`;
+        window.showToast(err.message, 'error', 5000);
+        return;
+    }
 
-  const gestori = utenti.filter(u => u.ruolo === 'Gestore');
-  const gestoreNome = (id) => {
-    const g = utenti.find(u => u.id === id);
-    return g ? g.username : `#${id}`;
-  };
-  const tavoliCount = (id) => giochi.filter(g => (g.localeId || g.idLocale) === id).length;
+    const gestori = utenti.filter(u => u.ruolo === 'Gestore');
+    const gestoreNome = (id) => {
+        const g = utenti.find(u => u.id === id);
+        return g ? g.username : `#${id}`;
+    };
+    const tavoliCount = (id) => giochi.filter(g => (g.localeId || g.idLocale) === id).length;
 
-  if (!locali.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--txt3)">Nessun locale registrato.</td></tr>`;
-  } else {
-    tbody.innerHTML = locali.map(l => `
+    if (!locali.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--txt3)">Nessun locale registrato.</td></tr>`;
+    } else {
+        tbody.innerHTML = locali.map(l => `
       <tr>
         <td style="font-family:monospace;font-size:11px;color:var(--txt3)">#${l.id}</td>
         <td style="font-weight:500;font-size:12px">${esc(l.nome)}</td>
@@ -406,98 +406,98 @@ async function initPlatformLocali() {
         </td>
       </tr>
     `).join('');
-  }
-
-  function popolaGestoriSelect(selectedId) {
-    const sel = document.getElementById('ml-gestore');
-    if (!sel) return;
-    if (!gestori.length) {
-      sel.innerHTML = '<option value="">Nessun gestore disponibile</option>';
-      return;
     }
-    sel.innerHTML = gestori.map(g =>
-      `<option value="${g.id}"${String(g.id) === String(selectedId) ? ' selected' : ''}>${esc(g.username)} (#${g.id})</option>`
-    ).join('');
-  }
 
-  document.getElementById('btn-nuovo-locale')?.addEventListener('click', () => {
-    document.getElementById('ml-title').textContent = 'Nuovo locale';
-    document.getElementById('ml-id').value = '';
-    document.getElementById('ml-nome').value = '';
-    document.getElementById('ml-indirizzo').value = '';
-    document.getElementById('ml-accesso').value = 'Luogo pubblico';
-    popolaGestoriSelect(gestori[0]?.id);
-    modal.classList.add('open');
-  });
-
-  document.getElementById('ml-annulla')?.addEventListener('click', () => modal.classList.remove('open'));
-  modal?.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
-
-  document.getElementById('ml-salva')?.addEventListener('click', async () => {
-    const id = document.getElementById('ml-id').value;
-    const payload = {
-      nome: document.getElementById('ml-nome').value.trim(),
-      indirizzo: document.getElementById('ml-indirizzo').value.trim(),
-      accesso: document.getElementById('ml-accesso').value,
-      gestoreId: Number(document.getElementById('ml-gestore').value)
-    };
-    if (!payload.nome || !payload.indirizzo || !payload.gestoreId) {
-      window.showToast('Compila tutti i campi obbligatori.', 'warning'); return;
+    function popolaGestoriSelect(selectedId) {
+        const sel = document.getElementById('ml-gestore');
+        if (!sel) return;
+        if (!gestori.length) {
+            sel.innerHTML = '<option value="">Nessun gestore disponibile</option>';
+            return;
+        }
+        sel.innerHTML = gestori.map(g =>
+            `<option value="${g.id}"${String(g.id) === String(selectedId) ? ' selected' : ''}>${esc(g.username)} (#${g.id})</option>`
+        ).join('');
     }
-    const btn = document.getElementById('ml-salva');
-    btn.disabled = true; btn.textContent = 'Salvataggio…';
-    try {
-      if (id) {
-        await Api.updateLocale(id, payload);
-        window.showToast(`Locale #${id} aggiornato.`, 'success');
-      } else {
-        await Api.createLocale(payload);
-        window.showToast('Locale creato con successo.', 'success');
-      }
-      modal.classList.remove('open');
-      initPlatformLocali();
-    } catch (err) {
-      window.showToast(err.message, 'error', 5000);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Salva';
-    }
-  });
 
-  tbody.querySelectorAll('.btn-edit-locale').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const l = locali.find(x => String(x.id) === btn.getAttribute('data-id'));
-      if (!l) return;
-      document.getElementById('ml-title').textContent = `Modifica locale #${l.id}`;
-      document.getElementById('ml-id').value = l.id;
-      document.getElementById('ml-nome').value = l.nome || '';
-      document.getElementById('ml-indirizzo').value = l.indirizzo || '';
-      document.getElementById('ml-accesso').value = l.accesso || 'Luogo pubblico';
-      popolaGestoriSelect(l.gestoreId);
-      modal.classList.add('open');
+    document.getElementById('btn-nuovo-locale')?.addEventListener('click', () => {
+        document.getElementById('ml-title').textContent = 'Nuovo locale';
+        document.getElementById('ml-id').value = '';
+        document.getElementById('ml-nome').value = '';
+        document.getElementById('ml-indirizzo').value = '';
+        document.getElementById('ml-accesso').value = 'Luogo pubblico';
+        popolaGestoriSelect(gestori[0]?.id);
+        modal.classList.add('open');
     });
-  });
 
-  tbody.querySelectorAll('.btn-del-locale').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      const name = btn.getAttribute('data-name');
-      if (!(await window.showConfirm(`Eliminare il locale "${name}" (#${id})?`))) return;
-      try {
-        const ok = await Api.deleteLocale(id);
-        window.showToast(ok ? `Locale #${id} eliminato.` : `Locale #${id} non trovato.`, ok ? 'success' : 'warning');
-        initPlatformLocali();
-      } catch (err) {
-        window.showToast(err.message, 'error', 5000);
-      }
+    document.getElementById('ml-annulla')?.addEventListener('click', () => modal.classList.remove('open'));
+    modal?.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+    document.getElementById('ml-salva')?.addEventListener('click', async () => {
+        const id = document.getElementById('ml-id').value;
+        const payload = {
+            nome: document.getElementById('ml-nome').value.trim(),
+            indirizzo: document.getElementById('ml-indirizzo').value.trim(),
+            accesso: document.getElementById('ml-accesso').value,
+            gestoreId: Number(document.getElementById('ml-gestore').value)
+        };
+        if (!payload.nome || !payload.indirizzo || !payload.gestoreId) {
+            window.showToast('Compila tutti i campi obbligatori.', 'warning'); return;
+        }
+        const btn = document.getElementById('ml-salva');
+        btn.disabled = true; btn.textContent = 'Salvataggio…';
+        try {
+            if (id) {
+                await Api.updateLocale(id, payload);
+                window.showToast(`Locale #${id} aggiornato.`, 'success');
+            } else {
+                await Api.createLocale(payload);
+                window.showToast('Locale creato con successo.', 'success');
+            }
+            modal.classList.remove('open');
+            initPlatformLocali();
+        } catch (err) {
+            window.showToast(err.message, 'error', 5000);
+        } finally {
+            btn.disabled = false; btn.textContent = 'Salva';
+        }
     });
-  });
+
+    tbody.querySelectorAll('.btn-edit-locale').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const l = locali.find(x => String(x.id) === btn.getAttribute('data-id'));
+            if (!l) return;
+            document.getElementById('ml-title').textContent = `Modifica locale #${l.id}`;
+            document.getElementById('ml-id').value = l.id;
+            document.getElementById('ml-nome').value = l.nome || '';
+            document.getElementById('ml-indirizzo').value = l.indirizzo || '';
+            document.getElementById('ml-accesso').value = l.accesso || 'Luogo pubblico';
+            popolaGestoriSelect(l.gestoreId);
+            modal.classList.add('open');
+        });
+    });
+
+    tbody.querySelectorAll('.btn-del-locale').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name');
+            if (!(await window.showConfirm(`Eliminare il locale "${name}" (#${id})?`))) return;
+            try {
+                const ok = await Api.deleteLocale(id);
+                window.showToast(ok ? `Locale #${id} eliminato.` : `Locale #${id} non trovato.`, ok ? 'success' : 'warning');
+                initPlatformLocali();
+            } catch (err) {
+                window.showToast(err.message, 'error', 5000);
+            }
+        });
+    });
 }
 
 // ─── GAMES ────────────────────────────────────────────────────────────────────
 export function platformGames() {
-  setTimeout(initPlatformGames, 0);
+    setTimeout(initPlatformGames, 0);
 
-  return `
+    return `
     <div class="pg-title">Tipi di Gioco</div>
     <div class="pg-sub">Definizione giochi e configurazione sensori</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -547,11 +547,11 @@ export function platformGames() {
 
 // ─── HTML del modal sensori (estratto per pulizia) ────────────────────────────
 function _sensorModalHTML() {
-  const tipiOptions = TIPI_SENSORE.map(t =>
-    `<option value="${t}">${iconaSensore(t)} ${t}</option>`
-  ).join('');
+    const tipiOptions = TIPI_SENSORE.map(t =>
+        `<option value="${t}">${iconaSensore(t)} ${t}</option>`
+    ).join('');
 
-  return `
+    return `
     <div id="modal-sensori" style="
       display:none;position:fixed;top:0;left:0;width:100%;height:100%;
       background:rgba(0,0,0,0.7);z-index:1001;align-items:flex-start;
@@ -635,37 +635,37 @@ function _sensorModalHTML() {
 
 // ─── Logica asincrona per la pagina Games ─────────────────────────────────────
 async function initPlatformGames() {
-  const tbody = document.getElementById('games-tbody');
-  const modalNew = document.getElementById('modal-new-game');
-  const modalSens = document.getElementById('modal-sensori');
+    const tbody = document.getElementById('games-tbody');
+    const modalNew = document.getElementById('modal-new-game');
+    const modalSens = document.getElementById('modal-sensori');
 
-  let giochi = [];
-  let installati = [];
-  let partite = [];
-  try {
-    [giochi, installati, partite] = await Promise.all([
-      Api.getAllTipologieGioco(),
-      Api.getAllGiochiInstallati(),
-      Api.getAllPartite()
-    ]);
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--red)">
+    let giochi = [];
+    let installati = [];
+    let partite = [];
+    try {
+        [giochi, installati, partite] = await Promise.all([
+            Api.getAllTipologieGioco(),
+            Api.getAllGiochiInstallati(),
+            Api.getAllPartite()
+        ]);
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--red)">
       Errore caricamento tipologie: ${err.message || err}</td></tr>`;
-    return;
-  }
+        return;
+    }
 
-  if (giochi.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">Nessun gioco. Aggiungine uno!</td></tr>`;
-  } else {
-    tbody.innerHTML = giochi.map(g => {
-      const id = g.id;
-      const nome = g.nome;
-      const numInst = installati.filter(i => i.tipologiaId === id).length;
-      const numPartite = partite.filter(p => {
-        const tavolo = installati.find(i => i.id === p.idGiocoInstallato);
-        return tavolo?.tipologiaId === id;
-      }).length;
-      return `
+    if (giochi.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">Nessun gioco. Aggiungine uno!</td></tr>`;
+    } else {
+        tbody.innerHTML = giochi.map(g => {
+            const id = g.id;
+            const nome = g.nome;
+            const numInst = installati.filter(i => i.tipologiaId === id).length;
+            const numPartite = partite.filter(p => {
+                const tavolo = installati.find(i => i.id === p.idGiocoInstallato);
+                return tavolo?.tipologiaId === id;
+            }).length;
+            return `
         <tr>
           <td><span style="font-size:14px">${iconaGioco(nome)}</span> <span style="font-weight:500;font-size:12px">${nome}</span></td>
           <td id="sensor-count-${id}"><span style="color:var(--txt3);font-size:11px">—</span></td>
@@ -674,109 +674,109 @@ async function initPlatformGames() {
           <td><button class="act-btn btn-config" data-id="${id}" data-nome="${nome}">⚙ Config sensori</button></td>
         </tr>
       `;
-    }).join('');
+        }).join('');
 
-    // Carichiamo il conteggio sensori per ogni gioco in background
-    for (const g of giochi) {
-      _aggiornaCounting(g.id);
+        // Carichiamo il conteggio sensori per ogni gioco in background
+        for (const g of giochi) {
+            _aggiornaCounting(g.id);
+        }
     }
-  }
 
-  // ── Listener: apri modal nuovo gioco ──
-  document.getElementById('btn-nuovo-gioco').onclick = () => {
-    document.getElementById('mg-name').value = '';
-    document.getElementById('mg-desc').value = '';
-    document.getElementById('mg-rules').value = '';
-    modalNew.style.display = 'flex';
-  };
-  document.getElementById('btn-close-game').onclick = () => { modalNew.style.display = 'none'; };
+    // ── Listener: apri modal nuovo gioco ──
+    document.getElementById('btn-nuovo-gioco').onclick = () => {
+        document.getElementById('mg-name').value = '';
+        document.getElementById('mg-desc').value = '';
+        document.getElementById('mg-rules').value = '';
+        modalNew.style.display = 'flex';
+    };
+    document.getElementById('btn-close-game').onclick = () => { modalNew.style.display = 'none'; };
 
-  document.getElementById('btn-save-game').onclick = async () => {
-    const name = document.getElementById('mg-name').value.trim();
-    const desc = document.getElementById('mg-desc').value.trim();
-    const rules = document.getElementById('mg-rules').value.trim();
+    document.getElementById('btn-save-game').onclick = async () => {
+        const name = document.getElementById('mg-name').value.trim();
+        const desc = document.getElementById('mg-desc').value.trim();
+        const rules = document.getElementById('mg-rules').value.trim();
 
-    if (!name || !desc || !rules) { window.showToast('Compila tutti i campi prima di salvare.', 'warning'); return; }
+        if (!name || !desc || !rules) { window.showToast('Compila tutti i campi prima di salvare.', 'warning'); return; }
 
-    const btn = document.getElementById('btn-save-game');
-    btn.textContent = 'Salvataggio…'; btn.disabled = true;
+        const btn = document.getElementById('btn-save-game');
+        btn.textContent = 'Salvataggio…'; btn.disabled = true;
 
-    try {
-      await Api.createTipologiaGioco({ nomeTipologiaGioco: name, descrizione: desc, regole: rules });
-      modalNew.style.display = 'none';
-      window.showToast('Tipologia gioco creata.', 'success');
-      initPlatformGames();
-    } catch (err) {
-      window.showToast(err.message, 'error', 5000);
-    } finally {
-      btn.textContent = 'Salva Gioco'; btn.disabled = false;
-    }
-  };
+        try {
+            await Api.createTipologiaGioco({ nomeTipologiaGioco: name, descrizione: desc, regole: rules });
+            modalNew.style.display = 'none';
+            window.showToast('Tipologia gioco creata.', 'success');
+            initPlatformGames();
+        } catch (err) {
+            window.showToast(err.message, 'error', 5000);
+        } finally {
+            btn.textContent = 'Salva Gioco'; btn.disabled = false;
+        }
+    };
 
-  // ── Listener: apri modal config sensori ──
-  document.querySelectorAll('.btn-config').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const id = Number(e.currentTarget.getAttribute('data-id'));
-      const nome = e.currentTarget.getAttribute('data-nome');
-      openSensoriModal(id, nome);
+    // ── Listener: apri modal config sensori ──
+    document.querySelectorAll('.btn-config').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const id = Number(e.currentTarget.getAttribute('data-id'));
+            const nome = e.currentTarget.getAttribute('data-nome');
+            openSensoriModal(id, nome);
+        });
     });
-  });
 
-  // ── Listener: chiudi modal sensori ──
-  document.getElementById('ms-close').onclick = () => { modalSens.style.display = 'none'; };
-  modalSens.addEventListener('click', e => { if (e.target === modalSens) modalSens.style.display = 'none'; });
+    // ── Listener: chiudi modal sensori ──
+    document.getElementById('ms-close').onclick = () => { modalSens.style.display = 'none'; };
+    modalSens.addEventListener('click', e => { if (e.target === modalSens) modalSens.style.display = 'none'; });
 }
 
 // ─── Apri e popola il modal sensori ──────────────────────────────────────────
 async function openSensoriModal(tipologiaId, nomeGioco) {
-  const modal = document.getElementById('modal-sensori');
-  document.getElementById('ms-title').textContent = `Sensori — ${nomeGioco}`;
-  document.getElementById('ms-subtitle').textContent = `tipologia_id: ${tipologiaId}`;
-  _resetSensoreForm(tipologiaId);
-  modal.style.display = 'flex';
+    const modal = document.getElementById('modal-sensori');
+    document.getElementById('ms-title').textContent = `Sensori — ${nomeGioco}`;
+    document.getElementById('ms-subtitle').textContent = `tipologia_id: ${tipologiaId}`;
+    _resetSensoreForm(tipologiaId);
+    modal.style.display = 'flex';
 
-  await _renderSensoriList(tipologiaId);
+    await _renderSensoriList(tipologiaId);
 
-  // show add-new form under the list (only creation UI, no edit/delete/toggle)
-  const formEl = document.getElementById('ms-form-title');
-  if (formEl && formEl.parentElement) formEl.parentElement.style.display = 'block';
+    // show add-new form under the list (only creation UI, no edit/delete/toggle)
+    const formEl = document.getElementById('ms-form-title');
+    if (formEl && formEl.parentElement) formEl.parentElement.style.display = 'block';
 
-  // ensure form is reset for 'add' mode
-  _resetSensoreForm(tipologiaId);
+    // ensure form is reset for 'add' mode
+    _resetSensoreForm(tipologiaId);
 
-  const saveBtn = document.getElementById('ms-form-save');
-  if (saveBtn) {
-    saveBtn.onclick = () => _salvaOAggiornaSensore(tipologiaId);
-  }
-  const cancelBtn = document.getElementById('ms-form-cancel');
-  if (cancelBtn) {
-    cancelBtn.onclick = () => _resetSensoreForm(tipologiaId);
-  }
+    const saveBtn = document.getElementById('ms-form-save');
+    if (saveBtn) {
+        saveBtn.onclick = () => _salvaOAggiornaSensore(tipologiaId);
+    }
+    const cancelBtn = document.getElementById('ms-form-cancel');
+    if (cancelBtn) {
+        cancelBtn.onclick = () => _resetSensoreForm(tipologiaId);
+    }
 }
 
 // ─── Renderizza la lista sensori esistenti ────────────────────────────────────
 async function _renderSensoriList(tipologiaId) {
-  const container = document.getElementById('ms-list');
-  container.innerHTML = `<div style="text-align:center;color:var(--txt3);padding:14px;font-size:12px">Caricamento…</div>`;
+    const container = document.getElementById('ms-list');
+    container.innerHTML = `<div style="text-align:center;color:var(--txt3);padding:14px;font-size:12px">Caricamento…</div>`;
 
-  let sensori = [];
-  try {
-    sensori = await Api.getSensoriByTipologia(tipologiaId);
-  } catch (err) {
-    container.innerHTML = `<div style="text-align:center;color:var(--red);padding:14px;font-size:12px">${esc(err.message)}</div>`;
-    window.showToast(err.message, 'error', 5000);
-    return;
-  }
+    let sensori = [];
+    try {
+        sensori = await Api.getSensoriByTipologia(tipologiaId);
+    } catch (err) {
+        container.innerHTML = `<div style="text-align:center;color:var(--red);padding:14px;font-size:12px">${esc(err.message)}</div>`;
+        window.showToast(err.message, 'error', 5000);
+        return;
+    }
 
-  if (sensori.length === 0) {
-    container.innerHTML = `
+    if (sensori.length === 0) {
+        container.innerHTML = `
       <div style="text-align:center;color:var(--txt3);padding:18px;font-size:12px;background:var(--surf2);border-radius:8px;">
         Nessun sensore configurato. Aggiungine uno qui sotto.
       </div>`;
-    return;
-  }
+        return;
+    }
 
-  container.innerHTML = sensori.map(s => `
+    container.innerHTML = sensori.map(s => `
     <div style="
       display:flex;align-items:center;gap:10px;padding:10px 14px;
       background:var(--surf2);border-radius:8px;margin-bottom:8px;
@@ -802,167 +802,167 @@ async function _renderSensoriList(tipologiaId) {
     </div>
   `).join('');
 
-  container.querySelectorAll('.btn-sens-toggle').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      try {
-        await Api.toggleSensore(id);
-        await _renderSensoriList(tipologiaId);
-        await _aggiornaCounting(tipologiaId);
-      } catch (err) {
-        window.showToast(err.message || 'Errore toggle sensore.', 'error');
-      }
+    container.querySelectorAll('.btn-sens-toggle').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            try {
+                await Api.toggleSensore(id);
+                await _renderSensoriList(tipologiaId);
+                await _aggiornaCounting(tipologiaId);
+            } catch (err) {
+                window.showToast(err.message || 'Errore toggle sensore.', 'error');
+            }
+        });
     });
-  });
 
-  container.querySelectorAll('.btn-sens-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.getAttribute('data-id');
-      if (!await showConfirm('Eliminare questo sensore?')) return;
-      try {
-        await Api.deleteSensore(id);
-        await _renderSensoriList(tipologiaId);
-        await _aggiornaCounting(tipologiaId);
-        window.showToast('Sensore eliminato.', 'success');
-      } catch (err) {
-        window.showToast(err.message || 'Errore eliminazione sensore.', 'error');
-      }
+    container.querySelectorAll('.btn-sens-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            if (!await showConfirm('Eliminare questo sensore?')) return;
+            try {
+                await Api.deleteSensore(id);
+                await _renderSensoriList(tipologiaId);
+                await _aggiornaCounting(tipologiaId);
+                window.showToast('Sensore eliminato.', 'success');
+            } catch (err) {
+                window.showToast(err.message || 'Errore eliminazione sensore.', 'error');
+            }
+        });
     });
-  });
 }
 
 // ─── Reset form (modalità "aggiungi") ─────────────────────────────────────────
 function _resetSensoreForm(tipologiaId) {
-  document.getElementById('ms-edit-id').value = '';
-  document.getElementById('ms-nome').value = '';
-  document.getElementById('ms-tipo').value = 'CUSTOM';
-  document.getElementById('ms-desc').value = '';
-  document.getElementById('ms-unita').value = '';
-  document.getElementById('ms-min').value = '';
-  document.getElementById('ms-max').value = '';
-  document.getElementById('ms-form-title').innerHTML = '➕ Aggiungi nuovo sensore';
-  document.getElementById('ms-form-cancel').style.display = 'none';
-  document.getElementById('ms-form-save').textContent = 'Salva sensore';
+    document.getElementById('ms-edit-id').value = '';
+    document.getElementById('ms-nome').value = '';
+    document.getElementById('ms-tipo').value = 'CUSTOM';
+    document.getElementById('ms-desc').value = '';
+    document.getElementById('ms-unita').value = '';
+    document.getElementById('ms-min').value = '';
+    document.getElementById('ms-max').value = '';
+    document.getElementById('ms-form-title').innerHTML = '➕ Aggiungi nuovo sensore';
+    document.getElementById('ms-form-cancel').style.display = 'none';
+    document.getElementById('ms-form-save').textContent = 'Salva sensore';
 }
 
 // ─── Popola form in modalità "modifica" ───────────────────────────────────────
 function _popolaFormSensore(s, tipologiaId) {
-  document.getElementById('ms-edit-id').value = s.id;
-  document.getElementById('ms-nome').value = s.nomeSensore || '';
-  document.getElementById('ms-tipo').value = s.tipo || 'CUSTOM';
-  document.getElementById('ms-desc').value = s.descrizione || '';
-  document.getElementById('ms-unita').value = s.unitaMisura || '';
-  document.getElementById('ms-min').value = s.valoreMin ?? '';
-  document.getElementById('ms-max').value = s.valoreMax ?? '';
-  document.getElementById('ms-form-title').innerHTML = `✏️ Modifica sensore: <b>${s.nomeSensore}</b>`;
-  document.getElementById('ms-form-cancel').style.display = 'inline-flex';
-  document.getElementById('ms-form-save').textContent = 'Aggiorna sensore';
+    document.getElementById('ms-edit-id').value = s.id;
+    document.getElementById('ms-nome').value = s.nomeSensore || '';
+    document.getElementById('ms-tipo').value = s.tipo || 'CUSTOM';
+    document.getElementById('ms-desc').value = s.descrizione || '';
+    document.getElementById('ms-unita').value = s.unitaMisura || '';
+    document.getElementById('ms-min').value = s.valoreMin ?? '';
+    document.getElementById('ms-max').value = s.valoreMax ?? '';
+    document.getElementById('ms-form-title').innerHTML = `✏️ Modifica sensore: <b>${s.nomeSensore}</b>`;
+    document.getElementById('ms-form-cancel').style.display = 'inline-flex';
+    document.getElementById('ms-form-save').textContent = 'Aggiorna sensore';
 
-  // Scroll al form
-  document.getElementById('ms-form-title').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Scroll al form
+    document.getElementById('ms-form-title').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 async function _risolviGiocoFisico(tipologiaId) {
-  const giochi = (await Api.getAllGiochiInstallati())
-    .filter(g => g.tipologiaId === tipologiaId);
-  if (!giochi.length) {
-    throw new Error('Nessun tavolo fisico installato per questa tipologia. Installa prima un gioco nel locale.');
-  }
-  giochi.sort((a, b) => (a.numSensori ?? 0) - (b.numSensori ?? 0));
-  return giochi[0];
+    const giochi = (await Api.getAllGiochiInstallati())
+        .filter(g => g.tipologiaId === tipologiaId);
+    if (!giochi.length) {
+        throw new Error('Nessun tavolo fisico installato per questa tipologia. Installa prima un gioco nel locale.');
+    }
+    giochi.sort((a, b) => (a.numSensori ?? 0) - (b.numSensori ?? 0));
+    return giochi[0];
 }
 
 // ─── Salva sensore via POST /api/sensori (idGiocoFisico + tipo + posizione) ───
 async function _salvaOAggiornaSensore(tipologiaId) {
-  const editId = document.getElementById('ms-edit-id').value;
-  const nome = document.getElementById('ms-nome').value.trim();
-  const tipo = document.getElementById('ms-tipo').value;
+    const editId = document.getElementById('ms-edit-id').value;
+    const nome = document.getElementById('ms-nome').value.trim();
+    const tipo = document.getElementById('ms-tipo').value;
 
-  if (!nome) { window.showToast('Il nome/posizione del sensore è obbligatorio (es. "Porta Squadra 1").', 'warning'); return; }
-  if (editId) {
-    window.showToast('La modifica sensori (PUT) non è esposta dal backend.', 'warning');
-    return;
-  }
-
-  const btn = document.getElementById('ms-form-save');
-  btn.textContent = 'Salvataggio…'; btn.disabled = true;
-
-  try {
-    const gioco = await _risolviGiocoFisico(tipologiaId);
-    const created = await Api.createSensore({
-      idGiocoFisico: gioco.id,
-      tipo,
-      posizione: nome,
-      nomeSensore: nome
-    });
-
-    _resetSensoreForm(tipologiaId);
-    await _renderSensoriList(tipologiaId);
-    await _aggiornaCounting(tipologiaId);
-
-    const subtitle = document.getElementById('ms-subtitle');
-    if (subtitle) {
-      subtitle.textContent = `Sensore #${created.id} salvato su tavolo #${gioco.id} (${gioco.localeNome || 'locale'})`;
+    if (!nome) { window.showToast('Il nome/posizione del sensore è obbligatorio (es. "Porta Squadra 1").', 'warning'); return; }
+    if (editId) {
+        window.showToast('La modifica sensori (PUT) non è esposta dal backend.', 'warning');
+        return;
     }
-  } catch (err) {
-    window.showToast(err.message || 'Errore durante il salvataggio del sensore.', 'error', 5000);
-    console.error(err);
-  } finally {
-    btn.textContent = 'Salva sensore';
-    btn.disabled = false;
-  }
+
+    const btn = document.getElementById('ms-form-save');
+    btn.textContent = 'Salvataggio…'; btn.disabled = true;
+
+    try {
+        const gioco = await _risolviGiocoFisico(tipologiaId);
+        const created = await Api.createSensore({
+            idGiocoFisico: gioco.id,
+            tipo,
+            posizione: nome,
+            nomeSensore: nome
+        });
+
+        _resetSensoreForm(tipologiaId);
+        await _renderSensoriList(tipologiaId);
+        await _aggiornaCounting(tipologiaId);
+
+        const subtitle = document.getElementById('ms-subtitle');
+        if (subtitle) {
+            subtitle.textContent = `Sensore #${created.id} salvato su tavolo #${gioco.id} (${gioco.localeNome || 'locale'})`;
+        }
+    } catch (err) {
+        window.showToast(err.message || 'Errore durante il salvataggio del sensore.', 'error', 5000);
+        console.error(err);
+    } finally {
+        btn.textContent = 'Salva sensore';
+        btn.disabled = false;
+    }
 }
 
 // ─── Aggiorna il contatore sensori nella tabella ─────────────────────────────
 async function _aggiornaCounting(tipologiaId) {
-  const cell = document.getElementById(`sensor-count-${tipologiaId}`);
-  if (!cell) return;
-  const sensori = await Api.getSensoriByTipologia(tipologiaId);
-  const attivi = sensori.filter(s => s.attivo).length;
-  cell.innerHTML = `<span style="font-size:12px">${sensori.length}</span>
+    const cell = document.getElementById(`sensor-count-${tipologiaId}`);
+    if (!cell) return;
+    const sensori = await Api.getSensoriByTipologia(tipologiaId);
+    const attivi = sensori.filter(s => s.attivo).length;
+    cell.innerHTML = `<span style="font-size:12px">${sensori.length}</span>
     <span style="font-size:10px;color:var(--grn);margin-left:4px">(${attivi} attivi)</span>`;
 }
 
 // ─── Utility badge colore per tipo ───────────────────────────────────────────
 function _tipoBadgeClass(tipo) {
-  const mappa = { OTTICO: 'b-blu', MAGNETICO: 'b-grn', PRESSIONE: 'b-amb', ULTRASONICO: 'b-blu', INFRAROSSO: 'b-red', ACCELEROMETRO: 'b-amb', CUSTOM: 'b-txt' };
-  return mappa[tipo] || 'b-txt';
+    const mappa = { OTTICO: 'b-blu', MAGNETICO: 'b-grn', PRESSIONE: 'b-amb', ULTRASONICO: 'b-blu', INFRAROSSO: 'b-red', ACCELEROMETRO: 'b-amb', CUSTOM: 'b-txt' };
+    return mappa[tipo] || 'b-txt';
 }
 
 // ─── TOURNAMENTS ──────────────────────────────────────────────────────────────
 export async function platformTournaments() {
-  let torneiNonOrdinati = [], tipologieGioco = [], errBanner = '';
-  try {
-    [torneiNonOrdinati, tipologieGioco] = await Promise.all([
-      Api.getAllTournaments(),
-      Api.getAllTipologieGioco()
-    ]);
-  } catch (err) {
-    errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
-  }
+    let torneiNonOrdinati = [], tipologieGioco = [], errBanner = '';
+    try {
+        [torneiNonOrdinati, tipologieGioco] = await Promise.all([
+            Api.getAllTournaments(),
+            Api.getAllTipologieGioco()
+        ]);
+    } catch (err) {
+        errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
+    }
 
-  const tornei = torneiNonOrdinati.sort((a, b) => a.id - b.id);
+    const tornei = torneiNonOrdinati.sort((a, b) => a.id - b.id);
 
-  const giochiDisponibili = tipologieGioco || [];
-  const NOMI_GIOCHI = {};
-  let opzioniGiochiHtml = '';
+    const giochiDisponibili = tipologieGioco || [];
+    const NOMI_GIOCHI = {};
+    let opzioniGiochiHtml = '';
 
-  giochiDisponibili.forEach(g => {
-    NOMI_GIOCHI[g.id] = g.nome;
-    opzioniGiochiHtml += `<option value="${g.id}">${esc(g.nome)}</option>`;
-  });
-  if (!opzioniGiochiHtml) {
-    opzioniGiochiHtml = '<option value="">Nessuna tipologia disponibile</option>';
-  }
+    giochiDisponibili.forEach(g => {
+        NOMI_GIOCHI[g.id] = g.nome;
+        opzioniGiochiHtml += `<option value="${g.id}">${esc(g.nome)}</option>`;
+    });
+    if (!opzioniGiochiHtml) {
+        opzioniGiochiHtml = '<option value="">Nessuna tipologia disponibile</option>';
+    }
 
-  function getStatusBadge(status) {
-    const s = (status || 'in arrivo').toLowerCase();
-    if (s.includes('corso') || s === 'active') return 'b-grn';
-    if (s.includes('arrivo') || s === 'pending' || s.includes('definire')) return 'b-blu';
-    return 'b-amb';
-  }
+    function getStatusBadge(status) {
+        const s = (status || 'in arrivo').toLowerCase();
+        if (s.includes('corso') || s === 'active') return 'b-grn';
+        if (s.includes('arrivo') || s === 'pending' || s.includes('definire')) return 'b-blu';
+        return 'b-amb';
+    }
 
-  const html = `
+    const html = `
     <div class="pg-title">Gestione Tornei</div>
     <div class="pg-sub">Crea e gestisci tornei — tournament-service /api/tornei</div>
     ${errBanner}
@@ -979,10 +979,10 @@ export async function platformTournaments() {
         </thead>
         <tbody>
           ${tornei.length > 0 ? tornei.map(t => {
-    const nomeGioco = NOMI_GIOCHI[t.idTipologiaGioco] || 'Sconosciuto';
-    const stato = t.classifica || 'In arrivo';
-    const dateStr = t.dataFine ? `${t.dataInizio} / ${t.dataFine}` : `${t.dataInizio}`;
-    return `
+        const nomeGioco = NOMI_GIOCHI[t.idTipologiaGioco] || 'Sconosciuto';
+        const stato = t.classifica || 'In arrivo';
+        const dateStr = t.dataFine ? `${t.dataInizio} / ${t.dataFine}` : `${t.dataInizio}`;
+        return `
               <tr>
                 <td style="font-size:11px;color:var(--txt3)">#${t.id}</td>
                 <td style="font-weight:500;font-size:12px">${t.nome}</td>
@@ -999,7 +999,7 @@ export async function platformTournaments() {
                 </td>
               </tr>
             `;
-  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:20px;">Nessun torneo trovato.</td></tr>`}
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--txt3);padding:20px;">Nessun torneo trovato.</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -1007,9 +1007,10 @@ export async function platformTournaments() {
     <!-- Modal Torneo -->
     <div id="modal-torneo" style="
       display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.6);z-index:1000;align-items:flex-start;justify-content:center;
+      overflow-y:auto;padding:24px 0;
     ">
-      <div class="card" style="width:500px;max-width:90%;background:var(--surf);border:1px solid var(--bdr);">
+      <div class="card" style="width:500px;max-width:90%;max-height:90vh;overflow-y:auto;background:var(--surf);border:1px solid var(--bdr);margin:auto;">
         <div id="modal-title" class="card-hd" style="margin-bottom:20px">Crea Nuovo Torneo</div>
         <input type="hidden" id="modal-t-id" value="" />
         <div style="margin-bottom:14px">
@@ -1053,7 +1054,7 @@ export async function platformTournaments() {
         </div>
         <div style="margin-bottom:20px">
           <label style="font-size:11px;color:var(--txt2);display:block;margin-bottom:5px">Locali partecipanti</label>
-          <select id="modal-t-locali" multiple style="${INPUT_STYLE}min-height:80px"></select>
+          <ul id="modal-t-locali" style="list-style-type:disc !important;padding:10px 10px 10px 40px !important;margin:0;max-height:150px;overflow-y:auto;border:1px solid var(--bdr);border-radius:7px;background:var(--surf2);"></ul>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
           <button id="btn-annulla-torneo" style="
@@ -1078,180 +1079,194 @@ export async function platformTournaments() {
     </div>
   `;
 
-  let allLocali = [];
-  try { allLocali = await Api.getAllLocali(); } catch (_) { /* opzionale */ }
+    let allLocali = [];
+    try { allLocali = await Api.getAllLocali(); } catch (_) { /* opzionale */ }
 
-  setTimeout(() => {
-    const modal = document.getElementById('modal-torneo');
-    const modalTitle = document.getElementById('modal-title');
-    const idInput = document.getElementById('modal-t-id');
-    const nameInput = document.getElementById('modal-t-name');
-    const gameInput = document.getElementById('modal-t-game');
-    const modInput = document.getElementById('modal-t-mod');
-    const startInput = document.getElementById('modal-t-start');
-    const endInput = document.getElementById('modal-t-end');
-    const statusInput = document.getElementById('modal-t-status');
-    const rulesInput = document.getElementById('modal-t-rules');
-    const localiSelect = document.getElementById('modal-t-locali');
-    const today = new Date().toISOString().split('T')[0];
+    setTimeout(() => {
+        const modal = document.getElementById('modal-torneo');
+        const modalTitle = document.getElementById('modal-title');
+        const idInput = document.getElementById('modal-t-id');
+        const nameInput = document.getElementById('modal-t-name');
+        const gameInput = document.getElementById('modal-t-game');
+        const modInput = document.getElementById('modal-t-mod');
+        const startInput = document.getElementById('modal-t-start');
+        const endInput = document.getElementById('modal-t-end');
+        const statusInput = document.getElementById('modal-t-status');
+        const rulesInput = document.getElementById('modal-t-rules');
+        const localiSelect = document.getElementById('modal-t-locali');
+        const today = new Date().toISOString().split('T')[0];
 
-    if (localiSelect) {
-      localiSelect.innerHTML = allLocali.map(l =>
-        `<option value="${l.id}">${esc(l.nome)}</option>`).join('');
-    }
+        if (localiSelect) {
+            localiSelect.innerHTML = allLocali.length
+                ? allLocali.map(l => `
+            <li style="margin-bottom:8px;display:list-item !important;list-style-type:disc !important;">
+              <label style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:12px;margin-left:4px;">
+                <input type="checkbox" name="modal-t-locale-cb" value="${l.id}">
+                <span>${esc(l.nome)}</span>
+              </label>
+            </li>
+          `).join('')
+                : '<li style="color:var(--txt3);font-style:italic;list-style-type:none !important;padding-left:0;">Nessun locale disponibile.</li>';
+        }
 
-    const modalDet = document.getElementById('modal-torneo-dettaglio');
-    const modalDetBody = document.getElementById('modal-det-body');
-    const modalDetTitle = document.getElementById('modal-det-title');
-    let torneoDettaglioCorrente = null;
+        const modalDet = document.getElementById('modal-torneo-dettaglio');
+        const modalDetBody = document.getElementById('modal-det-body');
+        const modalDetTitle = document.getElementById('modal-det-title');
+        let torneoDettaglioCorrente = null;
 
-    async function apriDettaglioTorneo(torneoId) {
-      modalDet.style.display = 'flex';
-      modalDetBody.innerHTML = '<div class="spinner">Caricamento dettaglio…</div>';
-      try {
-        const det = await Api.getTournamentDettaglio(torneoId);
-        torneoDettaglioCorrente = det;
-        modalDetTitle.textContent = det.nome || `Torneo #${torneoId}`;
-        const incontriHtml = (det.incontri || []).length
-          ? det.incontri.map(i => `
+        async function apriDettaglioTorneo(torneoId) {
+            modalDet.style.display = 'flex';
+            modalDetBody.innerHTML = '<div class="spinner">Caricamento dettaglio…</div>';
+            try {
+                const det = await Api.getTournamentDettaglio(torneoId);
+                torneoDettaglioCorrente = det;
+                modalDetTitle.textContent = det.nome || `Torneo #${torneoId}`;
+                const incontriHtml = (det.incontri || []).length
+                    ? det.incontri.map(i => `
               <div class="list-row" style="font-size:11px">
                 <span>R${i.round} · Slot ${i.slot}</span>
                 <span>#${i.giocatore1Id || '-'} vs #${i.giocatore2Id || 'BYE'}</span>
                 <span>${i.vincitoreId ? `Vinc: #${i.vincitoreId}` : (i.partitaId ? `Partita #${i.partitaId}` : 'In attesa')}</span>
               </div>`).join('')
-          : '<div style="padding:10px;color:var(--txt3)">Tabellone non ancora generato.</div>';
-        modalDetBody.innerHTML = `
+                    : '<div style="padding:10px;color:var(--txt3)">Tabellone non ancora generato.</div>';
+                modalDetBody.innerHTML = `
           <div style="margin-bottom:12px"><strong>Stato:</strong> ${esc(det.classifica || '-')}</div>
           <div style="margin-bottom:12px"><strong>Iscritti (${(det.iscrittiIds || []).length}):</strong> ${(det.iscrittiIds || []).map(id => `#${id}`).join(', ') || 'Nessuno'}</div>
           <div class="card-hd" style="margin-top:8px">Tabellone</div>
           ${incontriHtml}`;
-      } catch (err) {
-        modalDetBody.innerHTML = `<div style="color:var(--red)">${esc(err.message)}</div>`;
-      }
-    }
-
-    document.getElementById('btn-det-chiudi')?.addEventListener('click', () => { modalDet.style.display = 'none'; });
-    document.getElementById('btn-det-genera-tabellone')?.addEventListener('click', async () => {
-      if (!torneoDettaglioCorrente?.id) return;
-      try {
-        await Api.generaTabelloneTorneo(torneoDettaglioCorrente.id);
-        window.showToast('Tabellone generato.', 'success');
-        apriDettaglioTorneo(torneoDettaglioCorrente.id);
-      } catch (err) {
-        window.showToast(err.message || 'Errore generazione tabellone.', 'error', 5000);
-      }
-    });
-    document.getElementById('btn-det-modifica')?.addEventListener('click', () => {
-      if (!torneoDettaglioCorrente) return;
-      modalDet.style.display = 'none';
-      const t = torneoDettaglioCorrente;
-      modalTitle.textContent = `Modifica Torneo #${t.id}`;
-      idInput.value = t.id;
-      nameInput.value = t.nome || '';
-      gameInput.value = t.idTipologiaGioco || Object.keys(NOMI_GIOCHI)[0] || '1';
-      modInput.value = t.modalita || 'Squadre';
-      startInput.value = t.dataInizio || today;
-      endInput.value = t.dataFine || '';
-      statusInput.value = t.classifica || 'Da definire';
-      rulesInput.value = t.regole || '';
-      if (localiSelect && t.localiIds?.length) {
-        [...localiSelect.options].forEach(o => { o.selected = t.localiIds.includes(Number(o.value)); });
-      }
-      modal.style.display = 'flex';
-    });
-
-    document.getElementById('btn-nuovo-torneo')?.addEventListener('click', () => {
-      modalTitle.textContent = 'Crea Nuovo Torneo';
-      idInput.value = ''; nameInput.value = '';
-      gameInput.value = Object.keys(NOMI_GIOCHI)[0] || '1';
-      modInput.value = 'Squadre'; startInput.value = today;
-      endInput.value = ''; statusInput.value = 'Da definire';
-      rulesInput.value = 'Regole standard';
-      modal.style.display = 'flex';
-    });
-
-    document.querySelectorAll('.btn-gestisci').forEach(btn => {
-      btn.addEventListener('click', e => {
-        apriDettaglioTorneo(e.target.getAttribute('data-id'));
-      });
-    });
-
-    document.getElementById('btn-annulla-torneo')?.addEventListener('click', () => { modal.style.display = 'none'; });
-
-    document.getElementById('btn-salva-torneo')?.addEventListener('click', async () => {
-      if (!nameInput.value.trim() || !startInput.value) {
-        window.showToast("I campi 'Nome' e 'Data Inizio' sono obbligatori.", 'warning'); return;
-      }
-      const btn = document.getElementById('btn-salva-torneo');
-      btn.textContent = 'Salvataggio…'; btn.disabled = true;
-
-      const localiIds = localiSelect
-        ? [...localiSelect.selectedOptions].map(o => parseInt(o.value, 10)).filter(n => !isNaN(n))
-        : [];
-
-      const payload = {
-        nome: nameInput.value.trim(),
-        idTipologiaGioco: parseInt(gameInput.value, 10),
-        modalita: modInput.value,
-        regole: rulesInput.value.trim() || 'Nessuna regola specificata',
-        classifica: statusInput.value,
-        dataInizio: startInput.value,
-        dataFine: endInput.value || null,
-        localiIds
-      };
-
-      try {
-        if (idInput.value) await Api.updateTournament(idInput.value, payload);
-        else await Api.createTournament(payload);
-        modal.style.display = 'none';
-        window.showToast('Torneo salvato.', 'success');
-        document.querySelector('.sb-btn.active')?.click();
-      } catch (err) {
-        window.showToast(err.message || 'Errore nel salvataggio torneo.', 'error', 5000);
-      } finally {
-        btn.textContent = 'Salva'; btn.disabled = false;
-      }
-    });
-
-    document.querySelectorAll('.btn-del-torneo').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        const name = btn.getAttribute('data-name');
-        if (!(await window.showConfirm(`Eliminare il torneo "${name}" (#${id})?`))) return;
-        try {
-          const ok = await Api.deleteTournament(id);
-          window.showToast(ok ? `Torneo #${id} eliminato.` : `Torneo #${id} non trovato.`, ok ? 'success' : 'warning');
-          document.querySelector('.sb-btn.active')?.click();
-        } catch (err) {
-          window.showToast(err.message, 'error', 5000);
+            } catch (err) {
+                modalDetBody.innerHTML = `<div style="color:var(--red)">${esc(err.message)}</div>`;
+            }
         }
-      });
-    });
-  }, 50);
 
-  return html;
+        document.getElementById('btn-det-chiudi')?.addEventListener('click', () => { modalDet.style.display = 'none'; });
+        document.getElementById('btn-det-genera-tabellone')?.addEventListener('click', async () => {
+            if (!torneoDettaglioCorrente?.id) return;
+            try {
+                await Api.generaTabelloneTorneo(torneoDettaglioCorrente.id);
+                window.showToast('Tabellone generato.', 'success');
+                apriDettaglioTorneo(torneoDettaglioCorrente.id);
+            } catch (err) {
+                window.showToast(err.message || 'Errore generazione tabellone.', 'error', 5000);
+            }
+        });
+        document.getElementById('btn-det-modifica')?.addEventListener('click', () => {
+            if (!torneoDettaglioCorrente) return;
+            modalDet.style.display = 'none';
+            const t = torneoDettaglioCorrente;
+            modalTitle.textContent = `Modifica Torneo #${t.id}`;
+            idInput.value = t.id;
+            nameInput.value = t.nome || '';
+            gameInput.value = t.idTipologiaGioco || Object.keys(NOMI_GIOCHI)[0] || '1';
+            modInput.value = t.modalita || 'Squadre';
+            startInput.value = t.dataInizio || today;
+            endInput.value = t.dataFine || '';
+            statusInput.value = t.classifica || 'Da definire';
+            rulesInput.value = t.regole || '';
+            if (localiSelect) {
+                const selectedIds = t.localiIds || [];
+                localiSelect.querySelectorAll('input[name="modal-t-locale-cb"]').forEach(cb => {
+                    cb.checked = selectedIds.includes(Number(cb.value));
+                });
+            }
+            modal.style.display = 'flex';
+        });
+
+        document.getElementById('btn-nuovo-torneo')?.addEventListener('click', () => {
+            modalTitle.textContent = 'Crea Nuovo Torneo';
+            idInput.value = ''; nameInput.value = '';
+            gameInput.value = Object.keys(NOMI_GIOCHI)[0] || '1';
+            modInput.value = 'Squadre'; startInput.value = today;
+            endInput.value = ''; statusInput.value = 'Da definire';
+            rulesInput.value = 'Regole standard';
+            if (localiSelect) {
+                localiSelect.querySelectorAll('input[name="modal-t-locale-cb"]').forEach(cb => { cb.checked = false; });
+            }
+            modal.style.display = 'flex';
+        });
+
+        document.querySelectorAll('.btn-gestisci').forEach(btn => {
+            btn.addEventListener('click', e => {
+                apriDettaglioTorneo(e.target.getAttribute('data-id'));
+            });
+        });
+
+        document.getElementById('btn-annulla-torneo')?.addEventListener('click', () => { modal.style.display = 'none'; });
+
+        document.getElementById('btn-salva-torneo')?.addEventListener('click', async () => {
+            if (!nameInput.value.trim() || !startInput.value) {
+                window.showToast("I campi 'Nome' e 'Data Inizio' sono obbligatori.", 'warning'); return;
+            }
+            const btn = document.getElementById('btn-salva-torneo');
+            btn.textContent = 'Salvataggio…'; btn.disabled = true;
+
+            const localiIds = localiSelect
+                ? [...localiSelect.querySelectorAll('input[name="modal-t-locale-cb"]:checked')].map(cb => parseInt(cb.value, 10)).filter(n => !isNaN(n))
+                : [];
+
+            const payload = {
+                nome: nameInput.value.trim(),
+                idTipologiaGioco: parseInt(gameInput.value, 10),
+                modalita: modInput.value,
+                regole: rulesInput.value.trim() || 'Nessuna regola specificata',
+                classifica: statusInput.value,
+                dataInizio: startInput.value,
+                dataFine: endInput.value || null,
+                localiIds
+            };
+
+            try {
+                if (idInput.value) await Api.updateTournament(idInput.value, payload);
+                else await Api.createTournament(payload);
+                modal.style.display = 'none';
+                window.showToast('Torneo salvato.', 'success');
+                document.querySelector('.sb-btn.active')?.click();
+            } catch (err) {
+                window.showToast(err.message || 'Errore nel salvataggio torneo.', 'error', 5000);
+            } finally {
+                btn.textContent = 'Salva'; btn.disabled = false;
+            }
+        });
+
+        document.querySelectorAll('.btn-del-torneo').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                const name = btn.getAttribute('data-name');
+                if (!(await window.showConfirm(`Eliminare il torneo "${name}" (#${id})?`))) return;
+                try {
+                    const ok = await Api.deleteTournament(id);
+                    window.showToast(ok ? `Torneo #${id} eliminato.` : `Torneo #${id} non trovato.`, ok ? 'success' : 'warning');
+                    document.querySelector('.sb-btn.active')?.click();
+                } catch (err) {
+                    window.showToast(err.message, 'error', 5000);
+                }
+            });
+        });
+    }, 50);
+
+    return html;
 }
 
 // ─── MONITOR ─────────────────────────────────────────────────────────────────
 export async function platformMonitor() {
-  let summary = null, lat = [], logs = [], errBanner = '';
-  try {
-    [summary, lat, logs] = await Promise.all([
-      Api.getMonitorSummary(),
-      Api.getMonitorLatencies(),
-      Api.getMonitorLogs()
-    ]);
-  } catch (err) {
-    errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
-  }
+    let summary = null, lat = [], logs = [], errBanner = '';
+    try {
+        [summary, lat, logs] = await Promise.all([
+            Api.getMonitorSummary(),
+            Api.getMonitorLatencies(),
+            Api.getMonitorLogs()
+        ]);
+    } catch (err) {
+        errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
+    }
 
-  const apis = summary ? summary.apisCount || 0 : 0;
-  const services = summary ? summary.servicesCount || 0 : 0;
-  const gamesInstalled = summary ? summary.gamesInstalled || 0 : 0;
-  const livePartite = summary ? summary.livePartite || 0 : 0;
-  const reqpm = summary ? summary.reqPerMin || 0 : 0;
+    const apis = summary ? summary.apisCount || 0 : 0;
+    const services = summary ? summary.servicesCount || 0 : 0;
+    const gamesInstalled = summary ? summary.gamesInstalled || 0 : 0;
+    const livePartite = summary ? summary.livePartite || 0 : 0;
+    const reqpm = summary ? summary.reqPerMin || 0 : 0;
 
-  return `
+    return `
     <div class="pg-title">Monitor Sistema</div>
     <div class="pg-sub">Statistiche API e stato del sistema — GET /api/monitor/*</div>
     ${errBanner}
@@ -1290,14 +1305,14 @@ export async function platformMonitor() {
 
 // ─── LOGS ────────────────────────────────────────────────────────────────────
 export async function platformLogs() {
-  let logs = [], errBanner = '';
-  try {
-    logs = await Api.getMonitorLogs();
-  } catch (err) {
-    errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
-  }
+    let logs = [], errBanner = '';
+    try {
+        logs = await Api.getMonitorLogs();
+    } catch (err) {
+        errBanner = `<div class="connection-banner" style="margin-bottom:12px"><span>⚠️</span><span>${esc(err.message)}</span></div>`;
+    }
 
-  return `
+    return `
     <div class="pg-title">Log & Audit</div>
     <div class="pg-sub">Registro eventi IoT e di sistema — GET /api/monitor/logs</div>
     ${errBanner}

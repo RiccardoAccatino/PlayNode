@@ -24,7 +24,7 @@ const state = {
 };
 
 /* =====================================================
- * ACCESSORI DTO 
+ * ACCESSORI DTO
  * ===================================================== */
 
 function idPartita(p) {
@@ -303,6 +303,9 @@ export function adminGameDashboard() {
                 </div>
                 <div style="display:flex;gap:8px;align-items:center">
                     <span id="last-update" style="font-size:10px;color:var(--txt3)">Aggiornamento…</span>
+                    <button id="btn-crea-torneo" class="act-btn">
+                        🏆 Crea Torneo
+                    </button>
                     <button id="btn-refresh" class="refresh-btn">
                         <span class="ico">↻</span> Aggiorna
                     </button>
@@ -393,6 +396,27 @@ export function adminGameDashboard() {
                 </div>
             </div>
         </div>
+
+        <div id="modal-crea-torneo" class="cgp-modal-overlay">
+            <div class="cgp-modal">
+                <div class="cgp-modal-title">🏆 Crea Nuovo Torneo</div>
+                <div class="cgp-modal-body">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; margin-bottom: 5px; font-weight: bold;">Nome Torneo:</label>
+                        <input type="text" id="input-nome-torneo" style="width: 100%; padding: 8px; border: 1px solid var(--bdr); border-radius: 4px;" placeholder="Es. Torneo Estivo">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 5px; font-weight: bold;">Seleziona Locali:</label>
+                        <ul id="lista-locali-torneo" style="list-style-type: disc !important; padding: 10px 10px 10px 40px !important; margin: 0; max-height: 150px; overflow-y: auto; border: 1px solid var(--bdr); border-radius: 4px; background: var(--surf2);">
+                        </ul>
+                    </div>
+                </div>
+                <div class="cgp-modal-actions">
+                    <button id="btn-annulla-torneo" class="act-btn" style="background:none;border:1px solid var(--bdr)">Annulla</button>
+                    <button id="btn-salva-torneo" class="act-btn" style="background:var(--blu);color:white;border:none;">Salva Torneo</button>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -432,6 +456,41 @@ async function bootstrapAdminGame() {
         });
     }
 
+    // GESTIONE MODALE CREA TORNEO
+    const modalTorneo = document.getElementById('modal-crea-torneo');
+    const btnCreaTorneo = document.getElementById('btn-crea-torneo');
+    const btnAnnullaTorneo = document.getElementById('btn-annulla-torneo');
+    const btnSalvaTorneo = document.getElementById('btn-salva-torneo');
+
+    if (btnCreaTorneo) {
+        btnCreaTorneo.addEventListener('click', () => {
+            renderLocaliTorneo(); // Popola la lista prima di aprire
+            modalTorneo.classList.add('open');
+        });
+    }
+    if (btnAnnullaTorneo) {
+        btnAnnullaTorneo.addEventListener('click', () => {
+            modalTorneo.classList.remove('open');
+        });
+    }
+    if (modalTorneo) {
+        modalTorneo.addEventListener('click', (e) => {
+            if (e.target === modalTorneo) {
+                modalTorneo.classList.remove('open');
+            }
+        });
+    }
+    if (btnSalvaTorneo) {
+        btnSalvaTorneo.addEventListener('click', () => {
+            const nomeTorneo = document.getElementById('input-nome-torneo')?.value || '';
+            const localiSelezionati = Array.from(document.querySelectorAll('input[name="locali_selezionati"]:checked')).map(cb => cb.value);
+
+            console.log('[admin-gioco] Salvataggio torneo:', { nome: nomeTorneo, locali: localiSelezionati });
+            window.showToast(`Torneo "${nomeTorneo}" creato con successo! Locali associati: ${localiSelezionati.length}`, 'success');
+            modalTorneo.classList.remove('open');
+        });
+    }
+
     await fetchAllData();
     renderAll();
 
@@ -455,6 +514,26 @@ function renderLastUpdate() {
     if (el && state.lastUpdate) {
         el.textContent = 'Aggiornato: ' + state.lastUpdate.toLocaleTimeString('it-IT');
     }
+}
+
+// Renderizza dinamicamente la lista puntata dei locali per il modale torneo
+function renderLocaliTorneo() {
+    const ul = document.getElementById('lista-locali-torneo');
+    if (!ul) return;
+
+    if (state.locali.length === 0) {
+        ul.innerHTML = '<li style="color:var(--txt3); font-style:italic; list-style-type: none !important; padding-left: 0;">Nessun locale disponibile.</li>';
+        return;
+    }
+
+    ul.innerHTML = state.locali.map(l => `
+        <li style="margin-bottom: 8px; display: list-item !important; list-style-type: disc !important;">
+            <label style="cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-size:14px; margin-left: 4px;">
+                <input type="checkbox" name="locali_selezionati" value="${l.id}">
+                <span>${escapeHtml(l.nome)}</span>
+            </label>
+        </li>
+    `).join('');
 }
 
 function renderStats() {
