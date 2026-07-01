@@ -367,6 +367,17 @@ async function initTournaments() {
             Api.getAllTournaments(),
             Api.getAllTipologieGioco()
         ]);
+
+        // Recupera i dettagli per verificare l'iscrizione dell'utente corrente
+        const dettagliPromises = tornei.map(t => Api.getTournamentDettaglio(t.id).catch(() => null));
+        const dettagli = await Promise.all(dettagliPromises);
+
+        tornei.forEach((t, index) => {
+            if (dettagli[index] && dettagli[index].iscrittoUtenteCorrente) {
+                t.giaIscritto = true;
+            }
+        });
+
     } catch (err) {
         root.innerHTML = `<div style="padding:24px;color:var(--red);text-align:center">${esc(err.message)}</div>`;
         window.showToast(err.message, 'error', 5000);
@@ -394,6 +405,12 @@ async function initTournaments() {
             ? `${t.dataInizio} → ${t.dataFine}`
             : `Dal ${t.dataInizio}`;
         const terminato = (t.classifica || '').toLowerCase().includes('terminat');
+
+        // Verifica se mostrare il bottone o il testo "Già Iscritto"
+        const pulsanteIscriviti = (terminato || t.giaIscritto)
+            ? (t.giaIscritto ? `<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>` : '')
+            : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" style="font-size:11px">Iscriviti</button>`;
+
         return `
             <div class="card" style="margin-bottom:10px" data-torneo-id="${t.id}">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -412,7 +429,7 @@ async function initTournaments() {
                     <div style="font-size:11px;color:var(--txt3)">
                         Classifica: <strong style="color:var(--txt)">${esc(t.classifica || 'Da definire')}</strong>
                     </div>
-                    ${terminato ? '' : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" style="font-size:11px">Iscriviti</button>`}
+                    ${pulsanteIscriviti}
                 </div>
             </div>`;
     }).join('');
@@ -420,11 +437,21 @@ async function initTournaments() {
     document.querySelectorAll('.btn-iscriviti-torneo').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.target.getAttribute('data-id');
+            const originalText = e.target.innerText;
+            e.target.innerText = 'Attendere...';
+            e.target.disabled = true;
+
             try {
                 await Api.iscriviTorneo(id);
                 window.showToast('Iscrizione al torneo completata.', 'success');
-                initTournaments();
+
+                // Rimuove il bottone e mostra la conferma istantaneamente
+                const container = e.target.parentElement;
+                e.target.remove();
+                container.insertAdjacentHTML('beforeend', '<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>');
             } catch (err) {
+                e.target.innerText = originalText;
+                e.target.disabled = false;
                 window.showToast(err.message || 'Iscrizione non riuscita.', 'error', 5000);
             }
         });
