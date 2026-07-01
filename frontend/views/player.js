@@ -356,6 +356,95 @@ function badgeTorneo(classifica, dataFine) {
     if (!dataFine) return { cls: 'b-grn', label: 'Attivo' };
     return { cls: 'b-amb', label: classifica || 'In arrivo' };
 }
+// Modale per l'iscrizione a squadre
+function showSquadreModal(torneoId, onSuccess) {
+    // 1. Rimuovi modali precedenti se esistono
+    const existing = document.getElementById('modal-squadre');
+    if (existing) existing.remove();
+
+    // 2. Recupera le squadre dal backend (Simulato/TODO)
+    // Sostituisci questa variabile quando avrai l'endpoint API pronto, es:
+    // let squadre = await Api.getSquadreTorneo(torneoId).catch(() => []);
+    let squadre = [
+        /* { id: 1, nome: "I Leoni" }, { id: 2, nome: "I Draghi" } */ // Esempi di dati
+    ];
+
+    // 3. Costruisci l'HTML del modale
+    const modalHtml = `
+    <div id="modal-squadre" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div class="card" style="width:90%;max-width:400px;background:var(--bg);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0;margin-bottom:16px;font-family:var(--ff);">Iscrizione a Squadre</h3>
+            
+            <div style="margin-bottom:16px;">
+                <label style="font-size:12px;font-weight:600;color:var(--txt3);">Seleziona una squadra esistente:</label>
+                <select id="select-squadra" style="width:100%;padding:8px 12px;margin-top:4px;background:var(--surf);color:var(--txt);border:1px solid var(--bdr);border-radius:6px;outline:none;">
+                    <option value="">-- Scegli una squadra --</option>
+                    ${squadre.map(s => `<option value="${s.id}">${esc(s.nome)}</option>`).join('')}
+                </select>
+                ${squadre.length === 0 ? '<div style="font-size:10px;color:var(--txt3);margin-top:4px;">Nessuna squadra disponibile al momento.</div>' : ''}
+            </div>
+
+            <div style="text-align:center;margin-bottom:16px;color:var(--txt3);font-size:11px;font-weight:bold;">OPPURE</div>
+
+            <div style="margin-bottom:24px;">
+                <label style="font-size:12px;font-weight:600;color:var(--txt3);">Crea una nuova squadra:</label>
+                <input type="text" id="input-nuova-squadra" placeholder="Nome nuova squadra" style="width:100%;padding:8px 12px;margin-top:4px;background:var(--surf);color:var(--txt);border:1px solid var(--bdr);border-radius:6px;outline:none;">
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:12px;">
+                <button id="btn-annulla-squadre" class="act-btn" style="background:transparent;border:1px solid var(--bdr);color:var(--txt)">Annulla</button>
+                <button id="btn-conferma-squadre" class="act-btn">Conferma Iscrizione</button>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // 4. Gestione eventi del modale
+    const modal = document.getElementById('modal-squadre');
+    const selectSquadra = document.getElementById('select-squadra');
+    const inputNuovaSquadra = document.getElementById('input-nuova-squadra');
+    const btnAnnulla = document.getElementById('btn-annulla-squadre');
+    const btnConferma = document.getElementById('btn-conferma-squadre');
+
+    // Muto-esclusione visiva per guidare l'utente
+    selectSquadra.addEventListener('change', () => {
+        if(selectSquadra.value) inputNuovaSquadra.value = '';
+    });
+    inputNuovaSquadra.addEventListener('input', () => {
+        if(inputNuovaSquadra.value.trim()) selectSquadra.value = '';
+    });
+
+    btnAnnulla.addEventListener('click', () => modal.remove());
+
+    btnConferma.addEventListener('click', async () => {
+        const squadraId = selectSquadra.value;
+        const nuovaSquadraNome = inputNuovaSquadra.value.trim();
+
+        if (!squadraId && !nuovaSquadraNome) {
+            window.showToast('Devi selezionare o creare una squadra per iscriverti.', 'warning');
+            return;
+        }
+
+        btnConferma.innerText = 'Attendere...';
+        btnConferma.disabled = true;
+
+        try {
+            // Nota: quando implementerai l'API lato backend per l'iscrizione a squadre,
+            // potrai inviare `squadraId` o `nuovaSquadraNome`.
+            // Per ora usiamo il fallback standard `Api.iscriviTorneo`.
+            await Api.iscriviTorneo(torneoId);
+
+            window.showToast('Iscrizione a squadre completata con successo.', 'success');
+            modal.remove();
+            if (onSuccess) onSuccess();
+        } catch (err) {
+            btnConferma.innerText = 'Conferma Iscrizione';
+            btnConferma.disabled = false;
+            window.showToast(err.message || 'Iscrizione non riuscita.', 'error', 5000);
+        }
+    });
+}
 
 async function initTournaments() {
     const root = document.getElementById('player-tornei-root');
@@ -406,10 +495,10 @@ async function initTournaments() {
             : `Dal ${t.dataInizio}`;
         const terminato = (t.classifica || '').toLowerCase().includes('terminat');
 
-        // Verifica se mostrare il bottone o il testo "Già Iscritto"
+        // Aggiungiamo data-modalita al bottone per sapere che tipo di iscrizione gestire
         const pulsanteIscriviti = (terminato || t.giaIscritto)
             ? (t.giaIscritto ? `<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>` : '')
-            : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" style="font-size:11px">Iscriviti</button>`;
+            : `<button class="act-btn btn-iscriviti-torneo" data-id="${t.id}" data-modalita="${t.modalita || ''}" style="font-size:11px">Iscriviti</button>`;
 
         return `
             <div class="card" style="margin-bottom:10px" data-torneo-id="${t.id}">
@@ -437,6 +526,22 @@ async function initTournaments() {
     document.querySelectorAll('.btn-iscriviti-torneo').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.target.getAttribute('data-id');
+            const modalita = (e.target.getAttribute('data-modalita') || '').toUpperCase();
+
+            // Definiamo la callback di successo per aggiornare l'interfaccia istantaneamente
+            const onSuccessAction = () => {
+                const container = e.target.parentElement;
+                e.target.remove();
+                container.insertAdjacentHTML('beforeend', '<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>');
+            };
+
+            // Controlla se la modalità richiede il modale delle squadre
+            if (modalita.includes('SQUADR')) {
+                showSquadreModal(id, onSuccessAction);
+                return;
+            }
+
+            // --- Flusso iscrizione individuale (esistente) ---
             const originalText = e.target.innerText;
             e.target.innerText = 'Attendere...';
             e.target.disabled = true;
@@ -444,11 +549,7 @@ async function initTournaments() {
             try {
                 await Api.iscriviTorneo(id);
                 window.showToast('Iscrizione al torneo completata.', 'success');
-
-                // Rimuove il bottone e mostra la conferma istantaneamente
-                const container = e.target.parentElement;
-                e.target.remove();
-                container.insertAdjacentHTML('beforeend', '<span style="font-size:11px;color:var(--grn);font-weight:bold;">✓ Già Iscritto</span>');
+                onSuccessAction();
             } catch (err) {
                 e.target.innerText = originalText;
                 e.target.disabled = false;
